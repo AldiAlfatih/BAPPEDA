@@ -36,6 +36,7 @@ class RuleSeeder extends Seeder
         $editSubKegiatanPermission = Permission::firstOrCreate(['name' => 'edit sub kegiatan']);
         $deleteSubKegiatanPermission = Permission::firstOrCreate(['name' => 'delete sub kegiatan']);
         $viewSubKegiatanPermission = Permission::firstOrCreate(['name' => 'view sub kegiatan']);
+        $createAkunPermission = Permission::firstOrCreate(['name' => 'create akun']);
         $rsa->givePermissionTo($mpd);
 
         // Memberikan Permissions ke Roles
@@ -66,7 +67,8 @@ class RuleSeeder extends Seeder
             $createSubKegiatanPermission,
             $editSubKegiatanPermission,
             $deleteSubKegiatanPermission,
-            $viewSubKegiatanPermission
+            $viewSubKegiatanPermission,
+            $createAkunPermission
         ]);
 
         $rop->givePermissionTo([

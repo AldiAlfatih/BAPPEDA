@@ -36,6 +36,28 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));
+        
+        $validateData = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if(!Auth::attempt($validateData)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
+
+        $token = $user->createToken($user->name)->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'user' => $user,
+            'access_token' => $token
+        ], 200);
     }
 
     /**

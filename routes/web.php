@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+
+
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
@@ -16,7 +18,7 @@ Route::get('dashboard', function () {
 // });
 
 Route::group(['middleware' => ['permission:create program']], function () {
-    Route::get('/posts/create', [PermissionController::class, 'create']);
+    Route::get('/program/create', [PermissionController::class, 'create']);
 });
 
 Route: 

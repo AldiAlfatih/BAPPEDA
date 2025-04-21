@@ -1,5 +1,6 @@
 <?php
 
+<<<<<<< HEAD
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -15,4 +16,21 @@ class SubKegiatan extends Model
         return $this->belongsTo(Kegiatan::class, 'kegiatan_id');
     }
 }
+=======
+// namespace App\Models;
+
+// use Illuminate\Database\Eloquent\Model;
+
+// class SubKegiatan extends Model
+// {
+//     //
+//     protected $table = 'subkegiatan';
+//     protected $fillable = ['nama', 'kode', 'kegiatan_id'];
+
+//     public function kegiatan():BelongsTo
+//     {
+//         return $this->belongsTo(Kegiatan::class, 'kegiatan_id');
+//     }
+// }
+>>>>>>> bd447f1 (database pertama)
 

@@ -4,6 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Program;
 use Illuminate\Http\Request;
+<<<<<<< HEAD
+=======
+use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
+>>>>>>> bd447f1 (database pertama)
 
 class ProgramController extends Controller
 {
@@ -12,7 +17,11 @@ class ProgramController extends Controller
      */
     public function index()
     {
+<<<<<<< HEAD
         return response()->jsonRequest([
+=======
+        return response()->json([
+>>>>>>> bd447f1 (database pertama)
             'success' => true,
             'data' => Program::latest()->get()
         ]);
@@ -24,18 +33,31 @@ class ProgramController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+<<<<<<< HEAD
             'kode' => 'required|string|max:5',
             'nama' => 'required|string',
+=======
+            'name' => 'required|string|max:255',
+            'email' => 'required|string',
+>>>>>>> bd447f1 (database pertama)
         ]);
 
         $program = Program::create($request->all());
 
+<<<<<<< HEAD
         return response()->jsonRequest([
+=======
+        return response()->json([
+>>>>>>> bd447f1 (database pertama)
             'success' => true,
             'message' => 'Program created successfully',
             'data' => $program
         ], 201);
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> bd447f1 (database pertama)
 
     /**
      * Display the specified resource.

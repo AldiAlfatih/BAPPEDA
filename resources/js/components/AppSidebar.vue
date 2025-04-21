@@ -8,6 +8,10 @@ import { Link } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> bd447f1 (database pertama)
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
@@ -17,11 +21,19 @@ const mainNavItems: NavItem[] = [
     },
 
     {
+<<<<<<< HEAD
         title: 'Permissions',
         href: '/permissions',
         icon: LayoutGrid,
         // guard: ['admin', 'perangkat_daerah']
     },
+=======
+        title: 'Program',
+        href: '/program',
+        icon: LayoutGrid,
+        // guard: ['admin|perangkat_daerah']
+    }
+>>>>>>> bd447f1 (database pertama)
 
 ];
 

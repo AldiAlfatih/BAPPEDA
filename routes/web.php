@@ -6,7 +6,6 @@ use App\Http\Controllers\NomenklaturController;
 use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\MonitoringController;
 
-
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
@@ -19,13 +18,13 @@ Route::get('dashboard', function () {
 //     return Inertia::render('Nomenklatur');
 // })->middleware(['auth', 'verified'])->name('nomeklatur');
 
-Route::get('monitoring', function () {
-    return Inertia::render('Monitoring');
-})->middleware(['auth', 'verified'])->name('monitoring');
+// Route::get('monitoring', function () {
+//     return Inertia::render('Monitoring');
+// })->middleware(['auth', 'verified'])->name('monitoring');
 
 Route::resource('nomenklatur', NomenklaturController::class)->middleware(['auth', 'verified'])->name('nomenklatur');
 Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->name('bantuan');
-
+Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->name('monitoring');
 // Route::get('bantuan', function () {
 //     return Inertia::render('Bantuan');
 // })->middleware(['auth', 'verified'])->name('bantuan');

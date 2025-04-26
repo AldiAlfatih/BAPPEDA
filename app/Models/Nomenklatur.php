@@ -10,6 +10,6 @@ class Nomenklatur extends Model
     use HasFactory;
 
     protected $table = 'kode_nomenklatur';
-    protected $fillable = ['nama_kode','nomenklatur','urusan','bidang_urusan','program','kegiatan','subkegiatan'];
+    protected $fillable = ['nomor_kode','nomenklatur','urusan','bidang_urusan','program','kegiatan','subkegiatan'];
 
 }

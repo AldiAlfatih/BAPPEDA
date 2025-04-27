@@ -20,6 +20,12 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+
+     public function ProfileSKPD()
+     {
+         return $this->hasOne(ProfileSKPD::class);
+     }
+     
     protected $fillable = [
         'name',
         'email',

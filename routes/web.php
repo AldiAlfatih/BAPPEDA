@@ -17,6 +17,9 @@ Route::get('dashboard', function () {
 Route::resource('nomenklatur', NomenklaturController::class)->middleware(['auth', 'verified'])->names('nomenklatur');
 Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->names('bantuan');
 Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->names('monitoring');
-
+Route::resource('user-management', UserManagementController::class)
+    ->middleware(['auth', 'verified'])
+    ->names('user-management');
+    
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

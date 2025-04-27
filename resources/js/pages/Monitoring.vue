@@ -114,7 +114,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 </script>
 
 <template>
-    <Head title="Monitring" />
+    <Head title="Monitoring" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
@@ -158,16 +158,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <TableCell class="py-1 leading-none">{{ activity.nama }}</TableCell>
                         <TableCell class="py-1 leading-none">{{ activity.pagu }}</TableCell>
                         <TableCell class="py-1 leading-none">{{ activity.sumber }}</TableCell>
-                        <TableCell class="py-1 leading-none">{{ activity.target }}
-                            <Button class="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-4 rounded">
-                                <Eye class="w-4 h-4" />
-                                Lihat Target
-                            </Button>
-                            <Button class="ml-4 bg-amber-700 hover:bg-amber-800 text-white text-xs px-2 py-4 rounded">
-                                <Pencil class="w-4 h-4" />
-                                Edit
-                            </Button>
-                        </TableCell>
+                         
                         </TableRow>
                     </TableBody>
                 </Table>

@@ -20,6 +20,12 @@ Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 
 Route::resource('user-management', UserManagementController::class)
     ->middleware(['auth', 'verified'])
     ->names('user-management');
-    
+Route::resource('realisasi', RealisasiController::class)
+    ->middleware(['auth', 'verified'])
+    ->names('realisasi');
+Route::resource('periode', PeriodeController::class)
+    ->middleware(['auth', 'verified'])
+    ->names('periode');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

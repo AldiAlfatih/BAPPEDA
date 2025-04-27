@@ -15,7 +15,6 @@ class MonitoringController extends Controller
     {
         return Inertia::render('Monitoring');
     }
-
     /**
      * Show the form for creating a new resource.
      */

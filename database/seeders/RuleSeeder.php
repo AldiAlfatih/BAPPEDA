@@ -24,17 +24,8 @@ class RuleSeeder extends Seeder
         $rop = Role::firstOrCreate(['name'=> 'operator']);
         $rpd = Role::firstOrCreate(['name' => 'perangkat_daerah']);
         
-
-        // // Membuat Permissions umum
-        // $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah']);
-        // $addNomenklatur = Permission::firstOrCreate(['name' => 'create nomenklatur']);
-        // $editNomenklatur = Permission::firstOrCreate(['name' => 'edit nomenklatur']);
-        // $deleteNomenklatur = Permission::firstOrCreate(['name' => 'delete nomenklatur']);
-        // $viewNomenklatur = Permission::firstOrCreate(['name' => 'view nomenklatur']);
-        // $createAkun = Permission::firstOrCreate(['name' => 'create akun']);
-
         // Permissions khusus untuk perangkat daerah (select dropdown)
-        $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah', 'guard_name' => 'web']);
+        // $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah', 'guard_name' => 'web']);
         $selectNomenklatur = Permission::firstOrCreate(['name' => 'select nomenklatur','guard_name' => 'web']);
         $addNomenklatur = Permission::firstOrCreate(['name' => 'add nomenklatur', 'guard_name' => 'web']);
         $editNomenklatur = Permission::firstOrCreate(['name' => 'edit nomenklatur', 'guard_name' => 'web']);
@@ -93,7 +84,6 @@ class RuleSeeder extends Seeder
         $rpd->givePermissionTo([
             $selectNomenklatur,
             $viewNomenklatur,
-            $selectNomenklatur,
             $viewBantuan,
             $viewPemberitahuan,
             $viewAkunadminPDoperator,

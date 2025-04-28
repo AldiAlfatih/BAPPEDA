@@ -28,10 +28,8 @@ const mainNavItems: NavItem[] = [
         icon: BookOpen,
         guard: ['super_admin','admin'],
     },
-
     {
-        title: 'Monitoring',
-        href: '/monitoring',
+    title: 'Monitoring',
         icon: Folder,
         guard: ['admin'],
     },

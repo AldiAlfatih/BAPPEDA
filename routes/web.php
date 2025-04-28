@@ -14,18 +14,25 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Route::get('nomenklatur', function () {
+//     return Inertia::render('Nomenklatur');
+// })->middleware(['auth', 'verified'])->name('nomeklatur');
+
+// Route::get('monitoring', function () {
+//     return Inertia::render('Monitoring');
+// })->middleware(['auth', 'verified'])->name('monitoring');
+
 Route::resource('nomenklatur', NomenklaturController::class)->middleware(['auth', 'verified'])->names('nomenklatur');
 Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->names('bantuan');
 Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->names('monitoring');
-Route::resource('user-management', UserManagementController::class)
-    ->middleware(['auth', 'verified'])
-    ->names('user-management');
-Route::resource('realisasi', RealisasiController::class)
-    ->middleware(['auth', 'verified'])
-    ->names('realisasi');
-Route::resource('periode', PeriodeController::class)
-    ->middleware(['auth', 'verified'])
-    ->names('periode');
+// Route::get('/nomenklatur/edit/{id}', [NomenklaturController::class, 'edit'])->name('nomenklatur.edit');
+
+
+// Route::get('bantuan', function () {
+//     return Inertia::render('Bantuan');
+// })->middleware(['auth', 'verified'])->name('bantuan');
+
+// Route::get('/popup-data', [BantuanController::class, 'getDataForPopup']);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

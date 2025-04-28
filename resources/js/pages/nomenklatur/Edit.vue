@@ -3,11 +3,30 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+<<<<<<< HEAD
+import { type BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+  {
+    title: 'Nomenklatur',
+    href: '/nomenklatur',
+  },
+  {
+    title: 'Edit Nomenklatur',
+    href: '/nomenklatur/edit',
+  },
+];
+=======
+>>>>>>> e22747e20b654f222cf27c1d873cbb4746940e9b
 
 const props = defineProps<{
   nomenklatur: {
     id: number,
+<<<<<<< HEAD
+    nama_kode: string,
+=======
     nomor_kode: string,
+>>>>>>> e22747e20b654f222cf27c1d873cbb4746940e9b
     nomenklatur: string,
     urusan: string,
     bidang_urusan: string,
@@ -21,46 +40,48 @@ const props = defineProps<{
 
 // Form fields di-bind ke props
 const form = ref({
-  // nomor_kode: props.nomenklatur.nomor_kode,
-  nomenklatur: props.nomenklatur.nomenklatur,
-  urusan: props.nomenklatur.urusan,
-  bidang_urusan: props.nomenklatur.bidang_urusan,
-  program: props.nomenklatur.program,
-  kegiatan: props.nomenklatur.kegiatan,
-  subkegiatan: props.nomenklatur.subkegiatan,
+  nama_kode: props.nomenklatur.nama_kode || '',
+  nomenklatur: props.nomenklatur.nomenklatur || '',
+  urusan: props.nomenklatur.urusan || '',
+  bidang_urusan: props.nomenklatur.bidang_urusan || '',
+  program: props.nomenklatur.program || '',
+  kegiatan: props.nomenklatur.kegiatan || '',
+  subkegiatan: props.nomenklatur.subkegiatan || '',
+  sumber: props.nomenklatur.sumber || '',
+  target: props.nomenklatur.target || '',
 });
 
 
 // Fungsi update data
+const isSubmitting = ref(false);
+
 function updateNomenklatur() {
+  isSubmitting.value = true;
   router.put(`/nomenklatur/${props.nomenklatur.id}`, form.value, {
-    onSuccess: () => {
-      router.visit('/nomenklatur');
-    },
+    onFinish: () => isSubmitting.value = false,
+    onSuccess: () => alert('Berhasil update data!'),
     onError: (errors) => {
-      console.error('Error updating Nomenklatur:', errors);
-      // Tambahkan logika tambahan kalau mau
-    },
+      console.error(errors);
+      alert('Terjadi kesalahan saat update!');
+    }
   });
 }
-
-
 </script>
 
 <template>
   <Head title="Edit Nomenklatur" />
 
-  <AppLayout>
+  <AppLayout :breadcrumbs="breadcrumbs">
     <div class="p-6">
       <h1 class="text-2xl font-bold mb-4">Edit Nomenklatur</h1>
 
       <form @submit.prevent="updateNomenklatur">
         <div class="flex flex-col gap-4">
 
-          <!-- <div>
+          <div>
             <label>Kode</label>
-            <input v-model="form.nomor_kode" class="border rounded w-full" />
-          </div> -->
+            <input v-model="form.nama_kode" class="border rounded w-full" />
+          </div>
 
           <div>
             <label>Nomenklatur</label>
@@ -92,8 +113,9 @@ function updateNomenklatur() {
             <input v-model="form.subkegiatan" class="border rounded w-full" />
           </div>
 
-          <button type="submit" class="bg-blue-500 text-white rounded px-4 py-2">Update</button>
-
+          <button type="submit" :disabled="isSubmitting" class="bg-blue-500 text-white rounded px-4 py-2">
+            {{ isSubmitting ? 'Updating...' : 'Update' }}
+            </button>
         </div>
       </form>
     </div>

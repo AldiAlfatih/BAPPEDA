@@ -19,7 +19,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // form binding
 const form = useForm({
-  nomor_kode: '',
+  nama_kode: '',
   nomenklatur: '',
   urusan: '',
   bidang_urusan: '',
@@ -40,14 +40,14 @@ function submit() {
   <Head title="Tambah Nomenklatur" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex flex-col gap-6 p-6 max-w-3xl mx-auto">
-      <h1 class="text-2xl font-semibold">Tambah Nomenklatur</h1>
+    <div class="p-6">
+      <h1 class="text-2xl font-bold mb-4">Tambah Nomenklatur</h1>
 
-      <form @submit.prevent="submit" class="space-y-4">
+      <form @submit.prevent="submit" class="flex flex-col gap-4">
         <div>
-          <Label for="nomor_kode">Nama Kode</Label>
-          <Input id="nomor_kode" v-model="form.nomor_kode" type="text" required />
-          <div v-if="form.errors.nomor_kode" class="text-red-500 text-sm mt-1">{{ form.errors.nomor_kode }}</div>
+          <Label for="nama_kode">Nama Kode</Label>
+          <Input id="nama_kode" v-model="form.nama_kode" type="text" required />
+          <div v-if="form.errors.nama_kode" class="text-red-500 text-sm mt-1">{{ form.errors.nama_kode }}</div>
         </div>
 
         <div>

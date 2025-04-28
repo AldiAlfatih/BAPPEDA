@@ -13,28 +13,28 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        // $search = $request->input('search');
 
-        $users = User::query()
-            ->whereHas('roles', function ($q) {
-                $q->whereIn('name', ['perangkat_daerah', 'operator']);
-            })
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereHas('userDetail', function ($q2) use ($search) {
-                            $q2->where('nip', 'like', "%{$search}%");
-                        });
-                });
-            })
-            ->with(['roles', 'userDetail', 'profileSkpd'])
-            ->latest()
-            ->paginate(10);
+        // $users = User::query()
+        //     ->whereHas('roles', function ($q) {
+        //         $q->whereIn('name', ['perangkat_daerah', 'operator']);
+        //     })
+        //     ->when($search, function ($query, $search) {
+        //         $query->where(function ($q) use ($search) {
+        //             $q->where('name', 'like', "%{$search}%")
+        //                 ->orWhere('email', 'like', "%{$search}%")
+        //                 ->orWhereHas('userDetail', function ($q2) use ($search) {
+        //                     $q2->where('nip', 'like', "%{$search}%");
+        //                 });
+        //         });
+        //     })
+        //     ->with(['roles', 'userDetail', 'profileSkpd'])
+        //     ->latest()
+        //     ->paginate(10);
 
         return Inertia::render('UserManagement', [
             'users' => $users,
-            'filters' => $request->only('search'),
+            // 'filters' => $request->only('search'),
         ]);
     }
 

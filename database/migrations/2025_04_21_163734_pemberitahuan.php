@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('judul');
             $table->text('isi');
             $table->date('tanggal_kirim');
-            $table->string('tujuan');
             $table->timestamps(); // created_at dan updated_at
         });
     }

@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('validasi', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_penugasan');
             $table->string('status_validasi');
             $table->date('tanggal_validasi');
-            $table->unsignedBigInteger('id_operator');
+            $table->string('feedback');
             $table->timestamps();
 
         });

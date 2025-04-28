@@ -11,22 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('profile_skpd', function (Blueprint $table) {
+        Schema::create('user_detail', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
-            $table->string('nama_kepala_skpd');
-            $table->string('kode_urusan');
-            $table->string('nama_skpd');
-            $table->string('kode_organisasi');
+            $table->string('alamat');
+            $table->integer('nip')->unique();
+            $table->integer('no_hp');
+            $table->string('jenis_kelamin');
+            $table->integer('tgl_lahir');
             $table->timestamps();
         });
-    }
+    } 
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('profile_skpd');
+        //
     }
 };

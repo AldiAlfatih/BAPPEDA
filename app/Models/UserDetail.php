@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProfileSkpd extends Model
+class UserDetail extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'nama_kepala_skpd', 'kode_urusan', 'nama_skpd', 'kode_organisasi',
+        'user_id', 'alamat', 'nip', 'no_hp', 'jenis_kelamin', 'tanggal_lahir',
     ];
 
     public function user()
@@ -18,4 +18,3 @@ class ProfileSkpd extends Model
         return $this->belongsTo(User::class);
     }
 }
-

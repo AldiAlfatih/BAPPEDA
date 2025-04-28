@@ -3,192 +3,152 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\ProfileSKPD;
+use App\Models\UserDetail;
+use App\Models\ProfileSkpd;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Auth;
 
 class UserManagementController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Hanya admin yang bisa melihat daftar pengguna
-        if (!auth()->user()->can('view akun pengguna')) {
-            abort(403, 'Unauthorized');
-        }
+        $search = $request->input('search');
 
-        $users = User::with(['roles', 'ProfileSKPD'])
-            ->whereHas('roles', function ($query) {
-                $query->whereIn('name', ['pd', 'operator']);
+        $users = User::query()
+            ->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['perangkat_daerah', 'operator']);
             })
-            ->get();
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('userDetail', function ($q2) use ($search) {
+                            $q2->where('nip', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->with(['roles', 'userDetail', 'profileSkpd'])
+            ->latest()
+            ->paginate(10);
 
-        return Inertia::render('UserManagement/Index', [
-            'users' => $users
+        return Inertia::render('UserManagement', [
+            'users' => $users,
+            'filters' => $request->only('search'),
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        // Hanya admin yang bisa membuat akun
-        if (!auth()->user()->can('add akun pengguna')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $roles = Role::whereIn('name', ['pd', 'operator'])->get();
-        return Inertia::render('UserManagement/Create', [
-            'roles' => $roles,
-        ]);
+        return Inertia::render('UserManagement/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // Validasi input dari form
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-            'role' => 'required|exists:roles,name',
-            'nama_kepala_skpd' => 'required|string|max:255',
-            'kode_urusan' => 'required|string|max:100',
-            'nama' => 'required|string|max:255',
-            'kode_organisasi' => 'required|string|max:100',
+            'email' => 'required|string|email|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|in:perangkat_daerah,operator',
+            'alamat' => 'required|string|max:255',
             'nip' => 'required|string|max:50',
+            'no_hp' => 'required|string|max:20',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'tanggal_lahir' => 'required|date',
+            'nama_kepala_skpd' => 'nullable|string|max:255',
+            'kode_urusan' => 'nullable|string|max:100',
+            'nama_skpd' => 'nullable|string|max:255',
+            'kode_organisasi' => 'nullable|string|max:100',
         ]);
-
-        // Cek apakah admin yang membuat user
-        if (!auth()->user()->can('add akun pengguna')) {
-            abort(403, 'Unauthorized');
-        }
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
 
-        // Assign Role
-        $user->assignRole($request->role);
+        $user->assignRole($validated['role']);
 
-        // Buat profil SKPD
-        $user->ProfileSKPD()->create([
-            'nama_kepala_skpd' => $request->nama_kepala_skpd,
-            'kode_urusan' => $request->kode_urusan,
-            'nama_skpd' => $request->nama,
-            'kode_organisasi' => $request->kode_organisasi,
-            'nip' => $request->nip,
+        $user->userDetail()->create([
+            'alamat' => $validated['alamat'],
+            'nip' => $validated['nip'],
+            'no_hp' => $validated['no_hp'],
+            'jenis_kelamin' => $validated['jenis_kelamin'],
+            'tanggal_lahir' => $validated['tanggal_lahir'],
         ]);
 
-        return redirect()->route('user-management.index')->with('success', 'User created successfully.');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        $user = User::with('ProfileSKPD', 'roles')->findOrFail($id);
-
-        // Cek apakah admin yang mengedit
-        if (!auth()->user()->can('edit akun pengguna')) {
-            abort(403, 'Unauthorized');
-        }
-
-        $roles = Role::whereIn('name', ['pd', 'operator'])->get();
-
-        return Inertia::render('UserManagement/Edit', [
-            'user' => $user,
-            'roles' => $roles,
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        $user = User::findOrFail($id);
-    
-        $rules = [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'role' => 'required|exists:roles,name',
-            'nama_kepala_skpd' => 'required|string|max:255',
-            'kode_urusan' => 'required|string|max:100',
-            'nama' => 'required|string|max:255',
-            'kode_organisasi' => 'required|string|max:100',
-            'nip' => 'required|string|max:50',
-        ];
-    
-        // Kalau Admin, password juga di-validate
-        if (Auth::user()->hasRole('admin')) {
-            $rules['password'] = 'nullable|string|min:6|confirmed';
-        }
-    
-        $validated = $request->validate($rules);
-
-        // Cek apakah admin yang mengedit
-        if (!auth()->user()->can('edit akun pengguna')) {
-            abort(403, 'Unauthorized');
-        }
-    
-        // Update data user
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-    
-        // Update password hanya kalau admin yang mengisi password baru
-        if (Auth::user()->hasRole('admin') && !empty($validated['password'])) {
-            $user->password = Hash::make($validated['password']);
-        }
-    
-        $user->save();
-    
-        // Update role
-        $user->syncRoles($validated['role']);
-    
-        // Update Profile SKPD
-        if ($user->ProfileSKPD) {
-            $user->ProfileSKPD->update([
+        if ($validated['role'] == 'perangkat_daerah') {
+            $user->profileSkpd()->create([
                 'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
                 'kode_urusan' => $validated['kode_urusan'],
-                'nama_skpd' => $validated['nama'],
+                'nama_skpd' => $validated['nama_skpd'],
                 'kode_organisasi' => $validated['kode_organisasi'],
-                'nip' => $validated['nip'],
             ]);
         }
-    
-        return redirect()->route('user-management.index')->with('success', 'User updated successfully.');
+
+        return redirect()->route('user-management.index')->with('success', 'Akun berhasil dibuat.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function edit(User $user)
     {
-        $user = User::findOrFail($id);
-
-        // Cek apakah admin yang menghapus
-        if (!auth()->user()->can('delete akun pengguna')) {
-            abort(403, 'Unauthorized');
+        if (!auth()->user()->hasRole('admin') && auth()->id() !== $user->id) {
+            abort(403);
         }
 
-        if ($user->ProfileSKPD) {
-            $user->ProfileSKPD->delete();
+        return Inertia::render('UserManagement/Edit', [
+            'user' => $user->load('userDetail', 'profileSkpd', 'roles'),
+        ]);
+    }
+
+    public function update(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8|confirmed',
+            'alamat' => 'required|string|max:255',
+            'nip' => 'required|string|max:50',
+            'no_hp' => 'required|string|max:20',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'tanggal_lahir' => 'required|date',
+            'nama_kepala_skpd' => 'nullable|string|max:255',
+            'kode_urusan' => 'nullable|string|max:100',
+            'nama_skpd' => 'nullable|string|max:255',
+            'kode_organisasi' => 'nullable|string|max:100',
+        ]);
+
+        if (auth()->user()->hasRole('admin')) {
+            $user->update([
+                'email' => $validated['email'],
+                'password' => $validated['password'] ? bcrypt($validated['password']) : $user->password,
+            ]);
         }
 
+        $user->userDetail()->update([
+            'alamat' => $validated['alamat'],
+            'nip' => $validated['nip'],
+            'no_hp' => $validated['no_hp'],
+            'jenis_kelamin' => $validated['jenis_kelamin'],
+            'tanggal_lahir' => $validated['tanggal_lahir'],
+            'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
+            'kode_urusan' => $validated['kode_urusan'],
+            'nama_skpd' => $validated['nama_skpd'],
+        ]);
+
+        // if ($user->hasRole('perangkat_daerah') && $user->profileSkpd) {
+        //     $user->profileSkpd()->update([
+        //         'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
+        //         'kode_urusan' => $validated['kode_urusan'],
+        //         'nama_skpd' => $validated['nama_skpd'],
+        //         'kode_organisasi' => $validated['kode_organisasi'],
+        //     ]);
+        // }
+
+        return redirect()->route('user-management.index')->with('success', 'Akun berhasil diperbarui.');
+    }
+
+    public function destroy(User $user)
+    {
         $user->delete();
-
-        return redirect()->route('user-management.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('user-management.index')->with('success', 'Akun berhasil dihapus.');
     }
 }

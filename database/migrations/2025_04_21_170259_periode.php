@@ -11,15 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
+        
+        Schema::create('jenis_periode', function (Blueprint $table) {
+            $table->id();
+            $table->string('status');
+        }); 
+
         Schema::create('periode', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_admin');
+            $table->foreignId('jenis_periode_id')->constrained('periode');
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->timestamps();
 
             // Foreign key constraint ke tabel users
-            $table->foreign('id_admin')->references('id')->on('users')->onDelete('cascade');
+            
         });
     }
 

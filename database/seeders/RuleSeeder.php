@@ -35,15 +35,7 @@ class RuleSeeder extends Seeder
 
         // Permissions khusus untuk perangkat daerah (select dropdown)
         $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah', 'guard_name' => 'web']);
-        
-        $selectNamakode = Permission::firstOrCreate(['name' => 'select nomor_kode','guard_name' => 'web']);
         $selectNomenklatur = Permission::firstOrCreate(['name' => 'select nomenklatur','guard_name' => 'web']);
-        $selectUrusan = Permission::firstOrCreate(['name' => 'select urusan','guard_name' => 'web']);
-        $selectBidang_Urusan = Permission::firstOrCreate(['name' => 'select bidang_urusan','guard_name' => 'web']);
-        $selectProgram = Permission::firstOrCreate(['name' => 'select program','guard_name' => 'web']);
-        $selectKegiatan = Permission::firstOrCreate(['name' => 'select kegiatan','guard_name' => 'web']);
-        $selectSubkegiatan = Permission::firstOrCreate(['name' => 'select subkegiatan','guard_name' => 'web']);
-
         $addNomenklatur = Permission::firstOrCreate(['name' => 'add nomenklatur', 'guard_name' => 'web']);
         $editNomenklatur = Permission::firstOrCreate(['name' => 'edit nomenklatur', 'guard_name' => 'web']);
         $deleteNomenklatur = Permission::firstOrCreate(['name' => 'destroy nomenklatur', 'guard_name' => 'web']);
@@ -54,9 +46,15 @@ class RuleSeeder extends Seeder
         $deleteBantuan = Permission::firstOrCreate(['name' => 'delete bantuan', 'guard_name' => 'web']);
         $viewBantuan = Permission::firstOrCreate(['name' => 'view bantuan', 'guard_name' => 'web']);
 
-        $addAkunPengguna = Permission::firstOrCreate(['name' => 'create akun', 'guard_name' => 'web']);
-        $editAkunPengguna = Permission::firstOrCreate(['name' => 'edit akun', 'guard_name' => 'web']);
-        $deleteAkunPengguna = Permission::firstOrCreate(['name' => 'delete akun', 'guard_name' => 'web']);
+        $addPemberitahuan = Permission::firstOrCreate(['name' => 'add pemberitahuan', 'guard_name' => 'web']);
+        $editPemberitahuan = Permission::firstOrCreate(['name' => 'edit pemberitahuan', 'guard_name' => 'web']);
+        $deletePemberitahuan = Permission::firstOrCreate(['name' => 'delete pemberitahuan', 'guard_name' => 'web']);
+        $viewPemberitahuan = Permission::firstOrCreate(['name' => 'view pemberitahuan', 'guard_name' => 'web']);
+
+        $viewAkunadminPDoperator = Permission::firstOrCreate(['name' => 'add akun admin, pd, & operator', 'guard_name' => 'web']);
+        $addAkunPDoperator = Permission::firstOrCreate(['name' => 'add akun pd & operator', 'guard_name' => 'web']);
+        $editAkunPDoperator = Permission::firstOrCreate(['name' => 'edit akun pd & operator', 'guard_name' => 'web']);
+        $deleteAkunPDoperator = Permission::firstOrCreate(['name' => 'delete akun pd & operstor', 'guard_name' => 'web']);
 
         // Assign permission ke role super_admin
         $rsa->givePermissionTo([
@@ -69,32 +67,36 @@ class RuleSeeder extends Seeder
             $editNomenklatur,
             $deleteNomenklatur,
             $viewNomenklatur,
-            $viewBantuan,
             $addBantuan,
             $editBantuan,
             $deleteBantuan,
-            $addAkunPengguna,
-            $editAkunPengguna,
-            $deleteAkunPengguna,
+            $viewBantuan,
+            $viewPemberitahuan,
+            $addPemberitahuan,
+            $editPemberitahuan,
+            $deletePemberitahuan,
+            $viewAkunadminPDoperator,
+            $addAkunPDoperator,
+            $editAkunPDoperator,
+            $deleteAkunPDoperator,
         ]);
 
         // Assign permission ke role operator
         $rop->givePermissionTo([
             $viewNomenklatur,
             $viewBantuan,
+            $viewPemberitahuan,
+            $viewAkunadminPDoperator,
         ]);
 
         // Assign permission ke role perangkat daerah (hanya bisa memilih via dropdown)
         $rpd->givePermissionTo([
-            $selectNamakode,
             $selectNomenklatur,
-            $selectUrusan,
-            $selectBidang_Urusan,
-            $selectProgram,
-            $selectKegiatan,
-            $selectSubkegiatan,
             $viewNomenklatur,
-            $viewBantuan
+            $selectNomenklatur,
+            $viewBantuan,
+            $viewPemberitahuan,
+            $viewAkunadminPDoperator,
         ]);
 
         // Membuat User

@@ -21,10 +21,16 @@ class User extends Authenticatable
      * @var list<string>
      */
 
-     public function ProfileSKPD()
-     {
-         return $this->hasOne(ProfileSKPD::class);
-     }
+    public function userDetail()
+    {
+        return $this->hasOne(UserDetail::class);
+    }
+
+    public function profileSkpd()
+    {
+        return $this->hasOne(ProfileSkpd::class);
+    }
+
      
     protected $fillable = [
         'name',

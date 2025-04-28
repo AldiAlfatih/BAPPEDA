@@ -6,7 +6,6 @@ use App\Http\Controllers\NomenklaturController;
 use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\MonitoringController;
 
-
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');

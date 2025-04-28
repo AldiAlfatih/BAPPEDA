@@ -54,14 +54,12 @@ class RuleSeeder extends Seeder
         $deleteBantuan = Permission::firstOrCreate(['name' => 'delete bantuan', 'guard_name' => 'web']);
         $viewBantuan = Permission::firstOrCreate(['name' => 'view bantuan', 'guard_name' => 'web']);
 
+        $addAkunPengguna = Permission::firstOrCreate(['name' => 'create akun', 'guard_name' => 'web']);
+        $editAkunPengguna = Permission::firstOrCreate(['name' => 'edit akun', 'guard_name' => 'web']);
+        $deleteAkunPengguna = Permission::firstOrCreate(['name' => 'delete akun', 'guard_name' => 'web']);
 
         // Assign permission ke role super_admin
         $rsa->givePermissionTo([
-            // $mpd,
-            // $addNomenklatur,
-            // $editNomenklatur,
-            // $deleteNomenklatur,
-            // $viewNomenklatur,
 
         ]);
 
@@ -75,6 +73,9 @@ class RuleSeeder extends Seeder
             $addBantuan,
             $editBantuan,
             $deleteBantuan,
+            $addAkunPengguna,
+            $editAkunPengguna,
+            $deleteAkunPengguna,
         ]);
 
         // Assign permission ke role operator
@@ -95,69 +96,6 @@ class RuleSeeder extends Seeder
             $viewNomenklatur,
             $viewBantuan
         ]);
-
-
-        // Membuat Permissions
-        // $rsa = Permission::create(['name']);
-        // $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah']);
-        // $createProgramPermission = Permission::firstOrCreate(['name' => 'create program']);
-        // $editProgramPermission = Permission::firstOrCreate(['name' => 'edit program']);
-        // $deleteProgramPermission = Permission::firstOrCreate(['name' => 'delete program']);
-        // $viewProgramPermission = Permission::firstOrCreate(['name' => 'view program']);
-        // $createKegiatanPermission = Permission::firstOrCreate(['name' => 'create kegiatan']);
-        // $editKegiatanPermission = Permission::firstOrCreate(['name' => 'edit kegiatan']);
-        // $deleteKegiatanPermission = Permission::firstOrCreate(['name' => 'delete kegiatan']);
-        // $viewKegiatanPermission = Permission::firstOrCreate(['name' => 'view kegiatan']);
-        // $createSubKegiatanPermission = Permission::firstOrCreate(['name' => 'create sub kegiatan']);
-        // $editSubKegiatanPermission = Permission::firstOrCreate(['name' => 'edit sub kegiatan']);
-        // $deleteSubKegiatanPermission = Permission::firstOrCreate(['name' => 'delete sub kegiatan']);
-        // $viewSubKegiatanPermission = Permission::firstOrCreate(['name' => 'view sub kegiatan']);
-        // $createAkunPermission = Permission::firstOrCreate(['name' => 'create akun']);
-        // $rsa->givePermissionTo($mpd);
-
-        // // // Memberikan Permissions ke Roles
-        // // $rsa->givePermissionTo([
-        //     // $createProgramPermission,
-        //     // $editProgramPermission,
-        //     // $deleteProgramPermission,
-        //     $viewProgramPermission,
-        //     // $createKegiatanPermission,
-        //     // $editKegiatanPermission,
-        //     // $deleteKegiatanPermission,
-        //     $viewKegiatanPermission,
-        //     // $createSubKegiatanPermission,
-        //     // $editSubKegiatanPermission,
-        //     // $deleteSubKegiatanPermission,
-        //     $viewSubKegiatanPermission
-        // ]);
-
-        // $ra->givePermissionTo([
-        //     $createProgramPermission,
-        //     $editProgramPermission,
-        //     $deleteProgramPermission,
-        //     $viewProgramPermission,
-        //     $createKegiatanPermission,
-        //     $editKegiatanPermission,
-        //     $deleteKegiatanPermission,
-        //     $viewKegiatanPermission,
-        //     $createSubKegiatanPermission,
-        //     $editSubKegiatanPermission,
-        //     $deleteSubKegiatanPermission,
-        //     $viewSubKegiatanPermission,
-        //     $createAkunPermission
-        // ]);
-
-        // $rop->givePermissionTo([
-        //     $viewProgramPermission,
-        //     $viewKegiatanPermission,
-        //     $viewSubKegiatanPermission
-        // ]);
-
-        // $rpd->givePermissionTo([
-        //     $viewProgramPermission,
-        //     $viewKegiatanPermission,
-        //     $viewSubKegiatanPermission
-        // ]);
 
         // Membuat User
         $user = User::factory()->create([

@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+<<<<<<< HEAD
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -15,11 +16,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/nomenklatur/edit',
   },
 ];
+=======
+>>>>>>> e22747e20b654f222cf27c1d873cbb4746940e9b
 
 const props = defineProps<{
   nomenklatur: {
     id: number,
+<<<<<<< HEAD
     nama_kode: string,
+=======
+    nomor_kode: string,
+>>>>>>> e22747e20b654f222cf27c1d873cbb4746940e9b
     nomenklatur: string,
     urusan: string,
     bidang_urusan: string,

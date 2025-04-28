@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Nomenklatur;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+
 
 class NomenklaturController extends Controller
 {
@@ -12,20 +14,19 @@ class NomenklaturController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        // This method is currently empty. You can implement the logic to display a list of resources.
-        return Inertia::render('Nomenklatur');
-        // return Inertia::render('Nomenklatur/Index', [
-        //     'nomenklaturItems' => $nomenklaturItems,
-        // ]);
-    }
+    {     
+    $nomenklatur = Nomenklatur::all();
 
+    return Inertia::render('Nomenklatur', [
+        'nomenklatur' => $nomenklatur,
+    ]);
+    }
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        return Inertia::render('Nomenklatur/Create');
+        return Inertia::render('nomenklatur/Create');
     }
 
     /**
@@ -34,7 +35,7 @@ class NomenklaturController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama_kode' => 'required|string|max:10',
+            'nomor_kode' => 'required|string|max:10',
             'nomenklatur' => 'required|string|max:255',
             'urusan' => 'required|string|max:255',
             'bidang_urusan' => 'required|string|max:255',
@@ -63,8 +64,10 @@ class NomenklaturController extends Controller
     public function edit(string $id)
     {
         $nomenklatur = Nomenklatur::findOrFail($id);
-        return Inertia::render('Nomenklatur/Edit', ['nomenklatur' => $nomenklatur]);
-    }
+        return Inertia::render('nomenklatur/Edit', [
+            'nomenklatur' => $nomenklatur,
+        ]);
+}
 
     /**
      * Update the specified resource in storage.
@@ -72,7 +75,7 @@ class NomenklaturController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'nama_kode' => 'required|string|max:10',
+            // 'nomor_kode' => 'required|string|max:10',
             'nomenklatur' => 'required|string|max:255',
             'urusan' => 'required|string|max:255',
             'bidang_urusan' => 'required|string|max:255',
@@ -86,7 +89,6 @@ class NomenklaturController extends Controller
 
         return redirect()->route('nomenklatur.index')->with('success', 'Nomenklatur updated successfully');
     }
-
     /**
      * Remove the specified resource from storage.
      */

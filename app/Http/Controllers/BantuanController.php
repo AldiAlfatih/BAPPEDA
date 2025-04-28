@@ -24,7 +24,7 @@ class BantuanController extends Controller
     public function create()
     {
         $statusBantuanOptions = StatusBantuan::all();
-        return Inertia::render('Bantuan/Create', [
+        return Inertia::render('bantuan/Create', [
             'statusBantuanOptions' => $statusBantuanOptions
         ]);
     }
@@ -53,7 +53,7 @@ class BantuanController extends Controller
     public function show(string $id)
     {
         $bantuan = Bantuan::findOrFail($id);
-        return Inertia::render('Bantuan/Show', [
+        return Inertia::render('bantuan/Show', [
             'bantuan' => $bantuan
         ]);
     }
@@ -64,7 +64,7 @@ class BantuanController extends Controller
     public function edit(string $id)
     {
         $bantuan = Bantuan::findOrFail($id);
-        return Inertia::render('Bantuan/Edit', [
+        return Inertia::render('bantuan/Edit', [
             'bantuan' => $bantuan
         ]);
     }

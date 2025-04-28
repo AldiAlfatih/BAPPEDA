@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-vue-next';
 
@@ -13,16 +13,9 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
 ];
 
-const isPopupVisible = ref(false);
-
-const showPopup = () => {
-  isPopupVisible.value = true;
-};
-
-const closePopup = () => {
-  isPopupVisible.value = false;
-};
-
+function goToCreatePage() {
+  router.visit('/bantuan/create');
+}
 
 </script>
 
@@ -30,56 +23,6 @@ const closePopup = () => {
   <Head title="Bantuan" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <!-- Overlay & Popup -->
-    <div
-      v-if="isPopupVisible"
-      class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30"
-    >
-      <div class="bg-white rounded-lg shadow-lg w-[90%] max-w-md p-6 relative">
-        <h2 class="text-lg font-bold mb-4" v-if="page.props.auth.user.role in ['admin','operator']">Tambahkan Panduan</h2>
-
-        <form @submit.prevent>
-          <div class="mb-4 flex items-center gap-4">
-            <label class="w-24 font-semibold">Title:</label>
-            <input
-              type="text"
-              class="flex-1 border border-gray-300 rounded px-2 py-1"
-            />
-          </div>
-
-          <div class="mb-4 flex items-center gap-4">
-            <label class="w-24 font-semibold">Deskripsi:</label>
-            <textarea
-              class="flex-1 border border-gray-300 rounded px-2 py-1"
-            ></textarea>
-          </div>
-
-          <div class="mb-4 flex items-center gap-4">
-            <label class="w-40 font-semibold">Masukkan Panduan:</label>
-            <input
-              type="file"
-              class="flex-1 border border-gray-300 rounded px-1 py-1 file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:bg-blue-500 file:text-white hover:file:bg-blue-600"
-            />
-          </div>
-
-          <div class="flex justify-end gap-2 mt-4">
-            <Button
-              type="button"
-              @click="closePopup"
-              class="bg-gray-300 hover:bg-gray-400 text-black px-4 py-1 rounded"
-            >
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded"
-            >
-              Simpan
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
 
     <!-- Konten Utama Halaman -->
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
@@ -88,10 +31,8 @@ const closePopup = () => {
       >
         <div class="py-1 leading-none">
           <Button
-            @click="showPopup"
-            size="xs"
-            class="ml-auto flex items-center gap-1 px-2 py-1 text-sm"
-          >
+            size="sm"
+            class="ml-auto flex items-center gap-1 px-2 py-1 text-sm" @click="goToCreatePage">
             <Plus class="w-4 h-4" />
             Tambahkan
           </Button>

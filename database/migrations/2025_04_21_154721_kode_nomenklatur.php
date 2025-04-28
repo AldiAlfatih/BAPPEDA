@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('kode_nomenklatur', function (Blueprint $table) {
             $table->id();
-            $table->string('nomor_kode');
+            $table->string('nama_kode');
             $table->string('nomenklatur')->nullable(); 
             $table->string('urusan')->nullable();
             $table->string('bidang_urusan')->nullable();

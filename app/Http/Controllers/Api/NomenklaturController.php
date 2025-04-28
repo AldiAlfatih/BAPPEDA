@@ -33,7 +33,7 @@ class NomenklaturController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nomor_kode' => 'required|string|max:255',
+            'nama_kode' => 'required|string|max:255',
             'nomenklatur' => 'nullable|string',
             'urusan' => 'nullable|string',
             'bidang_urusan' => 'nullable|string',

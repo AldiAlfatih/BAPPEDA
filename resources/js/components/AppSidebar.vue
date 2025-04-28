@@ -24,12 +24,13 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Manjemen Tim Kerja',
-        href: '/manjemen',
+        href: '/manajemen',
         icon: BookOpen,
         guard: ['super_admin','admin'],
     },
     {
     title: 'Monitoring',
+    href: '/monitoring',
         icon: Folder,
         guard: ['admin'],
     },

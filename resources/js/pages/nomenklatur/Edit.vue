@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-<<<<<<< HEAD
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -16,17 +15,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/nomenklatur/edit',
   },
 ];
-=======
->>>>>>> e22747e20b654f222cf27c1d873cbb4746940e9b
 
 const props = defineProps<{
   nomenklatur: {
     id: number,
-<<<<<<< HEAD
-    nama_kode: string,
-=======
     nomor_kode: string,
->>>>>>> e22747e20b654f222cf27c1d873cbb4746940e9b
     nomenklatur: string,
     urusan: string,
     bidang_urusan: string,
@@ -40,7 +33,7 @@ const props = defineProps<{
 
 // Form fields di-bind ke props
 const form = ref({
-  nama_kode: props.nomenklatur.nama_kode || '',
+  nomor_kode: props.nomenklatur.nomor_kode || '',
   nomenklatur: props.nomenklatur.nomenklatur || '',
   urusan: props.nomenklatur.urusan || '',
   bidang_urusan: props.nomenklatur.bidang_urusan || '',
@@ -80,7 +73,7 @@ function updateNomenklatur() {
 
           <div>
             <label>Kode</label>
-            <input v-model="form.nama_kode" class="border rounded w-full" />
+            <input v-model="form.nomor_kode" class="border rounded w-full" />
           </div>
 
           <div>

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('nip')->unique();
             $table->integer('no_hp');
             $table->string('jenis_kelamin');
-            $table->integer('tgl_lahir');
+            $table->date('tgl_lahir');
             $table->timestamps();
         });
     } 

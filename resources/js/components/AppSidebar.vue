@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Manjemen Tim Kerja',
-        href: '/manjemen',
+        href: '/usermanagement',
         icon: BookOpen,
         guard: ['super_admin','admin'],
     },

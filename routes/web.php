@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\NomenklaturController;
 use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\MonitoringController;
+use App\Http\Controllers\UserManagementController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -25,6 +26,7 @@ Route::get('dashboard', function () {
 Route::resource('nomenklatur', NomenklaturController::class)->middleware(['auth', 'verified'])->names('nomenklatur');
 Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->names('bantuan');
 Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->names('monitoring');
+Route::resource('usermanagement', UserManagementController::class)->middleware(['auth', 'verified'])->names('usermanagement');
 // Route::get('/nomenklatur/edit/{id}', [NomenklaturController::class, 'edit'])->name('nomenklatur.edit');
 
 

@@ -15,12 +15,21 @@ class NomenklaturController extends Controller
      */
     public function index()
     {     
+          // Mengambil data dari tabel dengan memilih kolom yang dibutuhkan
     $nomenklatur = Nomenklatur::all();
 
     return Inertia::render('Nomenklatur', [
         'nomenklatur' => $nomenklatur,
     ]);
     }
+         
+    
+        // This method is currently empty. You can implement the logic to display a list of resources.
+        // return Inertia::render('Nomenklatur');
+        // return Inertia::render('Nomenklatur/Index', [
+        //     'nomenklaturItems' => $nomenklaturItems,
+        // ]);
+
     /**
      * Show the form for creating a new resource.
      */
@@ -35,7 +44,7 @@ class NomenklaturController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nomor_kode' => 'required|string|max:10',
+            'nama_kode' => 'required|string|max:10',
             'nomenklatur' => 'required|string|max:255',
             'urusan' => 'required|string|max:255',
             'bidang_urusan' => 'required|string|max:255',
@@ -63,7 +72,12 @@ class NomenklaturController extends Controller
      */
     public function edit(string $id)
     {
-        $nomenklatur = Nomenklatur::findOrFail($id);
+        
+        // $nomenklatur = Nomenklatur::findOrFail($id);
+        // return Inertia::render('Nomenklatur/Edit', [
+        //     'nomenklatur' => $nomenklatur,
+        // ]);
+        $nomenklatur = Nomenklatur::findOrFail($id); // Tambahkan log ini untuk debug
         return Inertia::render('nomenklatur/Edit', [
             'nomenklatur' => $nomenklatur,
         ]);
@@ -75,7 +89,7 @@ class NomenklaturController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            // 'nomor_kode' => 'required|string|max:10',
+            'nama_kode' => 'required|string|max:10',
             'nomenklatur' => 'required|string|max:255',
             'urusan' => 'required|string|max:255',
             'bidang_urusan' => 'required|string|max:255',

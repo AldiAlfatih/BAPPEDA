@@ -9,8 +9,10 @@ class UserDetail extends Model
 {
     use HasFactory;
 
+    protected $table = 'user_detail';
+
     protected $fillable = [
-        'user_id', 'alamat', 'nip', 'no_hp', 'jenis_kelamin', 'tanggal_lahir',
+        'user_id', 'alamat', 'nip', 'no_hp', 'jenis_kelamin', 'tgl_lahir',
     ];
 
     public function user()

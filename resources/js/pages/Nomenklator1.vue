@@ -1,194 +1,111 @@
+<script setup lang="ts">
+import AppLayout from '@/layouts/AppLayout.vue';
+import { type BreadcrumbItem } from '@/types';
+import { Head, router } from '@inertiajs/vue3';
+import { Button } from '@/components/ui/button';
+import { Plus, Pencil, Trash2 } from 'lucide-vue-next';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+// TERIMA PROPS DARI SERVER
+const props = defineProps<{
+  nomenklatur: Array<{
+    id: number,
+    nama_kode: string,
+    nomenklatur: string,
+    urusan: string,
+    bidang_urusan: string,
+    program: string,
+    kegiatan: string,
+    subkegiatan: string,
+    sumber: string,
+    target: string,
+  }>
+}>();
+
+const breadcrumbs: BreadcrumbItem[] = [
+  {
+    title: 'Nomenklatur',
+    href: '/nomenklatur',
+  },
+];
+
+// Fungsi untuk navigasi ke halaman create
+function goToCreatePage() {
+  router.visit('/nomenklatur/create');
+}
+
+// Fungsi untuk navigasi ke halaman edit dengan ID
+function goToEditPage(id: number) {
+    router.visit(`/nomenklatur/${id}/edit`);
+}
+
+// Fungsi untuk menghapus data
+function deleteNomenklatur(id: number) {
+  if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+    // Kirim permintaan DELETE ke server
+    router.delete(`/nomenklatur/${id}`)
+  };
+}
+</script>
+
+
 <template>
-    <div class="container p-4">
-      <h1 class="mb-4 text-xl font-semibold">Daftar Kode Nomenklatur</h1>
-  
-      <!-- Button untuk membuka form tambah data -->
-      <button @click="showCreateModal" class="bg-blue-500 text-white p-2 rounded-md mb-4">Tambah Kode Nomenklatur</button>
-  
-      <!-- Menampilkan tabel data kode nomenklatur -->
-      <div v-if="kodeNomenklatur.length === 0" class="alert alert-info mb-4">
-        Belum ada data kode nomenklatur.
-      </div>
-      <div v-else>
-        <table class="table-auto w-full border-collapse">
-          <thead class="bg-gray-200">
-            <tr>
-              <th class="px-4 py-2">#</th>
-              <th class="px-4 py-2">Nomor Kode</th>
-              <th class="px-4 py-2">Nomenklatur</th>
-              <th class="px-4 py-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(kode, index) in kodeNomenklatur" :key="kode.id">
-              <td class="px-4 py-2">{{ index + 1 }}</td>
-              <td class="px-4 py-2">{{ kode.nomor_kode }}</td>
-              <td class="px-4 py-2">{{ kode.nomenklatur }}</td>
-              <td class="px-4 py-2">
-                <button @click="showEditModal(kode)" class="bg-yellow-500 text-white p-2 rounded-md">Edit</button>
-                <button @click="deleteKode(kode.id)" class="bg-red-500 text-white p-2 rounded-md ml-2">Hapus</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-  
-      <!-- Modal untuk Create/Edit -->
-      <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-        <div class="bg-white p-6 rounded-lg w-96">
-          <h2 class="text-lg font-semibold mb-4">{{ isEditMode ? 'Edit' : 'Tambah' }} Kode Nomenklatur</h2>
-          <form @submit.prevent="saveKode">
-            <div class="mb-4">
-              <label for="nomor_kode" class="block text-sm font-medium">Nomor Kode</label>
-              <input type="text" id="nomor_kode" v-model="formData.nomor_kode" class="border border-gray-300 rounded-md p-2 w-full" required />
-            </div>
-            <div class="mb-4">
-              <label for="nomenklatur" class="block text-sm font-medium">Nomenklatur</label>
-              <input type="text" id="nomenklatur" v-model="formData.nomenklatur" class="border border-gray-300 rounded-md p-2 w-full" />
-            </div>
-            <div class="mb-4">
-              <label for="urusan" class="block text-sm font-medium">Urusan</label>
-              <input type="text" id="urusan" v-model="formData.urusan" class="border border-gray-300 rounded-md p-2 w-full" />
-            </div>
-            <div class="mb-4">
-              <label for="bidang_urusan" class="block text-sm font-medium">Bidang Urusan</label>
-              <input type="text" id="bidang_urusan" v-model="formData.bidang_urusan" class="border border-gray-300 rounded-md p-2 w-full" />
-            </div>
-            <div class="mb-4">
-              <label for="program" class="block text-sm font-medium">Program</label>
-              <input type="text" id="program" v-model="formData.program" class="border border-gray-300 rounded-md p-2 w-full" />
-            </div>
-            <div class="mb-4">
-              <label for="kegiatan" class="block text-sm font-medium">Kegiatan</label>
-              <input type="text" id="kegiatan" v-model="formData.kegiatan" class="border border-gray-300 rounded-md p-2 w-full" />
-            </div>
-            <div class="mb-4">
-              <label for="subkegiatan" class="block text-sm font-medium">Subkegiatan</label>
-              <input type="text" id="subkegiatan" v-model="formData.subkegiatan" class="border border-gray-300 rounded-md p-2 w-full" />
-            </div>
-            <div class="flex justify-between">
-              <button type="submit" class="bg-blue-500 text-white p-2 rounded-md">{{ isEditMode ? 'Perbarui' : 'Simpan' }}</button>
-              <button type="button" @click="closeModal" class="bg-gray-500 text-white p-2 rounded-md">Tutup</button>
-            </div>
-          </form>
+  <Head title="Nomenklatur" />
+
+  <AppLayout :breadcrumbs="breadcrumbs">
+    <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+      <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
+        <div class="py-1 leading-none mt-2 mr-2">
+          <Button size="sm" class="ml-auto flex items-center gap-1 px-2 py-1 text-sm" @click="goToCreatePage">
+            <Plus class="w-4 h-4" />
+            Tambahkan
+          </Button>
         </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead class="w-[100px]">No</TableHead>
+              <TableHead>Kode</TableHead>
+              <TableHead>Urusan</TableHead>
+              <TableHead>Bidang Urusan</TableHead> 
+              <TableHead>Program</TableHead>
+              <TableHead>Kegiatan</TableHead>
+              <TableHead>Sub Kegiatan</TableHead> 
+              <TableHead>Aksi</TableHead> 
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="(kode, index) in props.nomenklatur" :key="kode.id">
+              <TableCell class="py-1 leading-none font-medium">{{ index + 1 }}</TableCell>
+              <TableCell class="py-1 leading-none">{{ kode.nama_kode }}</TableCell>
+              <TableCell class="py-1 leading-none">{{ kode.urusan }}</TableCell> <!-- Menampilkan kolom urusan -->
+              <TableCell class="py-1 leading-none">{{ kode.bidang_urusan }}</TableCell> <!-- Menampilkan kolom bidang_urusan -->
+              <TableCell class="py-1 leading-none">{{ kode.program }}</TableCell> <!-- Menampilkan kolom program -->
+              <TableCell class="py-1 leading-none">{{ kode.kegiatan }}</TableCell> <!-- Menampilkan kolom kegiatan -->
+              <TableCell class="py-1 leading-none">{{ kode.subkegiatan }}</TableCell> <!-- Menampilkan kolom subkegiatan -->
+              <TableCell class="py-1 leading-none">
+                <Button class="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-4 rounded" @click="goToEditPage(kode.id)">
+                  <Pencil class="w-4 h-4" />
+                  Edit
+                </Button>
+                <Button class="ml-2 bg-amber-700 hover:bg-amber-800 text-white text-xs px-2 py-4 rounded" @click="deleteNomenklatur(kode.id)">
+                  <Trash2 class="w-4 h-4" />
+                  Hapus
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
     </div>
-  </template>
-  
-  <script setup lang="ts">
-  import { ref, onMounted } from 'vue';
-  import axios from 'axios';
-  
-  // Variabel dan data state
-  const kodeNomenklatur = ref([]);
-  const isModalOpen = ref(false);
-  const isEditMode = ref(false);
-  const formData = ref({
-    id: null,
-    nomor_kode: '',
-    nomenklatur: '',
-    urusan: '',
-    bidang_urusan: '',
-    program: '',
-    kegiatan: '',
-    subkegiatan: '',
-  });
-  
-  // Ambil data kode nomenklatur dari API
-  const fetchKodeNomenklatur = async () => {
-    try {
-      const response = await axios.get('/api/NomenklaturController');
-      kodeNomenklatur.value = response.data;
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-  
-  // Menampilkan modal untuk tambah data
-  const showCreateModal = () => {
-    isModalOpen.value = true;
-    isEditMode.value = false;
-    resetForm();
-  };
-  
-  // Menampilkan modal untuk edit data
-  const showEditModal = (kode) => {
-    isModalOpen.value = true;
-    isEditMode.value = true;
-    formData.value = { ...kode };
-  };
-  
-  // Menutup modal
-  const closeModal = () => {
-    isModalOpen.value = false;
-  };
-  
-  // Menyimpan data (tambah atau update)
-  const saveKode = async () => {
-    try {
-      if (isEditMode.value) {
-        await axios.put(`/api/NomenklaturController/${formData.value.id}`, formData.value);
-      } else {
-        await axios.post('/api/NomenklaturController', formData.value);
-      }
-      fetchKodeNomenklatur();
-      closeModal();
-    } catch (error) {
-      console.error('Error saving data:', error);
-    }
-  };
-  
-  // Menghapus data
-  const deleteKode = async (id) => {
-    if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-      try {
-        await axios.delete(`/api/NomenklaturController/${id}`);
-        fetchKodeNomenklatur();
-      } catch (error) {
-        console.error('Error deleting data:', error);
-      }
-    }
-  };
-  
-  // Mereset form input
-  const resetForm = () => {
-    formData.value = {
-      id: null,
-      nomor_kode: '',
-      nomenklatur: '',
-      urusan: '',
-      bidang_urusan: '',
-      program: '',
-      kegiatan: '',
-      subkegiatan: '',
-    };
-  };
-  
-  onMounted(() => {
-    fetchKodeNomenklatur();
-  });
-  </script>
-  
-  <style scoped>
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  .table-auto {
-    width: 100%;
-    border: 1px solid #ccc;
-    border-collapse: collapse;
-  }
-  .table-auto th, .table-auto td {
-    padding: 10px;
-    border: 1px solid #ddd;
-    text-align: left;
-  }
-  .alert {
-    padding: 10px;
-    background-color: #f0f4f8;
-    border: 1px solid #d3e2e8;
-  }
-  </style>
-  
+  </AppLayout>
+</template>

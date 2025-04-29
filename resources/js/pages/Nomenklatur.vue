@@ -18,7 +18,7 @@ import {
 const props = defineProps<{
   nomenklatur: Array<{
     id: number,
-    nomor_kode: string,
+    nama_kode: string,
     nomenklatur: string,
     urusan: string,
     bidang_urusan: string,
@@ -51,12 +51,6 @@ function goToEditPage(id: number) {
 function deleteNomenklatur(id: number) {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     router.delete(`/nomenklatur/${id}`)
-      .then(() => {
-        router.reload();
-      })
-      .catch((error) => {
-        console.error('Error deleting nomenklatur:', error);
-      });
   }
 }
 </script>
@@ -91,7 +85,7 @@ function deleteNomenklatur(id: number) {
           <TableBody>
             <TableRow v-for="(kode, index) in props.nomenklatur" :key="kode.id">
               <TableCell class="py-1 leading-none font-medium">{{ index + 1 }}</TableCell>
-              <TableCell class="py-1 leading-none">{{ kode.nomor_kode }}</TableCell>
+              <TableCell class="py-1 leading-none">{{ kode.nama_kode }}</TableCell>
               <TableCell class="py-1 leading-none">{{ kode.urusan }}</TableCell> <!-- Menampilkan kolom urusan -->
               <TableCell class="py-1 leading-none">{{ kode.bidang_urusan }}</TableCell> <!-- Menampilkan kolom bidang_urusan -->
               <TableCell class="py-1 leading-none">{{ kode.program }}</TableCell> <!-- Menampilkan kolom program -->

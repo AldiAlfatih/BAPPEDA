@@ -30,6 +30,7 @@ const mainNavItems: NavItem[] = [
     },
     {
     title: 'Monitoring',
+    href: '/monitoring',
         icon: Folder,
         guard: ['admin'],
     },

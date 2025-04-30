@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, Monitor, Bell, Info } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 
@@ -19,49 +19,64 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Nomenklatur',
         href: '/nomenklatur',
-        icon: LayoutGrid,
+        icon: BookOpen,
     },
 
     {
         title: 'Manjemen Tim Kerja',
         href: '/usermanagement',
-        icon: BookOpen,
+        icon: Users,
         guard: ['super_admin','admin'],
     },
     {
-    title: 'Monitoring',
-    href: '/monitoring',
-        icon: Folder,
+        title: 'Monitoring',
+        href: '/monitoring',
+        icon: Monitor,
         guard: ['admin'],
+        children: [
+        {
+            title: 'History',
+            href: '#',
+        },
+        {
+            title: 'Starred',
+            href: '#',
+        },
+        {
+            title: 'Settings',
+            href: '#',
+        },
+        ],
     },
 
     {
         title: 'Pemberitahuan',
         href: '/pemberitahuan',
-        icon: Folder,
+        icon: Bell,
     },
 
     {
-        title: 'Bantuan',
+        title: 'Informasi',
         href: '/bantuan',
-        icon: Folder,
+        icon: Info,
+        children: [
+        {
+            title: 'History',
+            href: '#',
+        },
+        {
+            title: 'Starred',
+            href: '#',
+        },
+        {
+            title: 'Settings',
+            href: '#',
+        },
+        ],
     },
-
 
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
-        icon: BookOpen,
-    },
-];
 </script>
 
 <template>
@@ -87,5 +102,4 @@ const footerNavItems: NavItem[] = [
             <NavUser />
         </SidebarFooter>
     </Sidebar>
-    <slot />
 </template>

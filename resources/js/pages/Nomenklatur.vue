@@ -63,7 +63,7 @@ function deleteNomenklatur(id: number) {
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
       <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border md:min-h-min">
         <div class="py-1 leading-none mt-2 mr-2">
-          <Button size="sm" class="ml-auto flex items-center gap-1 px-2 py-1 text-sm" @click="goToCreatePage">
+          <Button  class="ml-auto flex items-center gap-1 px-2 py-1 text-sm" @click="goToCreatePage">
             <Plus class="w-4 h-4" />
             Tambahkan
           </Button>

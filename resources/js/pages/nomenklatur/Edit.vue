@@ -19,7 +19,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const props = defineProps<{
   nomenklatur: {
     id: number,
-    nama_kode: string,
+    nomor_kode: string,
     nomenklatur: string,
     urusan: string,
     bidang_urusan: string,
@@ -33,7 +33,7 @@ const props = defineProps<{
 
 // Form fields di-bind ke props
 const form = ref({
-  nama_kode: props.nomenklatur.nama_kode || '',
+  nomor_kode: props.nomenklatur.nomor_kode || '',
   nomenklatur: props.nomenklatur.nomenklatur || '',
   urusan: props.nomenklatur.urusan || '',
   bidang_urusan: props.nomenklatur.bidang_urusan || '',
@@ -73,7 +73,7 @@ function updateNomenklatur() {
 
           <div>
             <label>Kode</label>
-            <input v-model="form.nama_kode" class="border rounded w-full" />
+            <input v-model="form.nomor_kode" class="border rounded w-full" />
           </div>
 
           <div>

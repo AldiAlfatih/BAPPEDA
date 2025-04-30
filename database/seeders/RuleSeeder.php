@@ -47,6 +47,10 @@ class RuleSeeder extends Seeder
         $editAkunPDoperator = Permission::firstOrCreate(['name' => 'edit akun pd & operator', 'guard_name' => 'web']);
         $deleteAkunPDoperator = Permission::firstOrCreate(['name' => 'delete akun pd & operstor', 'guard_name' => 'web']);
 
+        $addPemberitahuan = Permission::firstOrCreate(['name' => 'add pemberitahuan', 'guard_name' => 'web']);
+        $editPemberitahuan = Permission::firstOrCreate(['name' => 'edit pemberitahuan', 'guard_name' => 'web']);
+        $deletePemberitahuan = Permission::firstOrCreate(['name' => 'delete pemberitahuan', 'guard_name' => 'web']);
+        $viewPemberitahuan = Permission::firstOrCreate(['name' => 'view pemberitahuan', 'guard_name' => 'web']);
         // Assign permission ke role super_admin
         $rsa->givePermissionTo([
 

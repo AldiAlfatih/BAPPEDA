@@ -13,7 +13,7 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::paginate(10); // Paginasi untuk membatasi data yang dikirimkan
+        $users = User::paginate(10); 
         return Inertia::render('UserManagement', [
             'users' => $users,
         ]);
@@ -36,33 +36,29 @@ class UserManagementController extends Controller
             'nip' => 'required|string|max:50',
             'no_hp' => 'required|string|max:20',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-            'tgl_lahir' => 'required|date', // Menggunakan tgl_lahir di sini
+            'tgl_lahir' => 'required|date',
             'nama_kepala_skpd' => 'nullable|string|max:255',
             'kode_urusan' => 'nullable|string|max:100',
             'nama_skpd' => 'nullable|string|max:255',
             'kode_organisasi' => 'nullable|string|max:100',
         ]);
 
-        // Membuat user baru
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
         ]);
 
-        // Assign role
         $user->assignRole($validated['role']);
 
-        // Menyimpan detail pengguna ke table user_detail
         $user->userDetail()->create([
             'alamat' => $validated['alamat'],
             'nip' => $validated['nip'],
             'no_hp' => $validated['no_hp'],
             'jenis_kelamin' => $validated['jenis_kelamin'],
-            'tgl_lahir' => $validated['tgl_lahir'], // Sesuaikan dengan input `tgl_lahir`
+            'tgl_lahir' => $validated['tgl_lahir'],
         ]);
 
-        // Jika role 'perangkat_daerah', simpan profil SKPD
         if ($validated['role'] == 'perangkat_daerah') {
             $user->profileSkpd()->create([
                 'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
@@ -77,7 +73,7 @@ class UserManagementController extends Controller
 
     public function edit(User $user)
     {
-        // Tidak perlu pengecekan hak akses di sini, dilakukan di frontend (Vue)
+
     $user->loadMissing(['userDetail', 'profileSkpd', 'roles']);
 
     if (!$user->userDetail) {
@@ -95,7 +91,6 @@ class UserManagementController extends Controller
 
     public function update(Request $request, User $user)
     {
-        // Validasi input
         $validated = $request->validate([
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
@@ -103,14 +98,14 @@ class UserManagementController extends Controller
             'nip' => 'required|string|max:50',
             'no_hp' => 'required|string|max:20',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-            'tgl_lahir' => 'required|date', // Menggunakan tgl_lahir di sini
+            'tgl_lahir' => 'required|date', 
             'nama_kepala_skpd' => 'nullable|string|max:255',
             'kode_urusan' => 'nullable|string|max:100',
             'nama_skpd' => 'nullable|string|max:255',
             'kode_organisasi' => 'nullable|string|max:100',
         ]);
 
-        // Update password jika diubah
+       
         if ($validated['password']) {
             $user->update([
                 'password' => Hash::make($validated['password']),
@@ -121,16 +116,14 @@ class UserManagementController extends Controller
             'email' => $validated['email'],
         ]);
 
-        // Update detail pengguna
         $user->userDetail()->update([
             'alamat' => $validated['alamat'],
             'nip' => $validated['nip'],
             'no_hp' => $validated['no_hp'],
             'jenis_kelamin' => $validated['jenis_kelamin'],
-            'tgl_lahir' => $validated['tgl_lahir'], // Sesuaikan dengan input `tgl_lahir`
+            'tgl_lahir' => $validated['tgl_lahir'], 
         ]);
 
-        // Update profil SKPD jika role adalah perangkat_daerah
         if ($user->hasRole('perangkat_daerah')) {
             $user->profileSkpd()->update([
                 'nama_kepala_skpd' => $validated['nama_kepala_skpd'],

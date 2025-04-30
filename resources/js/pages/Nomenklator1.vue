@@ -18,7 +18,7 @@ import {
 const props = defineProps<{
   nomenklatur: Array<{
     id: number,
-    nama_kode: string,
+    nomor_kode: string,
     nomenklatur: string,
     urusan: string,
     bidang_urusan: string,
@@ -86,7 +86,7 @@ function deleteNomenklatur(id: number) {
           <TableBody>
             <TableRow v-for="(kode, index) in props.nomenklatur" :key="kode.id">
               <TableCell class="py-1 leading-none font-medium">{{ index + 1 }}</TableCell>
-              <TableCell class="py-1 leading-none">{{ kode.nama_kode }}</TableCell>
+              <TableCell class="py-1 leading-none">{{ kode.nomor_kode }}</TableCell>
               <TableCell class="py-1 leading-none">{{ kode.urusan }}</TableCell> <!-- Menampilkan kolom urusan -->
               <TableCell class="py-1 leading-none">{{ kode.bidang_urusan }}</TableCell> <!-- Menampilkan kolom bidang_urusan -->
               <TableCell class="py-1 leading-none">{{ kode.program }}</TableCell> <!-- Menampilkan kolom program -->

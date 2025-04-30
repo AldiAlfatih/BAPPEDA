@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->string('alamat');
-            $table->integer('nip')->unique();
-            $table->integer('no_hp');
+            $table->string('nip', 20)->unique();
+            $table->string('no_hp', 15);
             $table->string('jenis_kelamin');
             $table->date('tgl_lahir');
             $table->timestamps();

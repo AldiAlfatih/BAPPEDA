@@ -44,7 +44,7 @@ class NomenklaturController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama_kode' => 'required|string|max:10',
+            'nomor_kode' => 'required|string|max:10',
             'nomenklatur' => 'required|string|max:255',
             'urusan' => 'required|string|max:255',
             'bidang_urusan' => 'required|string|max:255',
@@ -89,7 +89,7 @@ class NomenklaturController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'nama_kode' => 'required|string|max:10',
+            'nomor_kode' => 'required|string|max:10',
             'nomenklatur' => 'required|string|max:255',
             'urusan' => 'required|string|max:255',
             'bidang_urusan' => 'required|string|max:255',

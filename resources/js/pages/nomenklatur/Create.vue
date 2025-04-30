@@ -19,7 +19,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // form binding
 const form = useForm({
-  nama_kode: '',
+  nomor_kode: '',
   nomenklatur: '',
   urusan: '',
   bidang_urusan: '',
@@ -45,9 +45,9 @@ function submit() {
 
       <form @submit.prevent="submit" class="flex flex-col gap-4">
         <div>
-          <Label for="nama_kode">Nama Kode</Label>
-          <Input id="nama_kode" v-model="form.nama_kode" type="text" required />
-          <div v-if="form.errors.nama_kode" class="text-red-500 text-sm mt-1">{{ form.errors.nama_kode }}</div>
+          <Label for="nomor_kode">Nama Kode</Label>
+          <Input id="nomor_kode" v-model="form.nomor_kode" type="text" required />
+          <div v-if="form.errors.nomor_kode" class="text-red-500 text-sm mt-1">{{ form.errors.nomor_kode }}</div>
         </div>
 
         <div>

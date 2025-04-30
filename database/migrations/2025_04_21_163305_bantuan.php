@@ -18,9 +18,10 @@ return new class extends Migration
 
         Schema::create('bantuan', function (Blueprint $table) {
             $table->id();
+            $table->string('kode_bantuan')->unique();
             $table->foreignId('status_bantuan_id')->constrained('status_bantuan');
-            $table->string('jenis_bantuan');
-            $table->string('penerima');
+            $table->string('judul');
+            $table->foreignId('user_id')->constrained('users');
             $table->date('tanggal_disalurkan');
             $table->timestamps(); // created_at dan updated_at
         });

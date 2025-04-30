@@ -117,8 +117,8 @@ function submit() {
         </div>
 
         <div>
-          <Label for="tanggal_lahir">Tanggal Lahir</Label>
-          <Input id="tanggal_lahir" v-model="form.tgl_lahir" type="date" required />
+          <Label for="tgl_lahir">Tanggal Lahir</Label>
+          <Input id="tgl_lahir" v-model="form.tgl_lahir" type="date" required />
           <div v-if="form.errors.tgl_lahir" class="text-red-500 text-sm mt-1">{{ form.errors.tgl_lahir }}</div>
         </div>
 

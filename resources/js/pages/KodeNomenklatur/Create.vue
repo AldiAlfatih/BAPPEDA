@@ -91,13 +91,14 @@ watch(
 
 // Fungsi untuk mengirimkan data ke backend
 function submit() {
-  updateNamaKode(); // pastikan nama kode terupdate
-  console.log(form); // Cek data yang dikirim
+  updateNamaKode(); // Pastikan nama kode terupdate
+  console.log(form); // Cek data yang dikirim ke backend
   form.post('/kodenomenklatur', {
     onSuccess: () => form.reset(),
     onError: (errors) => console.log(errors) // Menampilkan error jika ada
   });
 }
+
 </script>
 
 <template>

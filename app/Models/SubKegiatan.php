@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class SubKegiatan extends Model
 {
     use HasFactory;
-
+    protected $table = 'sub_kegiatan';
     protected $fillable = [
         'id_kegiatan', 'nama'
     ];
@@ -18,3 +18,4 @@ class SubKegiatan extends Model
         return $this->belongsTo(Kegiatan::class);
     }
 }
+

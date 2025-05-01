@@ -9,37 +9,35 @@ class KodeNomenklatur extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'nomor_kode', 'nomenklatur', 'jenis_nomenklatur', 'parent_id'
-    ];
+    protected $table = 'kode_nomenklatur';
+    // Menyimpan kolom-kolom yang bisa diisi mass-assignment
+    protected $fillable = ['nomor_kode', 'nomenklatur', 'jenis_nomenklatur'];
 
-    // Relasi dengan urusan
+    // Relasi ke Urusan
     public function urusan()
     {
-        return $this->hasMany(Urusan::class);
+        return $this->hasMany(Urusan::class, 'kode_nomenklatur_id');
     }
 
-    // Relasi dengan bidang urusan
+    // Relasi ke Bidang Urusan (melalui Urusan)
     public function bidangUrusan()
     {
-        return $this->hasMany(BidangUrusan::class);
+        return $this->hasManyThrough(BidangUrusan::class, Urusan::class, 'kode_nomenklatur_id', 'id_urusan');
     }
 
-    // Relasi dengan program
-    public function program()
-    {
-        return $this->hasMany(Program::class);
-    }
+     // Relasi ke Program (melalui Urusan dan Bidang Urusan)
+     public function program()
+     {
+         return $this->hasManyThrough(Program::class, Urusan::class, 'kode_nomenklatur_id', 'id_bid_urusan');
+     }
 
-    // Relasi dengan kegiatan
-    public function kegiatan()
-    {
-        return $this->hasMany(Kegiatan::class);
-    }
-
-    // Relasi dengan sub kegiatan
-    public function subKegiatan()
-    {
-        return $this->hasMany(SubKegiatan::class);
-    }
+     public function kegiatan()
+     {
+         return $this->hasManyThrough(Kegiatan::class, Urusan::class, 'kode_nomenklatur_id', 'id_program');
+     }
+     public function subKegiatan()
+     {
+         return $this->hasManyThrough(SubKegiatan::class, Urusan::class, 'kode_nomenklatur_id', 'id_kegiatan');
+     }
 }
+

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Program extends Model
 {
     use HasFactory;
-
+    protected $table = 'program';
     protected $fillable = [
         'id_bid_urusan', 'nama'
     ];
@@ -17,4 +17,11 @@ class Program extends Model
     {
         return $this->belongsTo(BidangUrusan::class);
     }
+
+    // Relasi ke Kegiatan
+    public function kegiatan()
+    {
+        return $this->hasMany(Kegiatan::class, 'id_program');
+    }
 }
+

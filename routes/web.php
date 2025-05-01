@@ -16,8 +16,8 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Route::resource('kodenomenklatur', KodeNomenklaturController::class)->middleware(['auth', 'verified'])->names('kodenomenklatur');
-Route::resource('kodenomenklatur', KodeNomenklaturController::class)->middleware('auth');
+Route::resource('kodenomenklatur', KodeNomenklaturController::class)->middleware(['auth', 'verified'])->names('kodenomenklatur');
+// Route::resource('kodenomenklatur', KodeNomenklaturController::class)->middleware('auth');
 Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->names('bantuan');
 Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->names('monitoring');
 Route::resource('usermanagement', UserManagementController::class)->middleware(['auth', 'verified'])->names('usermanagement');

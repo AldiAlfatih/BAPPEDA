@@ -70,11 +70,6 @@ class UserManagementController extends Controller
 
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dibuat.');
     }
-
-    // 1. First, let's implement the missing edit method in UserManagementController.php
-
-// 1. First, let's implement the missing edit method in UserManagementController.php
-
 public function edit(User $user)
 {
     $user->load(['userDetail', 'profileSkpd', 'roles']);

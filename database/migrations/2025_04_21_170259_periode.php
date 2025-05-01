@@ -20,7 +20,7 @@ return new class extends Migration
         Schema::create('periode', function (Blueprint $table) {
             $table->id();
             $table->foreignId('jenis_periode_id')->constrained('periode');
-            $$table->string('status');
+            $table->string('status');
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->timestamps();

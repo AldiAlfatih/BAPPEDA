@@ -82,9 +82,9 @@ function submit() {
 
         <div>
           <Label for="role">Role</Label>
-          <select id="role" v-model="form.role" required>
+          <select id="role" v-model="form.role" class="h-8 border border-grey-500 rounded-md" required>
             <option value="perangkat_daerah">Perangkat Daerah</option>
-            <option value="operator">Operator</option>
+            <option value="operator" class="text-grey-500">Operator</option>
           </select>
           <div v-if="form.errors.role" class="text-red-500 text-sm mt-1">{{ form.errors.role }}</div>
         </div>

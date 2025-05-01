@@ -5,7 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,18 +27,12 @@ const props = defineProps({
   },
 });
 
-// Check if user has "perangkat_daerah" role
-const hasPerangkatDaerahRole = computed(() => {
-  return props.user.roles?.some(role => role.name === 'perangkat_daerah') || false;
-});
-
 // Setup form
 const form = useForm({
   name: props.user.name || '',
   email: props.user.email || '',
   password: '',
   password_confirmation: '',
-  role: props.user.roles?.length > 0 ? props.user.roles[0].name : '',
   alamat: props.user.user_detail?.alamat || '',
   nip: props.user.user_detail?.nip || '',
   no_hp: props.user.user_detail?.no_hp || '',
@@ -102,11 +96,11 @@ function updateUser() {
           <div v-if="form.errors.password_confirmation" class="text-red-500 text-sm mt-1">{{ form.errors.password_confirmation }}</div>
         </div>
 
-        <!-- Role selector - uncomment if role should be editable -->
-        <!-- 
+        <!-- Uncomment jika role editable -->
+        <!--
         <div>
           <Label for="role">Role</Label>
-          <select id="role" v-model="form.role" class="w-full py-2 px-3 border rounded" required>
+          <select id="role" v-model="form.role" required>
             <option value="perangkat_daerah">Perangkat Daerah</option>
             <option value="operator">Operator</option>
           </select>
@@ -134,52 +128,46 @@ function updateUser() {
 
         <div>
           <Label for="jenis_kelamin">Jenis Kelamin</Label>
-          <select id="jenis_kelamin" v-model="form.jenis_kelamin" class="w-full py-2 px-3 border rounded" required>
+          <select id="jenis_kelamin" v-model="form.jenis_kelamin" required>
             <option value="Laki-laki">Laki-laki</option>
             <option value="Perempuan">Perempuan</option>
           </select>
           <div v-if="form.errors.jenis_kelamin" class="text-red-500 text-sm mt-1">{{ form.errors.jenis_kelamin }}</div>
         </div>
 
-        <div>
+        <!-- <div>
           <Label for="tgl_lahir">Tanggal Lahir</Label>
-          <Input id="tgl_lahir" v-model="form.tgl_lahir" type="date" />
+          <Input id="tgl_lahir" v-model="form.tgl_lahir" type="date" required />
           <div v-if="form.errors.tgl_lahir" class="text-red-500 text-sm mt-1">{{ form.errors.tgl_lahir }}</div>
-        </div>
+        </div> -->
 
-        <!-- SKPD fields - only show if user has perangkat_daerah role -->
-        <div v-if="hasPerangkatDaerahRole" class="mt-4 border-t pt-4">
-          <h2 class="text-lg font-semibold mb-3">Informasi SKPD</h2>
-          
+        <!-- Tampilkan jika role adalah perangkat daerah -->
+        <div v-if="form.role === 'perangkat_daerah'">
           <div>
             <Label for="nama_kepala_skpd">Nama Kepala SKPD</Label>
             <Input id="nama_kepala_skpd" v-model="form.nama_kepala_skpd" type="text" />
-            <div v-if="form.errors.nama_kepala_skpd" class="text-red-500 text-sm mt-1">{{ form.errors.nama_kepala_skpd }}</div>
           </div>
 
           <div>
             <Label for="kode_urusan">Kode Urusan</Label>
             <Input id="kode_urusan" v-model="form.kode_urusan" type="text" />
-            <div v-if="form.errors.kode_urusan" class="text-red-500 text-sm mt-1">{{ form.errors.kode_urusan }}</div>
           </div>
 
           <div>
             <Label for="nama_skpd">Nama SKPD</Label>
             <Input id="nama_skpd" v-model="form.nama_skpd" type="text" />
-            <div v-if="form.errors.nama_skpd" class="text-red-500 text-sm mt-1">{{ form.errors.nama_skpd }}</div>
           </div>
 
           <div>
             <Label for="kode_organisasi">Kode Organisasi</Label>
             <Input id="kode_organisasi" v-model="form.kode_organisasi" type="text" />
-            <div v-if="form.errors.kode_organisasi" class="text-red-500 text-sm mt-1">{{ form.errors.kode_organisasi }}</div>
           </div>
         </div>
 
         <div class="flex gap-4 mt-6">
-          <Button type="submit" :disabled="isSubmitting" class="bg-blue-500 text-white">
+          <button type="submit" :disabled="isSubmitting" class="bg-blue-500 text-white rounded px-4 py-2">
             {{ isSubmitting ? 'Updating...' : 'Simpan Perubahan' }}
-          </Button>
+          </button>
           <Button type="button" variant="outline" @click="$inertia.visit('/usermanagement')">
             Batal
           </Button>

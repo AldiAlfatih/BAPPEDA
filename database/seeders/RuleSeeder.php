@@ -118,5 +118,7 @@ class RuleSeeder extends Seeder
             
         ]);
         $user4->assignRole($rpd);
+
+        $roles = $user->getRoleNames();
     }
 }

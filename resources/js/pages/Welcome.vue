@@ -26,28 +26,28 @@ const goToLogin = () => {
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <LayoutGrid class="w-8 h-8 text-white" />
+          <img src="/images/icon-1.png" alt="" class="w-8 h-8 text-white">
           <span class="text-lg">Sistem Inovasi Dan Perancangan Pembangunan</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <BookOpen class="w-8 h-8 text-white" />
+          <img src="/images/icon-2.png" alt="" class="w-8 h-8 text-white">
           <span class="text-lg">e-Monev</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <Folder class="w-8 h-8 text-white" />
+          <img src="/images/icon-3.png" alt="" class="w-8 h-8 text-white">
           <span class="text-lg">e-Kinerja</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <Bitcoin class="w-8 h-8 text-white" />
+          <img src="/images/icon-4.png" alt="" class="w-8 h-8 text-white">
           <span class="text-lg">Dana Pembangunan Daerah</span>
         </div>
       </div>

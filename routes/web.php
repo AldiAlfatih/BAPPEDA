@@ -7,6 +7,7 @@ use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\PanduanController;
+use App\Http\Controllers\KodeNomenklaturController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -16,7 +17,7 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::resource('nomenklatur', NomenklaturController::class)->middleware(['auth', 'verified'])->names('nomenklatur');
+Route::resource('kodenomenklatur', KodeNomenklaturController::class)->middleware(['auth', 'verified'])->names('kodenomenklatur');
 Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->names('bantuan');
 Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->names('monitoring');
 Route::resource('usermanagement', UserManagementController::class)->middleware(['auth', 'verified'])->names('usermanagement');

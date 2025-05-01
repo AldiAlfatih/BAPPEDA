@@ -13,11 +13,7 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-<<<<<<< HEAD
         $users = User::with('roles')->paginate(10);
-=======
-        $users = User::paginate(10); 
->>>>>>> 9531cbc115fb8e8a23e9b9d16ea3ff53ade95207
         return Inertia::render('UserManagement', [
             'users' => $users,
         ]);
@@ -62,11 +58,7 @@ class UserManagementController extends Controller
             'tgl_lahir' => $validated['tgl_lahir'],
         ]);
 
-<<<<<<< HEAD
         if ($validated['role'] === 'perangkat_daerah') {
-=======
-        if ($validated['role'] == 'perangkat_daerah') {
->>>>>>> 9531cbc115fb8e8a23e9b9d16ea3ff53ade95207
             $user->profileSkpd()->create([
                 'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
                 'kode_urusan' => $validated['kode_urusan'],
@@ -80,12 +72,7 @@ class UserManagementController extends Controller
 
     public function edit(User $user)
     {
-<<<<<<< HEAD
         $user->loadMissing(['userDetail', 'profileSkpd', 'roles']);
-=======
-
-    $user->loadMissing(['userDetail', 'profileSkpd', 'roles']);
->>>>>>> 9531cbc115fb8e8a23e9b9d16ea3ff53ade95207
 
         if (!$user->userDetail) {
             $user->setRelation('userDetail', new UserDetail());
@@ -111,18 +98,13 @@ class UserManagementController extends Controller
             'nip' => 'required|string|max:50',
             'no_hp' => 'required|string|max:20',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-<<<<<<< HEAD
             'tgl_lahir' => 'required|date',
-=======
-            'tgl_lahir' => 'required|date', 
->>>>>>> 9531cbc115fb8e8a23e9b9d16ea3ff53ade95207
             'nama_kepala_skpd' => 'nullable|string|max:255',
             'kode_urusan' => 'nullable|string|max:100',
             'nama_skpd' => 'nullable|string|max:255',
             'kode_organisasi' => 'nullable|string|max:100',
         ]);
 
-<<<<<<< HEAD
         $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -161,34 +143,6 @@ class UserManagementController extends Controller
             if ($user->profileSkpd) {
                 $user->profileSkpd()->delete();
             }
-=======
-       
-        if ($validated['password']) {
-            $user->update([
-                'password' => Hash::make($validated['password']),
-            ]);
-        }
-
-        $user->update([
-            'email' => $validated['email'],
-        ]);
-
-        $user->userDetail()->update([
-            'alamat' => $validated['alamat'],
-            'nip' => $validated['nip'],
-            'no_hp' => $validated['no_hp'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-            'tgl_lahir' => $validated['tgl_lahir'], 
-        ]);
-
-        if ($user->hasRole('perangkat_daerah')) {
-            $user->profileSkpd()->update([
-                'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
-                'kode_urusan' => $validated['kode_urusan'],
-                'nama_skpd' => $validated['nama_skpd'],
-                'kode_organisasi' => $validated['kode_organisasi'],
-            ]);
->>>>>>> 9531cbc115fb8e8a23e9b9d16ea3ff53ade95207
         }
 
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil diperbarui.');

@@ -13,6 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const props = defineProps<{
   users: {
@@ -31,6 +39,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const loadingCreate = ref(false);
 const deletingId = ref<number | null>(null);
+const showDeleteDialog = ref(false);
+const userToDelete = ref<{id: number, name: string} | null>(null);
 
 function goToCreatePage() {
   loadingCreate.value = true;
@@ -43,13 +53,31 @@ function goToEditPage(id: number) {
   router.visit(`/usermanagement/${id}/edit`);
 }
 
-function deleteUser(id: number) {
-  if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-    deletingId.value = id;
-    router.delete(`/usermanagement/${id}`, {
-      onFinish: () => (deletingId.value = null),
-    });
-  }
+function confirmDelete(user: {id: number, name: string}) {
+  userToDelete.value = user;
+  showDeleteDialog.value = true;
+}
+
+function cancelDelete() {
+  showDeleteDialog.value = false;
+  userToDelete.value = null;
+}
+
+function deleteUser() {
+  if (!userToDelete.value) return;
+  
+  deletingId.value = userToDelete.value.id;
+  showDeleteDialog.value = false;
+  
+  router.delete(`/usermanagement/${userToDelete.value.id}`, {
+    onFinish: () => {
+      deletingId.value = null;
+      userToDelete.value = null;
+    },
+    onError: () => {
+      deletingId.value = null;
+    }
+  });
 }
 </script>
 
@@ -91,7 +119,8 @@ function deleteUser(id: number) {
             </TableRow>
 
             <TableRow
-              v-for="(user, index) in props.users.data":key="user.id"
+              v-for="(user, index) in props.users.data"
+              :key="user.id"
             >
               <TableCell>{{ index + 1 }}</TableCell>
               <TableCell>{{ user.name }}</TableCell>
@@ -112,7 +141,7 @@ function deleteUser(id: number) {
                   <Button
                     class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-2"
                     :disabled="deletingId === user.id"
-                    @click="deleteUser(user.id)"
+                    @click="confirmDelete({id: user.id, name: user.name})"
                   >
                     <Trash2 class="w-4 h-4 mr-1" />
                     <span v-if="deletingId === user.id">Menghapus...</span>
@@ -124,6 +153,27 @@ function deleteUser(id: number) {
           </TableBody>
         </Table>
       </div>
+
+      <!-- Dialog Konfirmasi Hapus -->
+      <Dialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
+        <DialogContent class="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus pengguna <strong>{{ userToDelete?.name }}</strong>?<br>
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter class="flex space-x-2 justify-end mt-4">
+            <Button variant="outline" @click="cancelDelete">
+              Batal
+            </Button>
+            <Button variant="destructive" @click="deleteUser">
+              Ya, Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   </AppLayout>

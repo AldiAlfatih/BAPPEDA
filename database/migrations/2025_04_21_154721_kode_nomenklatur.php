@@ -24,7 +24,7 @@ return new class extends Migration
         });
         Schema::create('kode_nomenklatur_detail', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_nomenklatur')->constrained('kode_nomenklatur');
+            $table->foreignId('id_kode_nomenklatur')->constrained('kode_nomenklatur');
             $table->foreignId('urusan')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 0
             $table->foreignId('bidang_urusan')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 1
             $table->foreignId('program')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 2

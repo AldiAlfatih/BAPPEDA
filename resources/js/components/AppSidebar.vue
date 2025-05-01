@@ -17,8 +17,9 @@ const mainNavItems: NavItem[] = [
     },
     
     {
-        title: 'Nomenklatur',
-        href: '/nomenklatur',
+        title: 'Kode Nomenklatur',
+        href: '/kodenomenklatur',
+        guard: ['admin'],
         icon: BookOpen,
     },
 

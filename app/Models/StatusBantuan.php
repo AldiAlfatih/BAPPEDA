@@ -9,7 +9,7 @@ class StatusBantuan extends Model
     protected $table = 'status_bantuan';
     protected $fillable = ['nama_status'];
 
-    public function bantuans()
+    public function bantuan()
     {
         return $this->hasMany(Bantuan::class, 'status_bantuan_id');
     }

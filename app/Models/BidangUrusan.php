@@ -5,16 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Program extends Model
+class BidangUrusan extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'id_bid_urusan', 'nama'
+        'id_urusan', 'nama'
     ];
 
-    public function bidangUrusan()
+    public function urusan()
     {
-        return $this->belongsTo(BidangUrusan::class);
+        return $this->belongsTo(Urusan::class);
     }
 }

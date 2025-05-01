@@ -1,19 +1,45 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Kodenomenklatur extends Model
+class KodeNomenklatur extends Model
 {
     use HasFactory;
 
-    protected $table = 'kode_nomenklatur';
-    protected $fillable = ['nomor_kode', 'nomenklatur', 'jenis_kode'];
+    protected $fillable = [
+        'nomor_kode', 'nomenklatur', 'jenis_nomenklatur', 'parent_id'
+    ];
 
-    public function detail()
-{
-    return $this->hasOne(KodeNomenklaturDetail::class, 'id_nomenklatur');
-}
+    // Relasi dengan urusan
+    public function urusan()
+    {
+        return $this->hasMany(Urusan::class);
+    }
 
+    // Relasi dengan bidang urusan
+    public function bidangUrusan()
+    {
+        return $this->hasMany(BidangUrusan::class);
+    }
+
+    // Relasi dengan program
+    public function program()
+    {
+        return $this->hasMany(Program::class);
+    }
+
+    // Relasi dengan kegiatan
+    public function kegiatan()
+    {
+        return $this->hasMany(Kegiatan::class);
+    }
+
+    // Relasi dengan sub kegiatan
+    public function subKegiatan()
+    {
+        return $this->hasMany(SubKegiatan::class);
+    }
 }

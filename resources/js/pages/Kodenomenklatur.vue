@@ -31,12 +31,13 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Kode Nomenklatur', href: '/kodenomenklatur' },
+  { title: 'Kode Nomenklatur', href: '/KodeNomenklatur' },
 ];
 
 function goToCreatePage() {
   router.visit('/kodenomenklatur/create');
 }
+
 
 function goToEditPage(id: number) {
   router.visit(`/kodenomenklatur/${id}/edit`);
@@ -77,24 +78,22 @@ function deleteKode(id: number) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="(kode, index) in props.kodenomenklatur" :key="kode.id">
+          <TableRow v-for="(item, index) in props.kodenomenklatur" :key="item.id">
             <TableCell>{{ index + 1 }}</TableCell>
-            <TableCell>{{ kode.nomor_kode }}</TableCell>
-            <TableCell>{{ kode.nomenklatur }}</TableCell>
-            <TableCell>{{ kode.jenis_kode }}</TableCell>
-            <TableCell>{{ kode.detail?.urusan || '-' }}</TableCell>
-            <TableCell>{{ kode.detail?.bidang_urusan || '-' }}</TableCell>
-            <TableCell>{{ kode.detail?.program || '-' }}</TableCell>
-            <TableCell>{{ kode.detail?.kegiatan || '-' }}</TableCell>
-            <TableCell>{{ kode.detail?.subkegiatan || '-' }}</TableCell>
-            <TableCell>
-              <Button class="bg-green-600 hover:bg-green-700 text-white text-xs" @click="goToEditPage(kode.id)">
+            <TableCell>{{ item.nomor_kode }}</TableCell>
+            <TableCell>{{ item.nomenklatur }}</TableCell>
+            <TableCell>{{ item.jenis_kode }}</TableCell>
+            <TableCell>{{ item.detail?.urusan || '-' }}</TableCell>
+            <TableCell>{{ item.detail?.bidang_urusan || '-' }}</TableCell>
+            <TableCell>{{ item.detail?.program || '-' }}</TableCell>
+            <TableCell>{{ item.detail?.kegiatan || '-' }}</TableCell>
+            <TableCell>{{ item.detail?.subkegiatan || '-' }}</TableCell>
+            <TableCell class="flex gap-2">
+              <Button variant="outline" size="sm" @click="goToEditPage(item.id)">
                 <Pencil class="w-4 h-4" />
-                Edit
               </Button>
-              <Button class="ml-2 bg-amber-700 hover:bg-amber-800 text-white text-xs" @click="deleteKode(kode.id)">
+              <Button variant="destructive" size="sm" @click="deleteKode(item.id)">
                 <Trash2 class="w-4 h-4" />
-                Hapus
               </Button>
             </TableCell>
           </TableRow>

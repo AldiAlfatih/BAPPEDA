@@ -1,176 +1,115 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\KodeNomenklatur;
-use App\Models\KodeNomenklaturDetail;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
 
 class KodeNomenklaturController extends Controller
 {
+    /**
+     * Menampilkan semua kode nomenklatur.
+     */
     public function index()
     {
-        $kodenomenklatur = KodeNomenklatur::with('detail')->where('jenis_kode', 0)->get();
+        $kodeNomenklatur = KodeNomenklatur::all();
         return Inertia::render('KodeNomenklatur/Index', [
-            'kodenomenklatur' => $kodenomenklatur,
+            'kodeNomenklatur' => $kodeNomenklatur,
         ]);
     }
 
-    public function getChildren(Request $request)
-    {
-        $type = $request->input('type');
-        $parentId = $request->input('parent_id');
-
-        $jenisKodeMap = [
-            'bidang' => 1,
-            'program' => 2,
-            'kegiatan' => 3,
-            'subkegiatan' => 4,
-        ];
-
-        $columnMap = [
-            'bidang' => 'urusan',
-            'program' => 'bidang_urusan',
-            'kegiatan' => 'program',
-            'subkegiatan' => 'kegiatan',
-        ];
-
-        if (!array_key_exists($type, $jenisKodeMap)) {
-            return response()->json(['error' => 'Invalid type'], 400);
-        }
-
-        $children = KodeNomenklatur::where('jenis_kode', $jenisKodeMap[$type])
-            ->whereHas('detail', function ($query) use ($columnMap, $type, $parentId) {
-                $query->where($columnMap[$type], $parentId);
-            })
-            ->with('detail')
-            ->get();
-
-        return response()->json($children);
-    }
-
+    /**
+     * Menampilkan form untuk membuat kode nomenklatur baru.
+     */
     public function create()
     {
-        return Inertia::render('kode_nomenklatur/Create');
+        return Inertia::render('KodeNomenklatur/Create');
     }
 
+    /**
+     * Menyimpan kode nomenklatur yang baru dibuat.
+     */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nomor_kode' => 'required|string|max:255',
-            'nomenklatur' => 'required|string|max:255',
-            'jenis_kode' => 'required|integer|in:0,1,2,3,4',
-            'urusan' => 'required|string|max:255',
-            'bidang_urusan' => 'required|string|max:255',
-            'program' => 'required|string|max:255',
-            'kegiatan' => 'required|string|max:255',
-            'subkegiatan' => 'required|string|max:255',
-        ]);
+{
+    // Validasi input
+    $request->validate([
+        'nomor_kode' => 'required|unique:kode_nomenklatur',
+        'nomenklatur' => 'required|string',
+        'jenis_nomenklatur' => 'required|integer',
+        'urusan' => 'required|string',
+        'bidang_urusan' => 'nullable|string',
+        'program' => 'nullable|string',
+        'kegiatan' => 'nullable|string',
+        'subkegiatan' => 'nullable|string',
+    ]);
 
-        DB::beginTransaction();
+    // Menyimpan data kode nomenklatur
+    $kodeNomenklatur = KodeNomenklatur::create([
+        'nomor_kode' => $request->nomor_kode,
+        'nomenklatur' => $request->nomenklatur,
+        'jenis_nomenklatur' => $request->jenis_nomenklatur,
+        'urusan' => $request->urusan,
+        'bidang_urusan' => $request->bidang_urusan,
+        'program' => $request->program,
+        'kegiatan' => $request->kegiatan,
+        'subkegiatan' => $request->subkegiatan,
+    ]);
 
-        try {
-            $kodeNomenklatur = KodeNomenklatur::create([
-                'nomor_kode' => $request->nomor_kode,
-                'nomenklatur' => $request->nomenklatur,
-                'jenis_kode' => $request->jenis_kode,
-            ]);
+    return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur berhasil disimpan.');
+}
 
-            KodeNomenklaturDetail::create([
-                'id_nomenklatur' => $kodeNomenklatur->id,
-                'urusan' => $request->urusan,
-                'bidang_urusan' => $request->bidang_urusan,
-                'program' => $request->program,
-                'kegiatan' => $request->kegiatan,
-                'subkegiatan' => $request->subkegiatan,
-            ]);
 
-            DB::commit();
-            return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur created successfully');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal menyimpan data: ' . $e->getMessage()]);
-        }
-    }
 
-    public function show($id)
-    {
-        $kode = KodeNomenklatur::with('detail')->findOrFail($id);
-
-        return Inertia::render('KodeNomenklatur/Show', [
-            'kodenomenklatur' => $kode,
-        ]);
-    }
-
+    /**
+     * Menampilkan form untuk mengedit kode nomenklatur yang ada.
+     */
     public function edit($id)
     {
-        $kode = KodeNomenklatur::with('detail')->findOrFail($id);
-
+        $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
         return Inertia::render('KodeNomenklatur/Edit', [
-            'kodenomenklatur' => $kode,
+            'kodeNomenklatur' => $kodeNomenklatur
         ]);
     }
 
+    /**
+     * Memperbarui data kode nomenklatur yang ada.
+     */
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'nomor_kode' => 'required|string|max:255',
-            'nomenklatur' => 'required|string|max:255',
-            'jenis_kode' => 'required|integer|in:0,1,2,3,4',
-            'urusan' => 'required|string|max:255',
-            'bidang_urusan' => 'required|string|max:255',
-            'program' => 'required|string|max:255',
-            'kegiatan' => 'required|string|max:255',
-            'subkegiatan' => 'required|string|max:255',
+        $request->validate([
+            'nomor_kode' => 'required|unique:kode_nomenklatur,nomor_kode,' . $id,
+            'nomenklatur' => 'required|string',
+            'jenis_nomenklatur' => 'required|integer',
+            'urusan' => 'required|string',
+            'bidang_urusan' => 'nullable|string',
+            'program' => 'nullable|string',
+            'kegiatan' => 'nullable|string',
+            'subkegiatan' => 'nullable|string',
         ]);
 
-        DB::beginTransaction();
+        $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
+        $kodeNomenklatur->update([
+            'nomor_kode' => $request->nomor_kode,
+            'nomenklatur' => $request->nomenklatur,
+            'jenis_nomenklatur' => $request->jenis_nomenklatur,
+            'urusan' => $request->urusan,
+            'bidang_urusan' => $request->bidang_urusan,
+            'program' => $request->program,
+            'kegiatan' => $request->kegiatan,
+            'subkegiatan' => $request->subkegiatan,
+        ]);
 
-        try {
-            $kode = KodeNomenklatur::findOrFail($id);
-            $kode->update([
-                'nomor_kode' => $request->nomor_kode,
-                'nomenklatur' => $request->nomenklatur,
-                'jenis_kode' => $request->jenis_kode,
-            ]);
-
-            if ($kode->detail) {
-                $kode->detail->update([
-                    'urusan' => $request->urusan,
-                    'bidang_urusan' => $request->bidang_urusan,
-                    'program' => $request->program,
-                    'kegiatan' => $request->kegiatan,
-                    'subkegiatan' => $request->subkegiatan,
-                ]);
-            } else {
-                $kode->detail()->create([
-                    'urusan' => $request->urusan,
-                    'bidang_urusan' => $request->bidang_urusan,
-                    'program' => $request->program,
-                    'kegiatan' => $request->kegiatan,
-                    'subkegiatan' => $request->subkegiatan,
-                ]);
-            }
-
-            DB::commit();
-            return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur updated successfully');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
-        }
+        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur berhasil diperbarui.');
     }
 
+    /**
+     * Menghapus kode nomenklatur yang ada.
+     */
     public function destroy($id)
     {
-        $kode = KodeNomenklatur::findOrFail($id);
+        $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
+        $kodeNomenklatur->delete();
 
-        DB::transaction(function () use ($kode) {
-            $kode->detail()->delete();
-            $kode->delete();
-        });
-
-        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur deleted successfully');
+        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur berhasil dihapus.');
     }
 }

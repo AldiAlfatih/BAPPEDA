@@ -51,8 +51,14 @@ const mainNavItems: NavItem[] = [
     },
 
     {
-        title: 'Pemberitahuan',
-        href: '/pemberitahuan',
+        title: 'Bantuan',
+        href: 'bantuan',
+        icon: Bell,
+    },
+
+    {
+        title: 'BantuanFaq',
+        href: 'bantuanfaq',
         icon: Bell,
     },
 
@@ -62,8 +68,8 @@ const mainNavItems: NavItem[] = [
         icon: Info,
         children: [
         {
-            title: 'History',
-            href: '#',
+            title: 'Pemberitahuan',
+            href: '/pemberitahuan',
         },
         {
             title: 'Starred',

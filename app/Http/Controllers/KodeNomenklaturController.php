@@ -2,148 +2,125 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\KodeNomenklatur;
 use App\Models\KodeNomenklaturDetail;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 
 class KodeNomenklaturController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(): Response
     {
-        // Mengambil data dari tabel KodeNomenklatur dan relasinya
-        $kodenomenklatur = KodeNomenklatur::with('detail')->get();
+        $data = KodeNomenklatur::with(['details', 'bidangUrusan', 'program', 'kegiatan', 'subkegiatan'])->get();
 
-        return Inertia::render('Kodenomenklatur', [
-            'kodenomenklatur' => $kodenomenklatur,
+        return Inertia::render('KodeNomenklatur', [
+            'kodeNomenklatur' => $data
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return Inertia::render('kode_nomenklatur/Create');
-    }
+    public function create(): Response
+{
+    return Inertia::render('KodeNomenklatur/Create', [
+        'urusanList' => KodeNomenklatur::where('jenis_nomenklatur', 0)->get(),
+        'bidangUrusanList' => KodeNomenklatur::where('jenis_nomenklatur', 1)->get(),
+        'programList' => KodeNomenklatur::where('jenis_nomenklatur', 2)->get(),
+        'kegiatanList' => KodeNomenklatur::where('jenis_nomenklatur', 3)->get(),
+    ]);
+}
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        // Validasi input
-        $request->validate([
-            'nomor_kode' => 'required|string|max:10',
-            'nomenklatur' => 'required|string|max:255',
-            'jenis_kode' => 'required|string|max:255',
-            'urusan' => 'nullable|string|max:255',
-            'bidang_urusan' => 'nullable|string|max:255',
-            'program' => 'nullable|string|max:255',
-            'kegiatan' => 'nullable|string|max:255',
-            'subkegiatan' => 'nullable|string|max:255',
+
+
+
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'jenis_nomenklatur' => 'required|integer',
+        'nomor_kode' => 'required|string',
+        'nomenklatur' => 'nullable|string',
+        'urusan' => 'nullable|exists:kode_nomenklatur,id',
+        'bidang_urusan' => 'nullable|exists:kode_nomenklatur,id',
+        'program' => 'nullable|exists:kode_nomenklatur,id',
+        'kegiatan' => 'nullable|exists:kode_nomenklatur,id',
+        'subkegiatan' => 'nullable|exists:kode_nomenklatur,id',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        $nomenklatur = KodeNomenklatur::create([
+            'jenis_nomenklatur' => $validated['jenis_nomenklatur'],
+            'nomor_kode' => $validated['nomor_kode'],
+            'nomenklatur' => $validated['nomenklatur'] ?? null,
+            'id_bidang_urusan' => $request->bidang_urusan,
+            'id_program' => $request->program,
+            'id_kegiatan' => $request->kegiatan,
+            'id_subkegiatan' => $request->subkegiatan,
         ]);
 
-        // Membuat data KodeNomenklatur
-        $kode = KodeNomenklatur::create([
-            'nomor_kode' => $request->nomor_kode,
-            'nomenklatur' => $request->nomenklatur,
-            'jenis_kode' => $request->jenis_kode,
-        ]);
+        $detailData = [
+            'id_nomenklatur' => $nomenklatur->id,
+        ];
 
-        // Menambahkan detail relasi ke KodeNomenklaturDetail
-        $kode->detail()->create([
-            'urusan' => $request->urusan,
-            'bidang_urusan' => $request->bidang_urusan,
-            'program' => $request->program,
-            'kegiatan' => $request->kegiatan,
-            'subkegiatan' => $request->subkegiatan,
-        ]);
-
-        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur created successfully');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
-    {
-        $kode = KodeNomenklatur::with('detail')->findOrFail($id);
-
-        return Inertia::render('KodeNomenklatur/Show', [
-            'kodenomenklatur' => $kode,
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        $kode = KodeNomenklatur::with('detail')->findOrFail($id);
-
-        return Inertia::render('KodeNomenklatur/Edit', [
-            'kodenomenklatur' => $kode,
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-        // Validasi input
-        $request->validate([
-            'nomor_kode' => 'required|string|max:10',
-            'nomenklatur' => 'required|string|max:255',
-            'jenis_kode' => 'required|string|max:255',
-            'urusan' => 'nullable|string|max:255',
-            'bidang_urusan' => 'nullable|string|max:255',
-            'program' => 'nullable|string|max:255',
-            'kegiatan' => 'nullable|string|max:255',
-            'subkegiatan' => 'nullable|string|max:255',
-        ]);
-
-        $kode = KodeNomenklatur::findOrFail($id);
-        $kode->update([
-            'nomor_kode' => $request->nomor_kode,
-            'nomenklatur' => $request->nomenklatur,
-            'jenis_kode' => $request->jenis_kode,
-        ]);
-
-        if ($kode->detail) {
-            $kode->detail->update([
-                'urusan' => $request->urusan,
-                'bidang_urusan' => $request->bidang_urusan,
-                'program' => $request->program,
-                'kegiatan' => $request->kegiatan,
-                'subkegiatan' => $request->subkegiatan,
-            ]);
-        } else {
-            $kode->detail()->create([
-                'urusan' => $request->urusan,
-                'bidang_urusan' => $request->bidang_urusan,
-                'program' => $request->program,
-                'kegiatan' => $request->kegiatan,
-                'subkegiatan' => $request->subkegiatan,
-            ]);
+        switch ((int) $validated['jenis_nomenklatur']) {
+            case 0:
+                $detailData['urusan'] = $validated['nomenklatur'];
+                break;
+            case 1:
+                $detailData['bidang_urusan'] = $validated['nomenklatur'];
+                break;
+            case 2:
+                $detailData['program'] = $validated['nomenklatur'];
+                break;
+            case 3:
+                $detailData['kegiatan'] = $validated['nomenklatur'];
+                break;
+            case 4:
+                $detailData['subkegiatan'] = $validated['nomenklatur'];
+                break;
         }
 
-        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur updated successfully');
+        KodeNomenklaturDetail::create($detailData);
+
+        DB::commit();
+
+        return redirect()->route('kodenomenklatur.index')->with('success', 'Data berhasil ditambahkan.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->withErrors(['error' => 'Gagal menyimpan data: ' . $e->getMessage()]);
+    }
+}
+
+
+    public function edit($id): Response
+    {
+        $data = KodeNomenklatur::findOrFail($id);
+
+        return Inertia::render('KodeNomenklatur/Edit', [
+            'data' => $data
+        ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'jenis_nomenklatur' => 'sometimes|integer',
+            'nomor_kode' => 'sometimes|string',
+            'nomenklatur' => 'nullable|string',
+        ]);
+
+        $nomenklatur = KodeNomenklatur::findOrFail($id);
+        $nomenklatur->update($validated);
+
+        return redirect()->route('kodenomenklatur.index')->with('success', 'Data berhasil diperbarui.');
+    }
+
     public function destroy($id)
     {
-        $kode = KodeNomenklatur::findOrFail($id);
-        $kode->detail()->delete(); // Hapus detail jika ada
-        $kode->delete(); // Hapus data utama
+        $nomenklatur = KodeNomenklatur::findOrFail($id);
+        $nomenklatur->delete();
 
-        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur deleted successfully');
+        return redirect()->route('kodenomenklatur.index')->with('success', 'Data berhasil dihapus.');
     }
 }

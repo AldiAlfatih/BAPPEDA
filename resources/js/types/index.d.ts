@@ -38,4 +38,9 @@ export interface User {
     updated_at: string;
 }
 
+export type Option = {
+    label: string;
+    value: string | number;
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;

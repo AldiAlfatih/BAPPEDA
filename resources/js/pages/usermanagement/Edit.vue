@@ -71,12 +71,6 @@ function onSubmit() {
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex flex-col gap-6 p-4">
       <div class="bg-white shadow-md rounded-lg dark:bg-gray-800">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Edit User</h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            Perbarui data user dan informasi tambahan
-          </p>
-        </div>
 
         <div class="p-6">
           <form @submit.prevent="onSubmit">
@@ -126,11 +120,12 @@ function onSubmit() {
                 </div>
 
                 <div class="space-y-2">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" >Role</label>
                   <select 
-                    v-model="form.role"
-                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    v-model="form.role" 
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" 
                   >
+                    <option value="">Pilih Jenis</option>
                     <option value="perangkat_daerah">Perangkat Daerah</option>
                     <option value="operator">Operator</option>
                   </select>

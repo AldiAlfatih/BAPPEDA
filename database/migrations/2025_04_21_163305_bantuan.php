@@ -11,20 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('status_bantuan', function (Blueprint $table) {
-            $table->id();
-            $table->string('status');
-        }); 
-
         Schema::create('bantuan', function (Blueprint $table) {
             $table->id();
-            $table->string('kode_bantuan')->unique();
-            $table->foreignId('status_bantuan_id')->constrained('status_bantuan');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('judul');
-            $table->foreignId('user_id')->constrained('users');
-            $table->date('tanggal_disalurkan');
-            $table->timestamps(); // created_at dan updated_at
+            $table->integer('status');
+            $table->timestamps();
         });
+
+        Schema::create('bantuan_faqs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('bantuan_id')->constrained('bantuan')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->text('deskripsi')->nullable();
+            $table->string('file')->nullable();
+            $table->timestamps();
+        }); 
     }
 
     /**
@@ -32,6 +34,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('bantuan_faqs');
         Schema::dropIfExists('bantuan');
     }
 };

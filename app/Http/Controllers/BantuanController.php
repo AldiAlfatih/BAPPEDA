@@ -2,100 +2,100 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bantuan;
+use App\Models\BantuanFaq;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Bantuan;
-use App\Models\StatusBantuan;
-use App\Http\Requests\BantuanRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
+
 
 class BantuanController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return Inertia::render('Bantuan');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $statusBantuanOptions = StatusBantuan::all();
-        return Inertia::render('bantuan/Create', [
-            'statusBantuanOptions' => $statusBantuanOptions
+        $bantuans = Bantuan::with('user')->latest()->get();
+        return Inertia::render('Bantuan', [
+            'bantuans' => $bantuans,
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function create()
+    {
+        return Inertia::render('Bantuan/Create');
+    }
+
+    public function show(Bantuan $bantuan)
+    {
+        $faqs = $bantuan->faqs();
+        // return Inertia::render('bantuan', 
+        dd($faqs);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
-            'jenis_bantuan' => 'required|string|max:255',
-            'penerima' => 'nullable|string',
-            'tanggal_disalurkan' => 'nullable|string',
-            'status_bantuan_id' => 'nullable|exists:status,id',
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'file' => 'nullable|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
         ]);
 
-        $bantuan = Bantuan::create($request->all());
 
-        // return response()->route('bantuan.index')->with('success', 'Bantuan created successfully');
-        return redirect()->route('bantuan.index')->with('success', 'Bantuan created successfully');
+        
+        $data = Bantuan::create([
+            'user_id' => Auth::id(),
+            'judul' => $request->judul,
+            'tgl_dibuat' => $request->tgl_dibuat,
+        ]);
+
+        $filePath = null;
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('images');
+
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $file->move($destinationPath, $fileName);
+            $filePath = 'images/' . $fileName;
+        }
+
+        BantuanFaq::create([
+            'user_id' => Auth::id(),
+            'bantuan_id' => $request->bantuan_id,
+            'deskripsi' => $request->deskripsi,
+            'file' => $filePath,
+            'tgl' => $request->tgl,
+        ]);
+
+        return redirect()->route('bantuan.index')->with('success', 'Data bantuan berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(Bantuan $bantuan)
     {
-        $bantuan = Bantuan::findOrFail($id);
-        return Inertia::render('bantuan/Show', [
-            'bantuan' => $bantuan
+        return Inertia::render('Bantuan/Edit', [
+            'bantuan' => $bantuan,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        $bantuan = Bantuan::findOrFail($id);
-        return Inertia::render('bantuan/Edit', [
-            'bantuan' => $bantuan
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Bantuan $bantuan)
     {
         $request->validate([
-            'jenis_bantuan' => 'required|string|max:255',
-            'penerima' => 'nullable|string',
-            'tanggal_disalurkan' => 'nullable|string',
-            'status_bantuan_id' => 'nullable|exists:status,id',
+            'judul' => 'required|string|max:255',
+            'tgl_dibuat' => 'required|date',
         ]);
-        $bantuan = Bantuan::findOrFail($id);
-        $bantuan->update($request->all());
 
-        // return response()->route('bantuan.index')->with('success', 'Bantuan updated successfully');
-        return redirect()->route('bantuan.index')->with('success', 'Bantuan updated successfully');
+        $bantuan->update($request->only('judul', 'tgl_dibuat'));
+
+        return redirect()->route('bantuan.index')->with('success', 'Data bantuan berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Bantuan $bantuan)
     {
-        $bantuan = Bantuan::findOrFail($id);
         $bantuan->delete();
-
-        // return response()->route('bantuan.index')->with('success', 'Bantuan deleted successfully');
-        return redirect()->route('bantuan.index')->with('success', 'Bantuan deleted successfully');
+        return redirect()->route('bantuan.index')->with('success', 'Data bantuan berhasil dihapus.');
     }
 }

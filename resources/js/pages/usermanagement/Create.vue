@@ -57,8 +57,8 @@ function submit() {
 
       <form @submit.prevent="submit" class="flex flex-col gap-4">
         <div>
-          <Label for="name">Nama</Label>
-          <Input id="name" v-model="form.name" type="text" required />
+          <Label>Nama</Label>
+          <Input v-model="form.name" type="text" required />
           <div v-if="form.errors.name" class="text-red-500 text-sm mt-1">{{ form.errors.name }}</div>
         </div>
 

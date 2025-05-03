@@ -1,65 +1,61 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { ref } from 'vue'
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
-    title: 'BantuanFaq',
-    href: '/bantuanfaq',
+    title: 'Bantuan',
+    href: '/bantuan',
   },
   {
     title: 'Tambah',
-    href: '/bantuanfaq/create',
+    href: '/bantuan/create',
   },
 ];
 
-defineProps<{
-  bantuans: Array<{ id: number; judul: string }>
-}>()
-
+// Form data untuk input
 const form = useForm({
-  bantuan_id: '',
+  judul: '',
   deskripsi: '',
-  file: null as File | null,
-  tgl: '',
+  status: 0,
 })
 
 function submit() {
-  form.post('/bantuanfaq', {
-    forceFormData: true,
-  })
+  form.post('/bantuan', {
+    onSuccess: () => {
+      console.log('Data berhasil disimpan');
+    },
+    onError: (errors) => {
+      console.log('Terjadi kesalahan:', errors);
+    }
+  })  // Mengirim data ke backend
 }
 </script>
 
 <template>
-    <Head title="Tambah" />
+  <Head title="Tambah Bantuan" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="p-6">
-            <h1 class="text-xl font-bold mb-4">Tambah FAQ</h1>
-            <form @submit.prevent="submit" class="space-y-4">
-            <div>
-                <label>Bantuan</label>
-                <select v-model="form.bantuan_id" class="border rounded w-full p-2">
-                <option v-for="b in bantuans" :key="b.id" :value="b.id">{{ b.judul }}</option>
-                </select>
-            </div>
-            <div>
-                <label>Isi</label>
-                <textarea v-model="form.deskripsi" class="border w-full p-2 rounded" rows="4"></textarea>
-            </div>
-            <div>
-                <label>File (optional)</label>
-                <input type="file" @change="e => form.file = e.target.files?.[0] || null" class="border rounded p-2 w-full" />
-            </div>
-            <div>
-                <label>Tanggal</label>
-                <input type="date" v-model="form.tgl" class="border rounded p-2 w-full" />
-            </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
-            </form>
+  <AppLayout :breadcrumbs="breadcrumbs">
+    <div>
+      <h1 class="text-xl font-bold mb-4">Tambah Bantuan</h1>
+      <form @submit.prevent="submit" class="space-y-4">
+        <!-- Judul -->
+        <div>
+          <label>Judul</label>
+          <input v-model="form.judul" type="text" class="border rounded p-2 w-full" required />
         </div>
-    </AppLayout>
+        
+        <!-- Deskripsi -->
+        <div>
+          <label>Deskripsi</label>
+          <textarea v-model="form.deskripsi" class="border rounded p-2 w-full" required></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
+      </form>
+    </div>
+  </AppLayout>
 </template>

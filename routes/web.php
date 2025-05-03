@@ -18,12 +18,20 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::resource('kodenomenklatur', KodeNomenklaturController::class)->middleware(['auth', 'verified'])->names('kodenomenklatur');
-Route::resource('bantuan', BantuanController::class)->middleware(['auth', 'verified'])->names('bantuan');
-Route::resource('bantuanfaq', BantuanFaqController::class)->middleware(['auth', 'verified'])->names('bantuanfaq');
-Route::resource('monitoring', MonitoringController::class)->middleware(['auth', 'verified'])->names('monitoring');
-Route::resource('usermanagement', UserManagementController::class)->middleware(['auth', 'verified'])->names('usermanagement');
-Route::resource('panduan', PanduanController::class)->middleware(['auth', 'verified'])->names('panduan');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::resource('kodenomenklatur', KodeNomenklaturController::class)->names('kodenomenklatur');
+    Route::resource('bantuan', BantuanController::class)->names('bantuan');
+    Route::resource('bantuanfaq', BantuanFaqController::class)->names('bantuanfaq');
+    Route::resource('monitoring', MonitoringController::class)->names('monitoring');
+    Route::resource('usermanagement', UserManagementController::class)->names('usermanagement');
+    Route::resource('panduan', PanduanController::class)->names('panduan');
+
+    // Routes khusus untuk fitur chat pada Bantuan
+    Route::get('/bantuan/{bantuan}/chat', [BantuanController::class, 'chatForm'])->name('bantuan.chat');
+    Route::post('/bantuan/{bantuan}/chat', [BantuanController::class, 'chatSend'])->name('bantuan.chat.send');
+});
+
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

@@ -15,6 +15,7 @@ class Bantuan extends Model
         'user_id',
         'judul',
         'status',
+        'deskripsi',
     ];
 
     public function user()

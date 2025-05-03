@@ -15,6 +15,7 @@ class BantuanFaq extends Model
         'bantuan_id',
         'user_id',
         'deskripsi',
+        'balasan',
         'file',
     ];
 

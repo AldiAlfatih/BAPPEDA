@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('judul');
-            $table->integer('status');
+            $table->integer('status')->default(0);
             $table->timestamps();
         });
 
@@ -24,6 +24,7 @@ return new class extends Migration
             $table->foreignId('bantuan_id')->constrained('bantuan')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('deskripsi')->nullable();
+            $table->text('balasan')->nullable();
             $table->string('file')->nullable();
             $table->timestamps();
         }); 

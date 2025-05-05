@@ -10,34 +10,49 @@ class KodeNomenklatur extends Model
     use HasFactory;
 
     protected $table = 'kode_nomenklatur';
-    // Menyimpan kolom-kolom yang bisa diisi mass-assignment
-    protected $fillable = ['nomor_kode', 'nomenklatur', 'jenis_nomenklatur'];
+    protected $fillable = [
+        'jenis_nomenklatur',
+        'nomor_kode',
+        'nomenklatur',
+    ];
 
-    // Relasi ke Urusan
-    public function urusan()
+    public function details()
     {
-        return $this->hasMany(Urusan::class, 'kode_nomenklatur_id');
+        return $this->hasMany(KodeNomenklaturDetail::class, 'id_nomenklatur');
     }
+    
+    
 
-    // Relasi ke Bidang Urusan (melalui Urusan)
-    public function bidangUrusan()
+    public function bidang_urusan_by_urusan()
     {
-        return $this->hasManyThrough(BidangUrusan::class, Urusan::class, 'kode_nomenklatur_id', 'id_urusan');
+        if ($this->jenis_nomenklatur == 0) {
+            return $this->hasMany(KodeNomenklatur::class, 'id_urusan');
+        } else {
+            return null;
+        }
     }
-
-     // Relasi ke Program (melalui Urusan dan Bidang Urusan)
-     public function program()
-     {
-         return $this->hasManyThrough(Program::class, Urusan::class, 'kode_nomenklatur_id', 'id_bid_urusan');
-     }
-
-     public function kegiatan()
-     {
-         return $this->hasManyThrough(Kegiatan::class, Urusan::class, 'kode_nomenklatur_id', 'id_program');
-     }
-     public function subKegiatan()
-     {
-         return $this->hasManyThrough(SubKegiatan::class, Urusan::class, 'kode_nomenklatur_id', 'id_kegiatan');
-     }
+    public function program_by_bidang_urusan()
+    {
+        if ($this->jenis_nomenklatur == 1) {
+            return $this->hasMany(KodeNomenklatur::class, 'id_bidang_urusan');
+        } else {
+            return null;
+        }
+    }
+    public function kegiatan_by_program()
+    {
+        if ($this->jenis_nomenklatur == 2) {
+            return $this->hasMany(KodeNomenklatur::class, 'id_program');
+        } else {
+            return null;
+        }
+    }
+    public function subkegiatan_by_kegiatan()
+    {
+        if ($this->jenis_nomenklatur == 3) {
+            return $this->hasMany(KodeNomenklatur::class, 'id_kegiatan');
+        } else {
+            return null;
+        }
+    }
 }
-

@@ -3,155 +3,322 @@
 namespace App\Http\Controllers;
 
 use App\Models\KodeNomenklatur;
-use App\Models\Urusan;
-use App\Models\BidangUrusan;
-use App\Models\Program;
-use App\Models\Kegiatan;
-use App\Models\SubKegiatan;
+use App\Models\KodeNomenklaturDetail;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class KodeNomenklaturController extends Controller
 {
     /**
-     * Menampilkan semua kode nomenklatur.
+     * Display a listing of the resource.
      */
     public function index()
     {
-        $kodeNomenklatur = KodeNomenklatur::with('urusan', 'bidangUrusan', 'program', 'kegiatan', 'subKegiatan')->get();
+        $kodeNomenklatur = KodeNomenklatur::all();
+        
         return Inertia::render('KodeNomenklatur', [
-            'kodeNomenklatur' => $kodeNomenklatur
+            'kodeNomenklatur' => $kodeNomenklatur,
         ]);
     }
 
     /**
-     * Menampilkan form untuk membuat kode nomenklatur baru.
+     * Show the form for creating a new resource.
      */
     public function create()
     {
+        $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan');
+            }]) 
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
+                ];
+            });
+        
+        $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
+                ];
+            });
+        
+        $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan', 'id_program');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null,
+                    'program_id' => $item->details->first() ? $item->details->first()->id_program : null
+                ];
+            });
+        
+        $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan', 'id_program', 'id_kegiatan');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null,
+                    'program_id' => $item->details->first() ? $item->details->first()->id_program : null,
+                    'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
+                ];
+            });
+        
+        $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan', 'id_program', 'id_kegiatan', 'id_sub_kegiatan');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null,
+                    'program_id' => $item->details->first() ? $item->details->first()->id_program : null,
+                    'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null,
+                    'subkegiatan_id' => $item->details->first() ? $item->details->first()->id_sub_kegiatan : null
+                ];
+            });
+        
         return Inertia::render('KodeNomenklatur/Create', [
-            'kodenomenklatur' => KodeNomenklatur::all() // Menyediakan semua kode nomenklatur
+            'urusanList' => $urusanList,
+            'bidangUrusanList' => $bidangUrusanList,
+            'programList' => $programList,
+            'kegiatanList' => $kegiatanList,
+            'subkegiatanList' => $subkegiatanList
         ]);
     }
-
- 
-    public function store(Request $request)
-{
-    // Validasi input
-    $validated = $request->validate([
-        'nomor_kode' => 'required|unique:kode_nomenklatur',
-        'nomenklatur' => 'required|string',
-        'jenis_kode' => 'required|integer',
-        'urusan' => 'required|string',
-        'bidang_urusan' => 'nullable|string',
-        'program' => 'nullable|string',
-        'kegiatan' => 'nullable|string',
-        'subkegiatan' => 'nullable|string',
-    ]);
-
-    // Debug: Menampilkan data yang diterima
-    // dd($validated); 
-
-    // Simpan kode nomenklatur
-    $kodeNomenklatur = KodeNomenklatur::create([
-        'nomor_kode' => $validated['nomor_kode'],
-        'nomenklatur' => $validated['nomenklatur'],
-        'jenis_nomenklatur' => $validated['jenis_kode'],
-        'parent_id' => $validated['parent_id'] ?? null, // Menyimpan parent_id jika ada
-    ]);
-
-    // Menyimpan urusan yang terkait dengan kode_nomenklatur
-    $urusan = Urusan::create([
-        'kode_nomenklatur_id' => $kodeNomenklatur->id,
-        'nama' => $validated['urusan']
-    ]);
-
-    // Menyimpan bidang urusan yang terkait dengan urusan
-    if (!empty($validated['bidang_urusan'])) {
-        $bidangUrusan = BidangUrusan::create([
-            'id_urusan' => $urusan->id,
-            'nama' => $validated['bidang_urusan']
-        ]);
-    }
-
-    // Menyimpan program yang terkait dengan bidang urusan
-    if (!empty($validated['program'])) {
-        $program = Program::create([
-            'id_bid_urusan' => $bidangUrusan->id ?? null,
-            'nama' => $validated['program']
-        ]);
-    }
-
-    // Menyimpan kegiatan yang terkait dengan program
-    if (!empty($validated['kegiatan'])) {
-        $kegiatan = Kegiatan::create([
-            'id_program' => $program->id ?? null,
-            'nama' => $validated['kegiatan']
-        ]);
-    }
-
-    // Menyimpan sub kegiatan yang terkait dengan kegiatan
-    if (!empty($validated['subkegiatan'])) {
-        SubKegiatan::create([
-            'id_kegiatan' => $kegiatan->id ?? null,
-            'nama' => $validated['subkegiatan']
-        ]);
-    }
-
-    return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur dan data terkait berhasil disimpan.');
-}
-
 
     /**
-     * Menampilkan form untuk mengedit kode nomenklatur yang ada.
+     * Store a newly created resource in storage.
      */
-    public function edit($id)
+    public function store(Request $request)
+    {
+        // Validasi request
+        $validated = $request->validate([
+            'jenis_nomenklatur' => 'required|integer|min:0|max:4',
+            'nomor_kode' => 'required|string',
+            'nomenklatur' => 'required|string',
+            'urusan' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'bidang_urusan' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'program' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'kegiatan' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'subkegiatan' => 'nullable|integer|exists:kode_nomenklatur,id',
+        ]);
+
+        // Buat kode nomenklatur baru
+        $kodeNomenklatur = KodeNomenklatur::create([
+            'jenis_nomenklatur' => $validated['jenis_nomenklatur'],
+            'nomor_kode' => $validated['nomor_kode'],
+            'nomenklatur' => $validated['nomenklatur'],
+        ]);
+
+        // Buat detail kode nomenklatur sesuai dengan jenis
+        if ($validated['jenis_nomenklatur'] > 0) {
+            $detailData = [
+                'id_nomenklatur' => $kodeNomenklatur->id,
+                'id_urusan' => $validated['urusan'] ?? null,
+                'id_bidang_urusan' => $validated['bidang_urusan'] ?? null,
+                'id_program' => $validated['program'] ?? null,
+                'id_kegiatan' => $validated['kegiatan'] ?? null,
+                'id_sub_kegiatan' => null,
+            ];
+
+            KodeNomenklaturDetail::create($detailData);
+        }
+
+        return redirect()->route('kodenomenklatur.index')
+            ->with('message', 'Kode Nomenklatur berhasil ditambahkan!');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
     {
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
-        return Inertia::render('KodeNomenklatur/Edit', [
-            'kodeNomenklatur' => $kodeNomenklatur
+        
+        return Inertia::render('KodeNomenklatur/Show', [
+            'kodeNomenklatur' => $kodeNomenklatur,
         ]);
     }
 
     /**
-     * Memperbarui data kode nomenklatur yang ada.
+     * Show the form for editing the specified resource.
      */
-    public function update(Request $request, $id)
+    public function edit(string $id)
     {
-        $request->validate([
-            'nomor_kode' => 'required|unique:kode_nomenklatur,nomor_kode,' . $id,
+        $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
+        $detail = KodeNomenklaturDetail::where('id_nomenklatur', $id)->first();
+        
+        // Ambil data untuk dropdown
+        $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->get();
+        
+        $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
+                ];
+            });
+        
+        $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
+                ];
+            });
+        
+        $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan', 'id_program');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null,
+                    'program_id' => $item->details->first() ? $item->details->first()->id_program : null
+                ];
+            });
+        
+        $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
+            ->select('id', 'nomor_kode', 'nomenklatur')
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan', 'id_program', 'id_kegiatan');
+            }])
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'nomor_kode' => $item->nomor_kode,
+                    'nomenklatur' => $item->nomenklatur,
+                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null,
+                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null,
+                    'program_id' => $item->details->first() ? $item->details->first()->id_program : null,
+                    'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
+                ];
+            });
+        
+        return Inertia::render('KodeNomenklatur/Edit', [
+            'kodeNomenklatur' => $kodeNomenklatur,
+            'detail' => $detail,
+            'urusanList' => $urusanList,
+            'bidangUrusanList' => $bidangUrusanList,
+            'programList' => $programList,
+            'kegiatanList' => $kegiatanList,
+            'subkegiatanList' => $subkegiatanList
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        // Validasi request
+        $validated = $request->validate([
+            'jenis_nomenklatur' => 'required|integer|min:0|max:4',
+            'nomor_kode' => 'required|string',
             'nomenklatur' => 'required|string',
-            'jenis_nomenklatur' => 'required|integer',
-            'urusan' => 'required|string',
-            'bidang_urusan' => 'nullable|string',
-            'program' => 'nullable|string',
-            'kegiatan' => 'nullable|string',
-            'subkegiatan' => 'nullable|string',
+            'urusan' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'bidang_urusan' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'program' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'kegiatan' => 'nullable|integer|exists:kode_nomenklatur,id',
+            'subkegiatan' => 'nullable|integer|exists:kode_nomenklatur,id',
         ]);
 
+        // Update kode nomenklatur
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
         $kodeNomenklatur->update([
-            'nomor_kode' => $request->nomor_kode,
-            'nomenklatur' => $request->nomenklatur,
-            'jenis_nomenklatur' => $request->jenis_nomenklatur,
-            'urusan' => $request->urusan,
-            'bidang_urusan' => $request->bidang_urusan,
-            'program' => $request->program,
-            'kegiatan' => $request->kegiatan,
-            'subkegiatan' => $request->subkegiatan,
+            'jenis_nomenklatur' => $validated['jenis_nomenklatur'],
+            'nomor_kode' => $validated['nomor_kode'],
+            'nomenklatur' => $validated['nomenklatur'],
         ]);
 
-        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur berhasil diperbarui.');
+        // Update atau buat detail
+        if ($validated['jenis_nomenklatur'] > 0) {
+            $detailData = [
+                'id_urusan' => $validated['urusan'] ?? null,
+                'id_bidang_urusan' => $validated['bidang_urusan'] ?? null,
+                'id_program' => $validated['program'] ?? null,
+                'id_kegiatan' => $validated['kegiatan'] ?? null,
+                'id_sub_kegiatan' => $validated['subkegiatan'] ?? null,
+            ];
+
+            KodeNomenklaturDetail::updateOrCreate(
+                ['id_nomenklatur' => $id],
+                $detailData
+            );
+        }
+
+        return redirect()->route('kodenomenklatur.index')
+            ->with('message', 'Kode Nomenklatur berhasil diperbarui!');
     }
 
     /**
-     * Menghapus kode nomenklatur yang ada.
+     * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(string $id)
     {
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
         $kodeNomenklatur->delete();
-
-        return redirect()->route('kodenomenklatur.index')->with('success', 'Kode Nomenklatur berhasil dihapus.');
+        
+        return redirect()->route('kodenomenklatur.index')
+            ->with('message', 'Kode Nomenklatur berhasil dihapus!');
     }
 }
+

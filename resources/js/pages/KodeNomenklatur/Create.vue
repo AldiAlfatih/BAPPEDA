@@ -1,168 +1,313 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import { type BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 
-const breadcrumbs: BreadcrumbItem[] = [
+// Ambil data dari Laravel
+const { props } = usePage();
+
+// Breadcrumbs
+const breadcrumbs = [
   { title: 'Kode Nomenklatur', href: '/kodenomenklatur' },
-  { title: 'Tambah Kode Nomenklatur', href: '/kodenomenklatur/create' },
+  { title: 'Tambah Kode Nomenklatur', href: '/kodenomenklatur/create' }
 ];
 
-// Form binding
-const form = useForm({
-  nomor_kode: '',
-  nomenklatur: '',
-  jenis_kode: '',
-  urusan: '',
-  bidang_urusan: '',
-  program: '',
-  kegiatan: '',
-  subkegiatan: '',
-});
-
-// Pilihan jenis kode
-const jenisKodeOptions = [
-  { value: 0, label: 'Urusan' },
-  { value: 1, label: 'Bidang Urusan' },
-  { value: 2, label: 'Program' },
-  { value: 3, label: 'Kegiatan' },
-  { value: 4, label: 'Subkegiatan' },
+// Jenis Nomenklatur
+const jenisNomenklaturOptions = [
+  { label: 'Urusan', value: 0 },
+  { label: 'Bidang Urusan', value: 1 },
+  { label: 'Program', value: 2 },
+  { label: 'Kegiatan', value: 3 },
+  { label: 'Subkegiatan', value: 4 }
 ];
 
-// Fungsi untuk memperbarui nomor kode dan nomenklatur
-function updateNamaKode() {
-  const parts = [];
-  const jenis = form.jenis_kode;
-  
-  if (jenis === 0) {
-    // Urusan: kode dimulai dari 1 dan naik per urusan
-    parts.push(`1`);
-  }
-  if (jenis === 1) {
-    // Bidang Urusan: kode dimulai dari 1/01 dan naik per bidang urusan
-    parts.push(`${form.urusan}/01`);
-  }
-  if (jenis === 2) {
-    // Program: kode melanjutkan dari bidang urusan
-    parts.push(`${form.urusan}/01/01`);
-  }
-  if (jenis === 3) {
-    // Kegiatan: kode melanjutkan dari program
-    parts.push(`${form.urusan}/01/01/2.01`);
-  }
-  if (jenis === 4) {
-    // Subkegiatan: kode melanjutkan dari kegiatan
-    let subkegiatanCount = 1;  // Menghitung urutan subkegiatan
-    parts.push(`${form.urusan}/01/01/2.01/${String(subkegiatanCount).padStart(4, '0')}`);
-  }
-  
-  form.nomor_kode = parts.join('/');
-  form.nomenklatur = jenisKodeOptions.find(j => j.value === form.jenis_kode)?.label || '';
-}
+const jenisNomenklatur = ref<number | null>(null);
+const nomorKode = ref('');
+const nomenklatur = ref('');
+const urusan = ref<number | null>(null);
+const bidangUrusan = ref<number | null>(null);
+const program = ref<number | null>(null);
+const kegiatan = ref<number | null>(null);
+const subkegiatan = ref<number | null>(null);
 
-// Menampilkan input yang sesuai berdasarkan jenis kode yang dipilih
-function showField(field: string) {
-  const jenis = form.jenis_kode;
-
-  if (jenis === 0 && ['urusan'].includes(field)) return true; // Tampilkan urusan
-  if (jenis === 1 && ['urusan', 'bidang_urusan'].includes(field)) return true;
-  if (jenis === 2 && ['urusan', 'bidang_urusan', 'program'].includes(field)) return true;
-  if (jenis === 3 && ['urusan', 'bidang_urusan', 'program', 'kegiatan'].includes(field)) return true;
-  if (jenis === 4) return true; // Tampilkan semua field
-  return false;
-}
-
-// Reaktif terhadap perubahan data input
-watch(
-  () => [
-    form.jenis_kode,
-    form.urusan,
-    form.bidang_urusan,
-    form.program,
-    form.kegiatan,
-    form.subkegiatan,
-  ],
-  updateNamaKode
+const urusanOptions = computed(() =>
+  props.urusanList.map((item: any) => ({
+    label: `${item.nomor_kode} - ${item.nomenklatur}`,
+    value: item.id
+  }))
 );
 
-// Fungsi untuk mengirimkan data ke backend
-function submit() {
-  updateNamaKode(); // Pastikan nama kode terupdate
-  console.log(form); // Cek data yang dikirim ke backend
-  form.post('/kodenomenklatur', {
-    onSuccess: () => form.reset(),
-    onError: (errors) => console.log(errors) // Menampilkan error jika ada
-  });
+const bidangUrusanOptions = computed(() => {
+  if (!urusan.value) return [];
+  
+  return props.bidangUrusanList
+    .filter((item: any) => item.urusan_id == urusan.value)
+    .map((item: any) => ({
+      label: `${item.nomor_kode} - ${item.nomenklatur}`,
+      value: item.id
+    }));
+});
+
+const programOptions = computed(() => {
+  if (!bidangUrusan.value) return [];
+  
+  return props.programList
+    .filter((item: any) => item.bidang_urusan_id == bidangUrusan.value)
+    .map((item: any) => ({
+      label: `${item.nomor_kode} - ${item.nomenklatur}`,
+      value: item.id
+    }));
+});
+
+const kegiatanOptions = computed(() => {
+  if (!program.value) return [];
+  
+  return props.kegiatanList
+    .filter((item: any) => item.program_id == program.value)
+    .map((item: any) => ({
+      label: `${item.nomor_kode} - ${item.nomenklatur}`,
+      value: item.id
+    }));
+});
+
+const subkegiatanOptions = computed(() => {
+  if (!kegiatan.value) return [];
+  
+  return props.subkegiatanList
+    .filter((item: any) => item.kegiatan_id == kegiatan.value)
+    .map((item: any) => ({
+      label: `${item.nomor_kode} - ${item.nomenklatur}`,
+      value: item.id
+    }));
+});
+
+function handleJenisChange(value: number) {
+  jenisNomenklatur.value = value;
+  
+  urusan.value = null;
+  bidangUrusan.value = null;
+  program.value = null;
+  kegiatan.value = null;
+  subkegiatan.value = null;
+  
+  // Generate nomor kode untuk Urusan
+  if (value === 0) {
+    const nextUrusanNumber = props.urusanList.length + 1;
+    nomorKode.value = `${nextUrusanNumber}`;
+  } else {
+    nomorKode.value = '';
+  }
 }
 
+// Watch perubahan pada urusan untuk update nomor kode bidang urusan
+watch(urusan, (newValue) => {
+  if (jenisNomenklatur.value === 1 && newValue) {
+    const selectedUrusan = props.urusanList.find((item: any) => item.id === newValue);
+    if (selectedUrusan) {
+      const filteredBidangUrusan = props.bidangUrusanList.filter((item: any) => item.urusan_id === newValue);
+      const nextNumber = filteredBidangUrusan.length + 1;
+      nomorKode.value = `${selectedUrusan.nomor_kode}.${String(nextNumber).padStart(2, '0')}`;
+    }
+  }
+});
+
+// Watch perubahan pada bidang urusan untuk update nomor kode program
+watch(bidangUrusan, (newValue) => {
+  if (jenisNomenklatur.value === 2 && newValue) {
+    const selectedBidangUrusan = props.bidangUrusanList.find((item: any) => item.id === newValue);
+    if (selectedBidangUrusan) {
+      const filteredProgram = props.programList.filter((item: any) => item.bidang_urusan_id === newValue);
+      const nextNumber = filteredProgram.length + 1;
+      nomorKode.value = `${selectedBidangUrusan.nomor_kode}.${String(nextNumber).padStart(3, '0')}`;
+    }
+  }
+});
+
+// Watch perubahan pada program untuk update nomor kode kegiatan
+watch(program, (newValue) => {
+  if (jenisNomenklatur.value === 3 && newValue) {
+    const selectedProgram = props.programList.find((item: any) => item.id === newValue);
+    if (selectedProgram) {
+      const filteredKegiatan = props.kegiatanList.filter((item: any) => item.program_id === newValue);
+      const nextNumber = filteredKegiatan.length + 1;
+      nomorKode.value = `${selectedProgram.nomor_kode}.${String(nextNumber).padStart(4, '0')}`;
+    }
+  }
+});
+
+// Watch perubahan pada kegiatan untuk update nomor kode subkegiatan
+watch(kegiatan, (newValue) => {
+  if (jenisNomenklatur.value === 4 && newValue) {
+    const selectedKegiatan = props.kegiatanList.find((item: any) => item.id === newValue);
+    if (selectedKegiatan) {
+      const filteredSubkegiatan = props.subkegiatanList.filter((item: any) => item.kegiatan_id === newValue);
+      const nextNumber = filteredSubkegiatan.length + 1;
+      nomorKode.value = `${selectedKegiatan.nomor_kode}.${String(nextNumber).padStart(5, '0')}`;
+    }
+  }
+});
+
+function handleSubmit() {
+  router.post('/kodenomenklatur', {
+    jenis_nomenklatur: jenisNomenklatur.value,
+    nomor_kode: nomorKode.value,
+    nomenklatur: nomenklatur.value,
+    urusan: urusan.value,
+    bidang_urusan: bidangUrusan.value,
+    program: program.value,
+    kegiatan: kegiatan.value,
+    subkegiatan: subkegiatan.value,
+  });
+}
 </script>
 
 <template>
   <Head title="Tambah Kode Nomenklatur" />
-
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-4">Tambah Kode Nomenklatur</h1>
-
-      <form @submit.prevent="submit" class="flex flex-col gap-4">
-        <!-- Nomor Kode -->
-        <div class="grid gap-2">
-          <Label for="nomor_kode">Nomor Kode</Label>
-          <Input id="nomor_kode" v-model="form.nomor_kode" type="text" disabled />
-        </div>
-
-        <!-- Nomenklatur -->
-        <div class="grid gap-2">
-          <Label for="nomenklatur">Nomenklatur</Label>
-          <Input id="nomenklatur" v-model="form.nomenklatur" type="text" disabled />
-        </div>
-
-        <!-- Jenis Kode -->
-        <div class="grid gap-2">
-          <Label for="jenis_kode">Jenis Kode</Label>
-          <select id="jenis_kode" v-model="form.jenis_kode" required @change="clearLowerFields">
-            <option value="" disabled selected>Pilih Jenis Nomenklatur</option>
-            <option v-for="option in jenisKodeOptions" :key="option.value" :value="option.value">
+    <div class="p-4 space-y-4">
+      <h1 class="text-xl font-semibold mb-4">Tambah Kode Nomenklatur</h1>
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- Jenis Nomenklatur -->
+        <div class="flex flex-col">
+          <Label for="jenis_nomenklatur">Jenis Nomenklatur</Label>
+          <select
+            id="jenis_nomenklatur"
+            v-model="jenisNomenklatur"
+            @change="handleJenisChange(jenisNomenklatur)"
+            class="border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled>Pilih jenis...</option>
+            <option
+              v-for="option in jenisNomenklaturOptions"
+              :key="option.value"
+              :value="option.value"
+            >
               {{ option.label }}
             </option>
           </select>
         </div>
 
+        <!-- Nomor Kode -->
+        <div class="flex flex-col">
+          <Label for="nomor_kode">Nomor Kode</Label>
+          <Input id="nomor_kode" v-model="nomorKode" type="text"/>
+        </div>
+
+        <!-- Nomenklatur -->
+        <div class="flex flex-col">
+          <Label for="nomenklatur">Nomenklatur</Label>
+          <Input id="nomenklatur" v-model="nomenklatur" type="text" required />
+        </div>
+
         <!-- Urusan -->
-        <div v-if="showField('urusan')">
+        <div v-if="jenisNomenklatur >= 1" class="flex flex-col">
           <Label for="urusan">Urusan</Label>
-          <Input id="urusan" v-model="form.urusan" type="text" required />
+          <select
+            id="urusan"
+            v-model="urusan"
+            class="border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled selected>Pilih Urusan</option>
+            <option
+              v-for="option in urusanOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </div>
 
         <!-- Bidang Urusan -->
-        <div v-if="showField('bidang_urusan')">
+        <div v-if="jenisNomenklatur >= 2" class="flex flex-col">
           <Label for="bidang_urusan">Bidang Urusan</Label>
-          <Input id="bidang_urusan" v-model="form.bidang_urusan" type="text" required />
+          <select
+            id="bidang_urusan"
+            v-model="bidangUrusan"
+            class="border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled selected>Pilih Bidang Urusan</option>
+            <option
+              v-for="option in bidangUrusanOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </div>
 
         <!-- Program -->
-        <div v-if="showField('program')">
+        <div v-if="jenisNomenklatur >= 3" class="flex flex-col">
           <Label for="program">Program</Label>
-          <Input id="program" v-model="form.program" type="text" required />
+          <select
+            id="program"
+            v-model="program"
+            class="border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled selected>Pilih Program</option>
+            <option
+              v-for="option in programOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </div>
 
         <!-- Kegiatan -->
-        <div v-if="showField('kegiatan')">
+        <div v-if="jenisNomenklatur >= 4" class="flex flex-col">
           <Label for="kegiatan">Kegiatan</Label>
-          <Input id="kegiatan" v-model="form.kegiatan" type="text" required />
+          <select
+            id="kegiatan"
+            v-model="kegiatan"
+            class="border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled selected>Pilih Kegiatan</option>
+            <option
+              v-for="option in kegiatanOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </div>
 
         <!-- Subkegiatan -->
-        <div v-if="showField('subkegiatan')">
+        <div v-if="jenisNomenklatur >= 5" class="flex flex-col">
           <Label for="subkegiatan">Subkegiatan</Label>
-          <Input id="subkegiatan" v-model="form.subkegiatan" type="text" required />
+          <select
+            id="subkegiatan"
+            v-model="subkegiatan"
+            class="border rounded px-3 py-2"
+            required
+          >
+            <option value="" disabled selected>Pilih Subkegiatan</option>
+            <option
+              v-for="option in subkegiatanOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </div>
-
-        <Button type="submit" class="mt-4">Simpan</Button>
+        
+        <div class="flex justify-end">
+          <Button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">
+            Simpan
+          </Button>
+        </div>
       </form>
     </div>
   </AppLayout>

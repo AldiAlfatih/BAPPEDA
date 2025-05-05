@@ -8,7 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class Pemberitahuan extends Model
 {
     use HasFactory;
-    protected $table = 'pemberitahuan'; // Nama tabel yang sesuai dengan konvensi Laravel
-    protected $fillable = ['judul', 'isi', 'tanggal_kirim'];
 
+    protected $table = 'pemberitahuan';
+
+    protected $fillable = [
+        'judul',
+        'isi',
+        'tanggal_dibuat',
+    ];
+
+    protected $casts = [
+        'tanggal_dibuat' => 'date',
+    ];
 }

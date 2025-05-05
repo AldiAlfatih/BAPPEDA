@@ -9,21 +9,21 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('pemberitahuan', function (Blueprint $table) {
             $table->id();
-            $table->string('judul');
-            $table->text('isi');
-            $table->date('tanggal_kirim');
-            $table->timestamps(); // created_at dan updated_at
+            $table->string('judul', 255);  
+            $table->text('isi'); 
+            $table->date('tanggal_dibuat'); 
+            $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('pemberitahuan');
     }

@@ -7,7 +7,6 @@ import { Plus, Pencil, Trash2 } from 'lucide-vue-next';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -15,20 +14,18 @@ import {
 } from '@/components/ui/table';
 
 const props = defineProps<{
-  kodenomenklatur: Array<{
+  kodeNomenklatur: Array<{
     id: number,
     nomor_kode: string,
     nomenklatur: string,
-    jenis_kode: string,
-    detail: {
-      urusan?: string,
-      bidang_urusan?: string,
-      program?: string,
-      kegiatan?: string,
-      subkegiatan?: string,
-    } | null
+    jenis_nomenklatur: number,
+    bidang_urusan?: { bidang_urusan: string } | null,
+    program?: { program: string } | null,
+    kegiatan?: { kegiatan: string } | null,
+    subkegiatan?: { subkegiatan: string } | null
   }>
 }>();
+
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Kode Nomenklatur', href: '/KodeNomenklatur' },
@@ -38,7 +35,6 @@ function goToCreatePage() {
   router.visit('/kodenomenklatur/create');
 }
 
-
 function goToEditPage(id: number) {
   router.visit(`/kodenomenklatur/${id}/edit`);
 }
@@ -47,6 +43,22 @@ function deleteKode(id: number) {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     router.delete(`/kodenomenklatur/${id}`);
   }
+}
+
+function labelJenisNomenklatur(value: number): string {
+  switch (value) {
+    case 0: return 'Urusan';
+    case 1: return 'Bidang Urusan';
+    case 2: return 'Program';
+    case 3: return 'Kegiatan';
+    case 4: return 'Subkegiatan';
+    default: return 'Tidak Dikenal';
+  }
+}
+
+// Fungsi untuk memotong teks Nomenklatur
+function truncateNomenklatur(nomenklatur: string): string {
+  return nomenklatur.length > 30 ? nomenklatur.slice(0, 30) + '...' : nomenklatur;
 }
 </script>
 
@@ -69,31 +81,24 @@ function deleteKode(id: number) {
             <TableHead>Kode</TableHead>
             <TableHead>Nomenklatur</TableHead>
             <TableHead>Jenis</TableHead>
-            <TableHead>Urusan</TableHead>
-            <TableHead>Bidang Urusan</TableHead>
-            <TableHead>Program</TableHead>
-            <TableHead>Kegiatan</TableHead>
-            <TableHead>Subkegiatan</TableHead>
             <TableHead>Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="(item, index) in props.kodenomenklatur" :key="item.id">
+          <TableRow v-for="(kode, index) in props.kodeNomenklatur" :key="kode.id">
             <TableCell>{{ index + 1 }}</TableCell>
-            <TableCell>{{ item.nomor_kode }}</TableCell>
-            <TableCell>{{ item.nomenklatur }}</TableCell>
-            <TableCell>{{ item.jenis_kode }}</TableCell>
-            <TableCell>{{ item.detail?.urusan || '-' }}</TableCell>
-            <TableCell>{{ item.detail?.bidang_urusan || '-' }}</TableCell>
-            <TableCell>{{ item.detail?.program || '-' }}</TableCell>
-            <TableCell>{{ item.detail?.kegiatan || '-' }}</TableCell>
-            <TableCell>{{ item.detail?.subkegiatan || '-' }}</TableCell>
-            <TableCell class="flex gap-2">
-              <Button variant="outline" size="sm" @click="goToEditPage(item.id)">
+            <TableCell>{{ kode.nomor_kode }}</TableCell>
+            <!-- Menampilkan nomenklatur yang dibatasi 30 karakter -->
+            <TableCell>{{ truncateNomenklatur(kode.nomenklatur) }}</TableCell>
+            <TableCell>{{ labelJenisNomenklatur(kode.jenis_nomenklatur) }}</TableCell>
+            <TableCell>
+              <Button class="bg-green-600 hover:bg-green-700 text-white text-xs" @click="goToEditPage(kode.id)">
                 <Pencil class="w-4 h-4" />
+                Edit
               </Button>
-              <Button variant="destructive" size="sm" @click="deleteKode(item.id)">
+              <Button class="ml-2 bg-red-600 hover:bg-amber-800 text-white text-xs" @click="deleteKode(kode.id)">
                 <Trash2 class="w-4 h-4" />
+                Hapus
               </Button>
             </TableCell>
           </TableRow>

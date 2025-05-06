@@ -144,23 +144,49 @@ class KodeNomenklaturController extends Controller
             'nomenklatur' => $validated['nomenklatur'],
         ]);
 
-        // Buat detail kode nomenklatur sesuai dengan jenis
-        if ($validated['jenis_nomenklatur'] > 0) {
-            $detailData = [
-                'id_nomenklatur' => $kodeNomenklatur->id,
-                'id_urusan' => $validated['urusan'] ?? null,
-                'id_bidang_urusan' => $validated['bidang_urusan'] ?? null,
-                'id_program' => $validated['program'] ?? null,
-                'id_kegiatan' => $validated['kegiatan'] ?? null,
-                'id_sub_kegiatan' => null,
-            ];
+        // Siapkan data detail dasar
+        $detailData = [
+            'id_nomenklatur' => $kodeNomenklatur->id,
+        ];
 
-            KodeNomenklaturDetail::create($detailData);
+        // Isi data detail sesuai dengan jenis nomenklatur
+        switch ($validated['jenis_nomenklatur']) {
+            case 0: // Urusan
+                // Untuk urusan, id_urusan merujuk ke dirinya sendiri
+                $detailData['id_urusan'] = $kodeNomenklatur->id;
+                break;
+            
+            case 1: // Bidang Urusan
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $kodeNomenklatur->id;
+                break;
+            
+            case 2: // Program
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
+                $detailData['id_program'] = $kodeNomenklatur->id;
+                break;
+            
+            case 3: // Kegiatan
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
+                $detailData['id_program'] = $validated['program'];
+                $detailData['id_kegiatan'] = $kodeNomenklatur->id;
+                break;
+            
+            case 4: // Sub Kegiatan
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
+                $detailData['id_program'] = $validated['program'];
+                $detailData['id_kegiatan'] = $validated['kegiatan'];
+                $detailData['id_sub_kegiatan'] = $kodeNomenklatur->id;
+                break;
         }
+        KodeNomenklaturDetail::create($detailData);
 
-        return redirect()->route('kodenomenklatur.index')
-            ->with('message', 'Kode Nomenklatur berhasil ditambahkan!');
+        return redirect()->route('kodenomenklatur.index')->with('message', 'Kode Nomenklatur berhasil ditambahkan!');
     }
+
 
     /**
      * Display the specified resource.

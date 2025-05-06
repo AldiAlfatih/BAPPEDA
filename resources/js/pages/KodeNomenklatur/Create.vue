@@ -151,7 +151,7 @@ watch(kegiatan, (newValue) => {
 });
 
 function handleSubmit() {
-  router.post('/kodenomenklatur', {
+  const data = {
     jenis_nomenklatur: jenisNomenklatur.value,
     nomor_kode: nomorKode.value,
     nomenklatur: nomenklatur.value,
@@ -160,8 +160,44 @@ function handleSubmit() {
     program: program.value,
     kegiatan: kegiatan.value,
     subkegiatan: subkegiatan.value,
-  });
+  };
+
+  // Sesuaikan data berdasarkan jenis_nomenklatur
+  if (jenisNomenklatur.value === 0) {
+    // Urusan hanya mengirim urusan
+    data.id_urusan = urusan.value;
+    delete data.bidang_urusan;
+    delete data.program;
+    delete data.kegiatan;
+    delete data.subkegiatan;
+  } else if (jenisNomenklatur.value === 1) {
+    // Bidang Urusan hanya mengirim urusan dan bidang_urusan
+    data.id_urusan = urusan.value;
+    data.id_bidang_urusan = bidangUrusan.value;
+    delete data.program;
+    delete data.kegiatan;
+    delete data.subkegiatan;
+  } else if (jenisNomenklatur.value === 2) {
+    // Program hanya mengirim program
+    data.id_bidang_urusan = bidangUrusan.value;
+    data.id_program = program.value;
+    delete data.kegiatan;
+    delete data.subkegiatan;
+  } else if (jenisNomenklatur.value === 3) {
+    // Kegiatan hanya mengirim kegiatan
+    data.id_program = program.value;
+    data.id_kegiatan = kegiatan.value;
+    delete data.subkegiatan;
+  } else if (jenisNomenklatur.value === 4) {
+    // Subkegiatan hanya mengirim subkegiatan
+    data.id_kegiatan = kegiatan.value;
+    data.id_sub_kegiatan = subkegiatan.value;
+  }
+
+  // Kirim data ke server
+  router.post('/kodenomenklatur', data);
 }
+
 </script>
 
 <template>
@@ -170,6 +206,13 @@ function handleSubmit() {
     <div class="p-4 space-y-4">
       <h1 class="text-xl font-semibold mb-4">Tambah Kode Nomenklatur</h1>
       <form @submit.prevent="handleSubmit" class="space-y-4">
+
+        <!-- Nomor Kode -->
+        <div class="flex flex-col">
+          <Label for="nomor_kode">Nomor Kode</Label>
+          <Input id="nomor_kode" v-model="nomorKode" type="text"/>
+        </div>
+
         <!-- Jenis Nomenklatur -->
         <div class="flex flex-col">
           <Label for="jenis_nomenklatur">Jenis Nomenklatur</Label>
@@ -192,18 +235,6 @@ function handleSubmit() {
         </div>
 
         <!-- Nomor Kode -->
-        <div class="flex flex-col">
-          <Label for="nomor_kode">Nomor Kode</Label>
-          <Input id="nomor_kode" v-model="nomorKode" type="text"/>
-        </div>
-
-        <!-- Nomenklatur -->
-        <div class="flex flex-col">
-          <Label for="nomenklatur">Nomenklatur</Label>
-          <Input id="nomenklatur" v-model="nomenklatur" type="text" required />
-        </div>
-
-        <!-- Urusan -->
         <div v-if="jenisNomenklatur >= 1" class="flex flex-col">
           <Label for="urusan">Urusan</Label>
           <select
@@ -302,6 +333,13 @@ function handleSubmit() {
             </option>
           </select>
         </div>
+
+        <!-- Nomenklatur -->
+        <div class="flex flex-col">
+          <Label for="nomenklatur">Nomenklatur</Label>
+          <Input id="nomenklatur" v-model="nomenklatur" type="text" required />
+        </div>
+        
         
         <div class="flex justify-end">
           <Button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">

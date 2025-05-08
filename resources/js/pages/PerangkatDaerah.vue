@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2 } from 'lucide-vue-next';
+import { Plus, Pencil, Trash2, Eye } from 'lucide-vue-next';
 import { ref } from 'vue';
 import {
   Table,
@@ -19,14 +19,17 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
-      email: string;
-      roles: Array<{ name: string }>;
+      skpd: { 
+        nama_dinas: string;
+        no_dpa: string;
+        kode_organisasi: string;
+      } | null; 
     }>;
   };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'User', href: '/usermanagement' },
+  { title: 'Perangkat Daerah', href: '/PerangkatDaerah' },
 ];
 
 const loadingCreate = ref(false);
@@ -34,19 +37,21 @@ const deletingId = ref<number | null>(null);
 
 function goToCreatePage() {
   loadingCreate.value = true;
-  router.visit('/usermanagement/create', {
+  router.visit('/perangkatdaerah/create', {
     onFinish: () => (loadingCreate.value = false),
   });
 }
 
-function goToEditPage(id: number) {
-  router.visit(`/usermanagement/${id}/edit`);
+function goToShow(id: number) {
+  router.visit(route('perangkatdaerah.show', { id }));
 }
+
+
 
 function deleteUser(id: number) {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     deletingId.value = id;
-    router.delete(`/usermanagement/${id}`, {
+    router.delete(`/perangkatdaerah/${id}`, {
       onFinish: () => (deletingId.value = null),
     });
   }
@@ -67,7 +72,7 @@ function deleteUser(id: number) {
         >
           <Plus class="w-4 h-4" />
           <span v-if="loadingCreate">Membuka...</span>
-          <span v-else>Tambahkan</span>
+          <span v-else>Tambahkan PD</span>
         </Button>
       </div>
 
@@ -77,7 +82,9 @@ function deleteUser(id: number) {
             <TableRow>
               <TableHead class="w-[50px]">No</TableHead>
               <TableHead>Nama</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Nama SKPD</TableHead>
+              <TableHead>No DPA</TableHead>
+              <TableHead>Kode Organisasi</TableHead>
               <TableHead class="text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -93,13 +100,23 @@ function deleteUser(id: number) {
             >
               <TableCell>{{ index + 1 }}</TableCell>
               <TableCell>{{ user.name }}</TableCell>
-              <TableCell>{{ user.email }}</TableCell>
-              <!-- Menampilkan data SKPD -->
+              <TableCell>{{ user.skpd ? user.skpd.nama_dinas : '-' }}</TableCell>
+              <TableCell>{{ user.skpd ? user.skpd.no_dpa : '-' }}</TableCell>
+              <TableCell>{{ user.skpd ? user.skpd.kode_organisasi : '-' }}</TableCell>
               <TableCell>
                 <div class="flex items-center justify-center gap-2">
+
+                  <Button
+                    class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-2"
+                    @click="goToShow(user.id)"
+                  >
+                    <Eye class="w-4 h-4 mr-1" />
+                    Show
+                  </Button>
+
                   <Button
                     class="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-2"
-                    @click="goToEditPage(user.id)"
+                    @click="goToCreatePage(user.id)"
                   >
                     <Pencil class="w-4 h-4 mr-1" />
                     Edit

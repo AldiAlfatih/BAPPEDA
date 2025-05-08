@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('nip', 20)->unique();
             $table->string('no_hp', 15);
             $table->string('jenis_kelamin');
-            $table->date('tgl_lahir');
             $table->timestamps();
         });
     } 

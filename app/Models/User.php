@@ -7,6 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\UserDetail;
+use App\Models\Skpd;
+use App\Models\SkpdKepala;
+use App\Models\SkpdTugas;
+use App\Models\TimKerja;
 
 class User extends Authenticatable
 {
@@ -54,8 +59,20 @@ class User extends Authenticatable
     /**
      * Memastikan relasi ke profileSkpd bekerja dengan benar
      */
-    public function profileSkpd()
+    public function Skpd()
     {
-        return $this->hasOne(ProfileSkpd::class);
+        return $this->hasOne(Skpd::class);
+    }
+    public function skpdKepala()
+    {
+        return $this->hasMany(SkpdKepala::class);
+    }
+    public function skpdTugas()
+    {
+        return $this->hasMany(SkpdTugas::class);
+    }
+    public function timKerja()
+    {
+        return $this->hasMany(TimKerja::class);
     }
 }

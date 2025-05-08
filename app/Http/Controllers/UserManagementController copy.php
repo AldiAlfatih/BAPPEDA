@@ -38,10 +38,10 @@ class UserManagementController extends Controller
             'nip' => 'required|string|max:50',
             'no_hp' => 'required|string|max:20',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-
+            'nama_skpd' => 'nullable|string|max:255',
+            'no_dpa' => 'nullable|string|max:255',
+            'kode_organisasi' => 'nullable|string|max:100',
         ]);
-
-
 
         $user = User::create([
             'name' => $validated['name'],
@@ -58,41 +58,35 @@ class UserManagementController extends Controller
             'jenis_kelamin' => $validated['jenis_kelamin'],
         ]);
 
-        // if ($validated['role'] == 'perangkat_daerah') {
-        //     $user->SkpdKepala()->create([
-        //         // 'skpd_id' => $user->Skpd->id,
-        //         'user_id' => $user->id,
-        //     ]);
-        // }
+        if ($validated['role'] == 'perangkat_daerah') {
+            $user->Skpd()->create([
+                'user_id' => $user->id,
+                'nama_skpd' => $validated['nama_skpd'],
+                'no_dpa' => $validated['no_dpa'],
+                'kode_organisasi' => $validated['kode_organisasi'],
+            ]);
+            if ($validated['role'] == 'perangkat_daerah') {
+                $user->skpdKepala()->create([
+                    'skpd_id' => $user->Skpd->id,
+                    'user_id' => $user->id,
+                ]);
+            }
+            if ($validated['role'] == 'perangkat_daerah') {
+                $user->skpdTugas()->create([
+                    'skpd_id' => $user->Skpd->id,
+                    'user_id' => $user->id,
+                    'is_aktif' => 1,
+                ]);
+            }
+            if ($validated['role'] == 'perangkat_daerah') {
+                $user->timKerja()->create([
+                    'skpd_id' => $user->Skpd->id,
+                    'user_id' => $user->id,
+                ]);
+            }
 
-        // if ($validated['role'] == 'perangkat_daerah') {
-        //     $user->Skpd()->create([
-        //         'user_id' => $user->id,
-        //         'nama_skpd' => $validated['nama_skpd'],
-        //         'no_dpa' => $validated['no_dpa'],
-        //         'kode_organisasi' => $validated['kode_organisasi'],
-                
-        //     ]);
-        //     if ($validated['role'] == 'perangkat_daerah') {
-        //         $user->skpdKepala()->create([
-        //             'skpd_id' => $user->Skpd->id,
-        //             'user_id' => $user->id,
-        //         ]);
-        //     }
-        //     if ($validated['role'] == 'perangkat_daerah') {
-        //         $user->skpdTugas()->create([
-        //             'skpd_id' => $user->Skpd->id,
-        //             'user_id' => $user->id,
-        //             'is_aktif' => 1,
-        //         ]);
-        //     }
-        //     if ($validated['role'] == 'perangkat_daerah') {
-        //         $user->timKerja()->create([
-        //             'skpd_id' => $user->Skpd->id,
-        //             'user_id' => $user->id,
-        //         ]);
-        //     }
-        // }
+
+        }
 
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dibuat.');
     }
@@ -120,20 +114,24 @@ public function update(Request $request, User $user)
             'kode_organisasi' => 'nullable|string|max:100',
         ]);
 
+    // Update user basic info
     $user->update([
         'nama' => $validated['nama'],
         'email' => $validated['email'],
     ]);
 
+    // Update password if provided
     if (!empty($validated['password'])) {
         $user->update([
             'password' => Hash::make($validated['password']),
         ]);
     }
 
+    // Check if user detail exists
     $userDetail = UserDetail::where('user_id', $user->id)->first();
     
     if ($userDetail) {
+        // Update existing record
         $userDetail->update([
             'alamat' => $validated['alamat'],
             'nip' => $validated['nip'],
@@ -142,6 +140,7 @@ public function update(Request $request, User $user)
             
         ]);
     } else {
+        // Create new record with explicit user_id
         UserDetail::create([
             'user_id' => $user->id,
             'alamat' => $validated['alamat'],
@@ -151,10 +150,12 @@ public function update(Request $request, User $user)
         ]);
     }
 
+    // Update SKPD profile if user has 'perangkat_daerah' role
     if ($user->hasRole('perangkat_daerah')) {
         $skpd = skpd::where('user_id', $user->id)->first();
         
         if ($skpd) {
+            // Update existing record
             $skpd->update([
                 'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
                 'kode_urusan' => $validated['kode_urusan'],
@@ -162,6 +163,7 @@ public function update(Request $request, User $user)
                 'kode_organisasi' => $validated['kode_organisasi'],
             ]);
         } else {
+            // Create new record with explicit user_id
             skpd::create([
                 'user_id' => $user->id,
                 'nama_kepala_skpd' => $validated['nama_kepala_skpd'],

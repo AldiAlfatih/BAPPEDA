@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, Monitor, Bell, Info } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, Users, Monitor, Bell, Info } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 
@@ -24,20 +24,33 @@ const mainNavItems: NavItem[] = [
     },
 
     {
-        title: 'Manjemen Tim Kerja',
+        title: 'Manjemen Tim',
         href: '/usermanagement',
         icon: Users,
         guard: ['super_admin','admin'],
+        children: [
+        {
+            title: 'User',
+            href: '/usermanagement',
+        },
+        {
+            title: 'Perangkat Daerah',
+            href: '/perangkatdaerah',
+        },
+        ],
+        
     },
+
+
     {
         title: 'Monitoring',
         href: '/monitoring',
         icon: Monitor,
-        guard: ['admin'],
+        guard: ['admin','perangkat_daerah'],
         children: [
         {
-            title: 'History',
-            href: '#',
+            title: 'Monitoring',
+            href: '/monitoring',
         },
         {
             title: 'Starred',

@@ -20,7 +20,10 @@ class KodeNomenklatur extends Model
     {
         return $this->hasMany(KodeNomenklaturDetail::class, 'id_nomenklatur');
     }
-    
+    public function skpdTugas()
+    {
+        return $this->hasMany(SkpdTugas::class); 
+    }
     
 
     public function bidang_urusan_by_urusan()
@@ -55,4 +58,5 @@ class KodeNomenklatur extends Model
             return null;
         }
     }
+
 }

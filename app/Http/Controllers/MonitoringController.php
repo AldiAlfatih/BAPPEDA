@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Monitoring;;
 use Inertia\Inertia;
+use App\Models\User;
 
 class MonitoringController extends Controller
 {
@@ -13,7 +14,14 @@ class MonitoringController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Monitoring');
+        $user = Auth::user();
+
+        // Fetch the user's related skpd data
+        $userData = User::with('skpd')->find($user->id); // Get the authenticated user and their associated skpd data
+    
+        return Inertia::render('Monitoring', [
+            'user' => $userData, // Pass only the logged-in user's data to the Vue component
+        ]);
     }
     /**
      * Show the form for creating a new resource.

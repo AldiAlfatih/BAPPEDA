@@ -505,4 +505,3 @@ button {
     </div>
   </AppLayout>
 </template>
-

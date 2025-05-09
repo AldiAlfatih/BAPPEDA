@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Eye } from 'lucide-vue-next';
+import { Plus, Pencil, Eye } from 'lucide-vue-next';
 import { ref } from 'vue';
 import {
   Table,
@@ -33,7 +33,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const loadingCreate = ref(false);
-const deletingId = ref<number | null>(null);
 
 function goToCreatePage() {
   loadingCreate.value = true;
@@ -46,16 +45,6 @@ function goToShow(id: number) {
   router.visit(route('perangkatdaerah.show', { id }));
 }
 
-
-
-function deleteUser(id: number) {
-  if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-    deletingId.value = id;
-    router.delete(`/perangkatdaerah/${id}`, {
-      onFinish: () => (deletingId.value = null),
-    });
-  }
-}
 </script>
 
 <template>
@@ -120,16 +109,6 @@ function deleteUser(id: number) {
                   >
                     <Pencil class="w-4 h-4 mr-1" />
                     Edit
-                  </Button>
-
-                  <Button
-                    class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-2"
-                    :disabled="deletingId === user.id"
-                    @click="deleteUser(user.id)"
-                  >
-                    <Trash2 class="w-4 h-4 mr-1" />
-                    <span v-if="deletingId === user.id">Menghapus...</span>
-                    <span v-else>Hapus</span>
                   </Button>
                 </div>
               </TableCell>

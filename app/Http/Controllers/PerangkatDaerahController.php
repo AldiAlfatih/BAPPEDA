@@ -18,7 +18,7 @@ class PerangkatDaerahController extends Controller
      */
     public function index()
     {
-        $users = User::role('perangkat_daerah')->with('skpd')->paginate(10);
+        $users = User::role('perangkat_daerah')->with('skpd')->paginate(15);
 
         return Inertia::render('PerangkatDaerah', [
             'users' => $users,
@@ -43,20 +43,26 @@ class PerangkatDaerahController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_dinas' => 'required|string|max:255',  
+            'nama_dinas' => 'required|string|max:255',
             'no_dpa' => 'required|string|max:255',
             'kode_organisasi' => 'required|string|max:100',
-            'user_id' => 'required|exists:users,id',  
+            'user_id' => 'required|exists:users,id',
         ]);
-  
+        
         $user = User::find($validated['user_id']);
-
+        
         $skpd = Skpd::create([
-            'user_id' => $validated['user_id'],  
-            'nama_skpd' => $user->name,  
-            'nama_dinas' => $validated['nama_dinas'], 
+            'user_id' => $validated['user_id'],
+            'nama_skpd' => $user->name,
+            'nama_dinas' => $validated['nama_dinas'],
             'no_dpa' => $validated['no_dpa'],
             'kode_organisasi' => $validated['kode_organisasi'],
+        ]);
+        
+        SkpdKepala::create([
+            'skpd_id' => $skpd->id,
+            'user_id' => $validated['user_id'],
+            'is_aktif' => 1,
         ]);
         
         return redirect()->route('perangkatdaerah.index')->with('success', 'Data SKPD berhasil disimpan.');

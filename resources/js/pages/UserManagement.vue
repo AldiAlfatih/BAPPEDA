@@ -78,6 +78,7 @@ function deleteUser(id: number) {
               <TableHead class="w-[50px]">No</TableHead>
               <TableHead>Nama</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Roles</TableHead>
               <TableHead class="text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -94,6 +95,7 @@ function deleteUser(id: number) {
               <TableCell>{{ index + 1 }}</TableCell>
               <TableCell>{{ user.name }}</TableCell>
               <TableCell>{{ user.email }}</TableCell>
+              <TableCell>{{ user.roles?.[0]?.name || 'tidak ada' }}</TableCell>
               <!-- Menampilkan data SKPD -->
               <TableCell>
                 <div class="flex items-center justify-center gap-2">

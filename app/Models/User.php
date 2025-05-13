@@ -75,4 +75,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(TimKerja::class);
     }
+    public function skpds()
+    {
+        return $this->belongsTo(Skpd::class);
+    }
+
+
 }

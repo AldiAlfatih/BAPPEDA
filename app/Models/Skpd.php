@@ -12,6 +12,7 @@ class Skpd extends Model
     protected $fillable = [
         'user_id',
         'nama_skpd',
+        'nama_operator',
         'nama_dinas',
         'no_dpa',
         'kode_organisasi',

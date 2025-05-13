@@ -10,13 +10,14 @@ use App\Models\SkpdTugas;
 use App\Models\TimKerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('Skpd')->paginate(10);
+        $users = User::with('roles')->paginate(10);
         return Inertia::render('UserManagement', [
             'users' => $users,
         ]);
@@ -38,10 +39,7 @@ class UserManagementController extends Controller
             'nip' => 'required|string|max:50',
             'no_hp' => 'required|string|max:20',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-
         ]);
-
-
 
         $user = User::create([
             'name' => $validated['name'],
@@ -58,122 +56,81 @@ class UserManagementController extends Controller
             'jenis_kelamin' => $validated['jenis_kelamin'],
         ]);
 
-        // if ($validated['role'] == 'perangkat_daerah') {
-        //     $user->SkpdKepala()->create([
-        //         // 'skpd_id' => $user->Skpd->id,
-        //         'user_id' => $user->id,
-        //     ]);
-        // }
-
-        // if ($validated['role'] == 'perangkat_daerah') {
-        //     $user->Skpd()->create([
-        //         'user_id' => $user->id,
-        //         'nama_skpd' => $validated['nama_skpd'],
-        //         'no_dpa' => $validated['no_dpa'],
-        //         'kode_organisasi' => $validated['kode_organisasi'],
-                
-        //     ]);
-        //     if ($validated['role'] == 'perangkat_daerah') {
-        //         $user->skpdKepala()->create([
-        //             'skpd_id' => $user->Skpd->id,
-        //             'user_id' => $user->id,
-        //         ]);
-        //     }
-        //     if ($validated['role'] == 'perangkat_daerah') {
-        //         $user->skpdTugas()->create([
-        //             'skpd_id' => $user->Skpd->id,
-        //             'user_id' => $user->id,
-        //             'is_aktif' => 1,
-        //         ]);
-        //     }
-        //     if ($validated['role'] == 'perangkat_daerah') {
-        //         $user->timKerja()->create([
-        //             'skpd_id' => $user->Skpd->id,
-        //             'user_id' => $user->id,
-        //         ]);
-        //     }
-        // }
-
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dibuat.');
     }
-public function edit(User $user)
-{
-    $user->load(['userDetail', 'skpd', 'roles']);
+
+    public function edit(User $user)
+    {
+        $user->load('userDetail');
     
-    return Inertia::render('usermanagement/Edit', [
-        'user' => $user,
-    ]);
-}
-
-public function update(Request $request, User $user)
-{
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:perangkat_daerah,operator',
-            'alamat' => 'required|string|max:255',
-            'nip' => 'required|string|max:50',
-            'no_hp' => 'required|string|max:20',
-            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-            'no_dpa' => 'nullable|string|max:255',
-            'kode_organisasi' => 'nullable|string|max:100',
-        ]);
-
-    $user->update([
-        'nama' => $validated['nama'],
-        'email' => $validated['email'],
-    ]);
-
-    if (!empty($validated['password'])) {
-        $user->update([
-            'password' => Hash::make($validated['password']),
-        ]);
-    }
-
-    $userDetail = UserDetail::where('user_id', $user->id)->first();
-    
-    if ($userDetail) {
-        $userDetail->update([
-            'alamat' => $validated['alamat'],
-            'nip' => $validated['nip'],
-            'no_hp' => $validated['no_hp'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-            
-        ]);
-    } else {
-        UserDetail::create([
-            'user_id' => $user->id,
-            'alamat' => $validated['alamat'],
-            'nip' => $validated['nip'],
-            'no_hp' => $validated['no_hp'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-        ]);
-    }
-
-    if ($user->hasRole('perangkat_daerah')) {
-        $skpd = skpd::where('user_id', $user->id)->first();
+        $roles = $user->getRoleNames()->toArray();
         
-        if ($skpd) {
-            $skpd->update([
-                'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
-                'kode_urusan' => $validated['kode_urusan'],
-                'nama_skpd' => $validated['nama_skpd'],
-                'kode_organisasi' => $validated['kode_organisasi'],
-            ]);
-        } else {
-            skpd::create([
-                'user_id' => $user->id,
-                'nama_kepala_skpd' => $validated['nama_kepala_skpd'],
-                'kode_urusan' => $validated['kode_urusan'],
-                'nama_skpd' => $validated['nama_skpd'],
-                'kode_organisasi' => $validated['kode_organisasi'],
+        return Inertia::render('usermanagement/Edit', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $roles,
+                'userDetail' => $user->userDetail ? [
+                    'alamat' => $user->userDetail->alamat,
+                    'nip' => $user->userDetail->nip,
+                    'no_hp' => $user->userDetail->no_hp,
+                    'jenis_kelamin' => $user->userDetail->jenis_kelamin,
+                ] : null,
+            ],
+        ]);
+    }
+
+    public function update(Request $request, User $user)
+    {
+        $validatedData = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'email' => [
+                'string',
+                'email',
+                Rule::unique('users')->ignore($user->id),
+            ],
+            'password' => 'nullable|string|min:8|confirmed',
+            'role' => 'nullable|in:perangkat_daerah,operator',
+            'alamat' => 'nullable|string|max:255',
+            'nip' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('user_details', 'nip')->ignore($user->userDetail->id ?? 0),
+            ],
+            'no_hp' => 'nullable|string|max:20',
+            'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
+        ]);
+
+        $user->fill([
+            'name' => $validatedData['name'] ?? $user->name,
+            'email' => $validatedData['email'],
+        ])->save();
+        
+        if (!empty($validatedData['password'])) {
+            $user->update([
+                'password' => Hash::make($validatedData['password'])
             ]);
         }
-    }
 
-    return redirect()->route('usermanagement.index')->with('success', 'Data pengguna berhasil diperbarui.');
-}
+        if (!empty($validatedData['role'])) {
+            $user->syncRoles([$validatedData['role']]);
+        }
+
+        $userDetailFields = array_filter(
+            array_intersect_key($validatedData, array_flip(['alamat', 'nip', 'no_hp', 'jenis_kelamin'])),
+            function ($value) { return !is_null($value); }
+        );
+        
+        if (!empty($userDetailFields)) {
+            if ($user->userDetail) {
+                $user->userDetail->update($userDetailFields);
+            }
+        }
+
+        return redirect()->route('usermanagement.index')->with('success', 'Data pengguna berhasil diperbarui.');
+    }
 
     public function destroy(User $user)
     {

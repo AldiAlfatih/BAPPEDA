@@ -205,10 +205,13 @@ class KodeNomenklaturController extends Controller
      */
     public function edit(string $id)
     {
+        // Get the main record
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
+        
+        // Get associated detail record
         $detail = KodeNomenklaturDetail::where('id_nomenklatur', $id)->first();
         
-        // Ambil data untuk dropdown
+        // Get data for dropdowns
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->get();
@@ -295,7 +298,7 @@ class KodeNomenklaturController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // Validasi request
+        // Validate the request
         $validated = $request->validate([
             'jenis_nomenklatur' => 'required|integer|min:0|max:4',
             'nomor_kode' => 'required|string',
@@ -315,16 +318,44 @@ class KodeNomenklaturController extends Controller
             'nomenklatur' => $validated['nomenklatur'],
         ]);
 
-        // Update atau buat detail
-        if ($validated['jenis_nomenklatur'] > 0) {
-            $detailData = [
-                'id_urusan' => $validated['urusan'] ?? null,
-                'id_bidang_urusan' => $validated['bidang_urusan'] ?? null,
-                'id_program' => $validated['program'] ?? null,
-                'id_kegiatan' => $validated['kegiatan'] ?? null,
-                'id_sub_kegiatan' => $validated['subkegiatan'] ?? null,
-            ];
-
+        // Prepare detail data based on the jenis_nomenklatur
+        $detailData = [];
+        
+        switch ($validated['jenis_nomenklatur']) {
+            case 0: // Urusan
+                // For Urusan, id_urusan references itself
+                $detailData['id_urusan'] = $kodeNomenklatur->id;
+                break;
+                
+            case 1: // Bidang Urusan
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $kodeNomenklatur->id;
+                break;
+                
+            case 2: // Program
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
+                $detailData['id_program'] = $kodeNomenklatur->id;
+                break;
+                
+            case 3: // Kegiatan
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
+                $detailData['id_program'] = $validated['program'];
+                $detailData['id_kegiatan'] = $kodeNomenklatur->id;
+                break;
+                
+            case 4: // Sub Kegiatan
+                $detailData['id_urusan'] = $validated['urusan'];
+                $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
+                $detailData['id_program'] = $validated['program'];
+                $detailData['id_kegiatan'] = $validated['kegiatan'];
+                $detailData['id_sub_kegiatan'] = $kodeNomenklatur->id;
+                break;
+        }
+        
+        // Update or create the detail record
+        if (!empty($detailData)) {
             KodeNomenklaturDetail::updateOrCreate(
                 ['id_nomenklatur' => $id],
                 $detailData

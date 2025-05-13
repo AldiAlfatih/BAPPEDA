@@ -1,190 +1,266 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ref, computed } from 'vue';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ArrowLeft, Save } from 'lucide-vue-next';
+import { ref} from 'vue';
 
-// Breadcrumbs
+const props = defineProps<{
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    roles: string[];
+    userDetail?: {
+      alamat: string;
+      nip: string;
+      no_hp: string;
+      jenis_kelamin: string;
+    };
+  };
+}>();
+
 const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'User Management',
-    href: '/usermanagement',
-  },
-  {
-    title: 'Edit User',
-    href: '/usermanagement/edit',
-  },
+  { title: 'User', href: '/usermanagement' },
+  { title: 'Edit User', href: `/usermanagement/${props.user.id}/edit` },
 ];
 
-// Props dari backend
-const props = defineProps({
-  user: {
-    type: Object,
-    required: true,
-  },
-});
+const isSubmitting = ref(false);
+const showPassword = ref(false);
 
-// Check if user has "perangkat_daerah" role
-const hasPerangkatDaerahRole = computed(() => {
-  return props.user.roles?.some(role => role.name === 'perangkat_daerah') || false;
-});
-
-// Setup form
+// Form dengan data yang sudah terisi dari database
 const form = useForm({
-  name: props.user.name || '',
-  email: props.user.email || '',
+  _method: 'PATCH',
+  name: props.user.name,
+  email: props.user.email,
   password: '',
   password_confirmation: '',
-  role: props.user.roles?.length > 0 ? props.user.roles[0].name : '',
-  alamat: props.user.user_detail?.alamat || '',
-  nip: props.user.user_detail?.nip || '',
-  no_hp: props.user.user_detail?.no_hp || '',
-  jenis_kelamin: props.user.user_detail?.jenis_kelamin || '',
-  tgl_lahir: props.user.user_detail?.tgl_lahir || '',
-  nama_kepala_skpd: props.user.profile_skpd?.nama_kepala_skpd || '',
-  kode_urusan: props.user.profile_skpd?.kode_urusan || '',
-  nama_skpd: props.user.profile_skpd?.nama_skpd || '',
-  kode_organisasi: props.user.profile_skpd?.kode_organisasi || '',
+  role: props.user.roles.length > 0 ? props.user.roles[0] : 'operator',
+  alamat: props.user.userDetail?.alamat || '',
+  nip: props.user.userDetail?.nip || '',
+  no_hp: props.user.userDetail?.no_hp || '',
+  jenis_kelamin: props.user.userDetail?.jenis_kelamin || '',
 });
 
-const isSubmitting = ref(false);
-
-// Submit update
-function updateUser() {
+function submit() {
   isSubmitting.value = true;
-
-  form.put(`/usermanagement/${props.user.id}`, {
+  
+  // Kirim form ke endpoint update
+  form.post(`/usermanagement/${props.user.id}`, {
     onSuccess: () => {
-      alert('Berhasil update data!');
+      // Redirect ke halaman index setelah berhasil
+      window.location.href = '/usermanagement';
     },
     onError: (errors) => {
       console.error(errors);
-      alert('Terjadi kesalahan saat update!');
+      isSubmitting.value = false;
     },
     onFinish: () => {
       isSubmitting.value = false;
     },
+    // Pastikan transformasi data dimatikan agar semua field dikirim
+    // Removed invalid 'transform' property
   });
+}
+
+function goBack() {
+  window.history.back();
 }
 </script>
 
 <template>
   <Head title="Edit User" />
+
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-4">Edit User</h1>
-      <form @submit.prevent="updateUser" class="flex flex-col gap-4">
-
-        <div>
-          <Label for="name">Nama</Label>
-          <Input id="name" v-model="form.name" type="text" required />
-          <div v-if="form.errors.name" class="text-red-500 text-sm mt-1">{{ form.errors.name }}</div>
-        </div>
-
-        <div>
-          <Label for="email">Email</Label>
-          <Input id="email" v-model="form.email" type="email" required />
-          <div v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</div>
-        </div>
-
-        <div>
-          <Label for="password">Password (Kosongkan jika tidak ingin ubah)</Label>
-          <Input id="password" v-model="form.password" type="password" />
-          <div v-if="form.errors.password" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</div>
-        </div>
-
-        <div>
-          <Label for="password_confirmation">Konfirmasi Password</Label>
-          <Input id="password_confirmation" v-model="form.password_confirmation" type="password" />
-          <div v-if="form.errors.password_confirmation" class="text-red-500 text-sm mt-1">{{ form.errors.password_confirmation }}</div>
-        </div>
-
-        <!-- Role selector - uncomment if role should be editable -->
-        <!-- 
-        <div>
-          <Label for="role">Role</Label>
-          <select id="role" v-model="form.role" class="w-full py-2 px-3 border rounded" required>
-            <option value="perangkat_daerah">Perangkat Daerah</option>
-            <option value="operator">Operator</option>
-          </select>
-          <div v-if="form.errors.role" class="text-red-500 text-sm mt-1">{{ form.errors.role }}</div>
-        </div>
-        -->
-
-        <div>
-          <Label for="alamat">Alamat</Label>
-          <Input id="alamat" v-model="form.alamat" type="text" required />
-          <div v-if="form.errors.alamat" class="text-red-500 text-sm mt-1">{{ form.errors.alamat }}</div>
-        </div>
-
-        <div>
-          <Label for="nip">NIP</Label>
-          <Input id="nip" v-model="form.nip" type="text" required />
-          <div v-if="form.errors.nip" class="text-red-500 text-sm mt-1">{{ form.errors.nip }}</div>
-        </div>
-
-        <div>
-          <Label for="no_hp">No HP</Label>
-          <Input id="no_hp" v-model="form.no_hp" type="text" required />
-          <div v-if="form.errors.no_hp" class="text-red-500 text-sm mt-1">{{ form.errors.no_hp }}</div>
-        </div>
-
-        <div>
-          <Label for="jenis_kelamin">Jenis Kelamin</Label>
-          <select id="jenis_kelamin" v-model="form.jenis_kelamin" class="w-full py-2 px-3 border rounded" required>
-            <option value="Laki-laki">Laki-laki</option>
-            <option value="Perempuan">Perempuan</option>
-          </select>
-          <div v-if="form.errors.jenis_kelamin" class="text-red-500 text-sm mt-1">{{ form.errors.jenis_kelamin }}</div>
-        </div>
-
-        <div>
-          <Label for="tgl_lahir">Tanggal Lahir</Label>
-          <Input id="tgl_lahir" v-model="form.tgl_lahir" type="date" />
-          <div v-if="form.errors.tgl_lahir" class="text-red-500 text-sm mt-1">{{ form.errors.tgl_lahir }}</div>
-        </div>
-
-        <!-- SKPD fields - only show if user has perangkat_daerah role -->
-        <div v-if="hasPerangkatDaerahRole" class="mt-4 border-t pt-4">
-          <h2 class="text-lg font-semibold mb-3">Informasi SKPD</h2>
-          
-          <div>
-            <Label for="nama_kepala_skpd">Nama Kepala SKPD</Label>
-            <Input id="nama_kepala_skpd" v-model="form.nama_kepala_skpd" type="text" />
-            <div v-if="form.errors.nama_kepala_skpd" class="text-red-500 text-sm mt-1">{{ form.errors.nama_kepala_skpd }}</div>
+    <div class="container mx-auto p-4">
+      <Card class="max-w-3xl mx-auto">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="text-xl font-bold">Edit User</CardTitle>
+              <CardDescription>
+                Perbarui informasi pengguna
+              </CardDescription>
+            </div>
+            <Button variant="outline" @click="goBack" class="flex items-center gap-1">
+              <ArrowLeft class="w-4 h-4" />
+              Kembali
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+          <form @submit.prevent="submit" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Informasi Dasar -->
+              <div class="space-y-4">
+                <div>
+                  <Label for="name">Nama</Label>
+                  <Input 
+                    id="name" 
+                    v-model="form.name" 
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.name" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.name }}
+                  </div>
+                </div>
 
-          <div>
-            <Label for="kode_urusan">Kode Urusan</Label>
-            <Input id="kode_urusan" v-model="form.kode_urusan" type="text" />
-            <div v-if="form.errors.kode_urusan" class="text-red-500 text-sm mt-1">{{ form.errors.kode_urusan }}</div>
-          </div>
+                <div>
+                  <Label for="email">Email <span class="text-red-500">*</span></Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    v-model="form.email" 
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.email" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.email }}
+                  </div>
+                </div>
 
-          <div>
-            <Label for="nama_skpd">Nama SKPD</Label>
-            <Input id="nama_skpd" v-model="form.nama_skpd" type="text" />
-            <div v-if="form.errors.nama_skpd" class="text-red-500 text-sm mt-1">{{ form.errors.nama_skpd }}</div>
-          </div>
+                <div>
+                  <Label for="role">Role</Label>
+                  <Select v-model="form.role">
+                    <SelectTrigger class="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="perangkat_daerah">Perangkat Daerah</SelectItem>
+                      <SelectItem value="operator">Operator</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div v-if="form.errors.role" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.role }}
+                  </div>
+                </div>
+              </div>
 
-          <div>
-            <Label for="kode_organisasi">Kode Organisasi</Label>
-            <Input id="kode_organisasi" v-model="form.kode_organisasi" type="text" />
-            <div v-if="form.errors.kode_organisasi" class="text-red-500 text-sm mt-1">{{ form.errors.kode_organisasi }}</div>
-          </div>
-        </div>
+              <!-- Informasi Detail -->
+              <div class="space-y-4">
+                <div>
+                  <Label for="alamat">Alamat</Label>
+                  <Input 
+                    id="alamat" 
+                    v-model="form.alamat" 
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.alamat" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.alamat }}
+                  </div>
+                </div>
 
-        <div class="flex gap-4 mt-6">
-          <Button type="submit" :disabled="isSubmitting" class="bg-blue-500 text-white">
-            {{ isSubmitting ? 'Updating...' : 'Simpan Perubahan' }}
-          </Button>
-          <Button type="button" variant="outline" @click="$inertia.visit('/usermanagement')">
+                <div>
+                  <Label for="nip">NIP</Label>
+                  <Input 
+                    id="nip" 
+                    v-model="form.nip" 
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.nip" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.nip }}
+                  </div>
+                </div>
+
+                <div>
+                  <Label for="no_hp">No. HP</Label>
+                  <Input 
+                    id="no_hp" 
+                    v-model="form.no_hp" 
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.no_hp" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.no_hp }}
+                  </div>
+                </div>
+
+                <div>
+                  <Label for="jenis_kelamin">Jenis Kelamin</Label>
+                  <Select v-model="form.jenis_kelamin">
+                    <SelectTrigger class="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                      <SelectItem value="Perempuan">Perempuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div v-if="form.errors.jenis_kelamin" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.jenis_kelamin }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Password Section -->
+            <div class="border-t pt-6">
+              <h3 class="text-lg font-medium mb-4">Ubah Password (opsional)</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label for="password">Password Baru</Label>
+                  <Input 
+                    id="password" 
+                    :type="showPassword ? 'text' : 'password'" 
+                    v-model="form.password" 
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.password" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.password }}
+                  </div>
+                </div>
+
+                <div>
+                  <Label for="password_confirmation">Konfirmasi Password</Label>
+                  <Input 
+                    id="password_confirmation" 
+                    :type="showPassword ? 'text' : 'password'" 
+                    v-model="form.password_confirmation" 
+                    class="mt-1"
+                  />
+                </div>
+              </div>
+              <div class="mt-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="showPassword" class="rounded" />
+                  <span class="text-sm">Tampilkan password</span>
+                </label>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+        <CardFooter class="flex justify-end gap-3">
+          <Button variant="outline" @click="goBack">
             Batal
           </Button>
-        </div>
-      </form>
+          <Button 
+            type="submit" 
+            @click="submit" 
+            :disabled="isSubmitting"
+            class="flex items-center gap-1"
+          >
+            <Save class="w-4 h-4" />
+            <span v-if="isSubmitting">Menyimpan...</span>
+            <span v-else>Simpan Perubahan</span>
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   </AppLayout>
 </template>

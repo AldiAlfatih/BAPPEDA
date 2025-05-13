@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage, useRouter } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import { Button } from '@/Components/ui/button';
 import { Label } from '@/Components/ui/label';
@@ -33,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const flash = computed(() => page.props.flash || {});
+const flash = computed(() => (page.props.flash as { success?: string; error?: string }) || {});
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Perangkat Daerah', href: '/perangkatdaerah' },
@@ -50,9 +50,7 @@ const kegiatan = ref<number | null>(null);
 const subkegiatan = ref<number | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const selectedNomenklaturId = ref<number | null>(null);
 
-// Fixed the missing comma here
 const jenisNomenklaturOptions = [
   { value: 0, label: "Urusan" },
   { value: 1, label: "Bidang Urusan" },
@@ -61,48 +59,32 @@ const jenisNomenklaturOptions = [
   { value: 4, label: "Sub Kegiatan" }
 ];
 
-// Make sure we're only showing urusan items in the urusan dropdown
+// Filtered options for each dropdown
 const urusanOptions = computed(() => {
-  // Filter to ensure we're only getting items where jenis is 0 (Urusan)
-  const filteredUrusanList = props.urusanList.filter(item => 
-    item.jenis_nomenklatur === 0
-  );
-  
-  console.log('Available urusan items:', filteredUrusanList);
-  
-  return filteredUrusanList.map((item) => ({
-    label: `${item.nomor_kode} - ${item.nomenklatur}`,
-    value: item.id
-  }));
+  return props.urusanList
+    .filter(item => item.jenis_nomenklatur === 0)
+    .map((item) => ({
+      label: `${item.nomor_kode} - ${item.nomenklatur}`,
+      value: item.id
+    }));
 });
 
-// Make sure bidang urusan is properly filtered based on the selected urusan
 const bidangUrusanOptions = computed(() => {
   if (!urusan.value) return [];
   
-  const filteredBidangList = props.bidangUrusanList.filter((item) => 
-    // Ensure we only get bidang urusan items related to the selected urusan
-    item.urusan_id === urusan.value && 
-    // And double check that these are actually bidang urusan items
-    item.jenis_nomenklatur === 1
-  );
-  
-  console.log('Filtered bidang urusan for urusan ID', urusan.value, ':', filteredBidangList);
-  
-  return filteredBidangList.map((item) => ({
-    label: `${item.nomor_kode} - ${item.nomenklatur}`,
-    value: item.id
-  }));
+  return props.bidangUrusanList
+    .filter(item => item.jenis_nomenklatur === 1 && item.urusan_id === urusan.value)
+    .map((item) => ({
+      label: `${item.nomor_kode} - ${item.nomenklatur}`,
+      value: item.id
+    }));
 });
 
 const programOptions = computed(() => {
   if (!bidangUrusan.value) return [];
   
   return props.programList
-    .filter((item) => 
-      item.bidang_urusan_id === bidangUrusan.value && 
-      item.jenis_nomenklatur === 2
-    )
+    .filter(item => item.jenis_nomenklatur === 2 && item.bidang_urusan_id === bidangUrusan.value)
     .map((item) => ({
       label: `${item.nomor_kode} - ${item.nomenklatur}`,
       value: item.id
@@ -113,10 +95,7 @@ const kegiatanOptions = computed(() => {
   if (!program.value) return [];
   
   return props.kegiatanList
-    .filter((item) => 
-      item.program_id === program.value &&
-      item.jenis_nomenklatur === 3
-    )
+    .filter(item => item.jenis_nomenklatur === 3 && item.program_id === program.value)
     .map((item) => ({
       label: `${item.nomor_kode} - ${item.nomenklatur}`,
       value: item.id
@@ -127,63 +106,63 @@ const subkegiatanOptions = computed(() => {
   if (!kegiatan.value) return [];
   
   return props.subkegiatanList
-    .filter((item) => 
-      item.kegiatan_id === kegiatan.value &&
-      item.jenis_nomenklatur === 4
-    )
+    .filter(item => item.jenis_nomenklatur === 4 && item.kegiatan_id === kegiatan.value)
     .map((item) => ({
       label: `${item.nomor_kode} - ${item.nomenklatur}`,
       value: item.id
     }));
 });
 
-// Watch for changes and update the selectedNomenklatur
-watch([jenisNomenklatur, urusan, bidangUrusan, program, kegiatan, subkegiatan], () => {
-  updateSelectedNomenklaturId();
-});
-
-function handleJenisChange(value: number) {
-  jenisNomenklatur.value = typeof value === 'string' ? parseInt(value, 10) : value;
+watch(jenisNomenklatur, () => {
   urusan.value = null;
-  // Reset all dependent fields
   bidangUrusan.value = null;
   program.value = null;
   kegiatan.value = null;
   subkegiatan.value = null;
-  // Reset the selected nomenklatur ID
-  updateSelectedNomenklaturId();
-}
+});
 
-function updateSelectedNomenklaturId() {
-  switch (jenisNomenklatur.value) {
-    case 0: 
-      selectedNomenklaturId.value = urusan.value;
-      break;
-    case 1: 
-      selectedNomenklaturId.value = bidangUrusan.value;
-      break;
-    case 2: 
-      selectedNomenklaturId.value = program.value;
-      break;
-    case 3: 
-      selectedNomenklaturId.value = kegiatan.value;
-      break;
-    case 4: 
-      selectedNomenklaturId.value = subkegiatan.value;
-      break;
-    default:
-      selectedNomenklaturId.value = null;
-  }
+watch(urusan, () => {
+  bidangUrusan.value = null;
+  program.value = null;
+  kegiatan.value = null;
+  subkegiatan.value = null;
+});
+
+watch(bidangUrusan, () => {
+  program.value = null;
+  kegiatan.value = null;
+  subkegiatan.value = null;
+});
+
+watch(program, () => {
+  kegiatan.value = null;
+  subkegiatan.value = null;
+});
+
+watch(kegiatan, () => {
+  subkegiatan.value = null;
+});
+
+function handleJenisChange(value: number) {
+  jenisNomenklatur.value = typeof value === 'string' ? parseInt(value, 10) : value;
 }
 
 function isFormValid() {
+  if (jenisNomenklatur.value === null) return false;
+  
   switch (jenisNomenklatur.value) {
-    case 0: return !!urusan.value;
-    case 1: return !!bidangUrusan.value && !!urusan.value;
-    case 2: return !!program.value && !!bidangUrusan.value && !!urusan.value;
-    case 3: return !!kegiatan.value && !!program.value && !!bidangUrusan.value && !!urusan.value;
-    case 4: return !!subkegiatan.value && !!kegiatan.value && !!program.value && !!bidangUrusan.value && !!urusan.value;
-    default: return false;
+    case 0: // Urusan
+      return urusan.value !== null;
+    case 1: // Bidang Urusan
+      return urusan.value !== null && bidangUrusan.value !== null;
+    case 2: // Program
+      return urusan.value !== null && bidangUrusan.value !== null && program.value !== null;
+    case 3: // Kegiatan
+      return urusan.value !== null && bidangUrusan.value !== null && program.value !== null && kegiatan.value !== null;
+    case 4: // Sub Kegiatan
+      return urusan.value !== null && bidangUrusan.value !== null && program.value !== null && kegiatan.value !== null && subkegiatan.value !== null;
+    default:
+      return false;
   }
 }
 
@@ -204,15 +183,24 @@ function resetForm() {
   program.value = null;
   kegiatan.value = null;
   subkegiatan.value = null;
-  selectedNomenklaturId.value = null;
   error.value = null;
+}
+
+function getSelectedNomenklaturId() {
+  switch (jenisNomenklatur.value) {
+    case 0: return urusan.value;
+    case 1: return bidangUrusan.value;
+    case 2: return program.value;
+    case 3: return kegiatan.value;
+    case 4: return subkegiatan.value;
+    default: return null;
+  }
 }
 
 function saveTugas() {
   error.value = null;
   
-  // Determine which ID to use based on the current selection type
-  let kodeNomenklaturId = selectedNomenklaturId.value;
+  const kodeNomenklaturId = getSelectedNomenklaturId();
   
   if (!kodeNomenklaturId || !props.user.skpd?.id) {
     error.value = 'Silakan pilih nomenklatur dengan lengkap';
@@ -221,26 +209,16 @@ function saveTugas() {
   
   loading.value = true;
   
-  // Debug what we're submitting
-  console.log('Submitting data:', {
-    skpd_id: props.user.skpd.id,
-    kode_nomenklatur_id: kodeNomenklaturId,
-    jenis_nomenklatur: jenisNomenklatur.value,
-    is_aktif: 1
-  });
-
   router.post('/skpdtugas', {
     skpd_id: props.user.skpd.id,
     kode_nomenklatur_id: kodeNomenklaturId,
     is_aktif: 1
   }, {
-    onSuccess: (page) => {
-      console.log('Success response:', page);
+    onSuccess: () => {
       closeModal();
       loading.value = false;
     },
     onError: (errors) => {
-      console.error('Error response:', errors);
       loading.value = false;
       if (errors.error) {
         error.value = errors.error;
@@ -259,7 +237,7 @@ function deleteTugas(id: number) {
   }
 }
 
-function getTaskLabel(task) {
+function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: any; }; }) {
   return `${task.kode_nomenklatur.nomor_kode} - ${task.kode_nomenklatur.nomenklatur}`;
 }
 </script>
@@ -325,7 +303,7 @@ button {
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold">Tugas PD</h3>
           <button class="px-4 py-2 bg-black text-white rounded hover:bg-gray-700" @click="openModal">
-            + Tambah
+            Tambah Tugas
           </button>
         </div>
 
@@ -355,7 +333,7 @@ button {
 
       <div class="mt-6 flex justify-end">
         <Button type="button" variant="outline" class="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-        @click="$inertia.visit('/perangkatdaerah')">
+        @click="router.visit('/perangkatdaerah')">
             Kembali
         </Button>
       </div>
@@ -377,7 +355,7 @@ button {
               <select
                 id="jenis_nomenklatur"
                 v-model="jenisNomenklatur"
-                @change="handleJenisChange($event.target.value)"
+                @change="handleJenisChange(Number(($event.target as HTMLSelectElement).value))"
                 class="border rounded px-3 py-2"
                 required
               >
@@ -392,7 +370,8 @@ button {
               </select>
             </div>
 
-            <div v-if="jenisNomenklatur != null" class="flex flex-col">
+            <!-- Urusan Dropdown (Always visible if jenisNomenklatur is selected) -->
+            <div v-if="jenisNomenklatur !== null" class="flex flex-col">
               <Label for="urusan">Urusan</Label>
               <select
                 id="urusan"
@@ -411,13 +390,14 @@ button {
               </select>
             </div>
 
-            <div v-if="jenisNomenklatur >= 1 && urusan" class="flex flex-col">
+            <!-- Bidang Urusan Dropdown -->
+            <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 1 && urusan !== null" class="flex flex-col">
               <Label for="bidang_urusan">Bidang Urusan</Label>
               <select
                 id="bidang_urusan"
                 v-model="bidangUrusan"
                 class="border rounded px-3 py-2"
-                :required="jenisNomenklatur >= 1"
+                required
               >
                 <option value="" disabled selected>Pilih Bidang Urusan</option>
                 <option
@@ -430,13 +410,14 @@ button {
               </select>
             </div>
 
-            <div v-if="jenisNomenklatur >= 2 && bidangUrusan" class="flex flex-col">
+            <!-- Program Dropdown -->
+            <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 2 && bidangUrusan !== null" class="flex flex-col">
               <Label for="program">Program</Label>
               <select
                 id="program"
                 v-model="program"
                 class="border rounded px-3 py-2"
-                :required="jenisNomenklatur >= 2"
+                required
               >
                 <option value="" disabled selected>Pilih Program</option>
                 <option
@@ -449,13 +430,14 @@ button {
               </select>
             </div>
 
-            <div v-if="jenisNomenklatur >= 3 && program" class="flex flex-col">
+            <!-- Kegiatan Dropdown -->
+            <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 3 && program !== null" class="flex flex-col">
               <Label for="kegiatan">Kegiatan</Label>
               <select
                 id="kegiatan"
                 v-model="kegiatan"
                 class="border rounded px-3 py-2"
-                :required="jenisNomenklatur >= 3"
+                required
               >
                 <option value="" disabled selected>Pilih Kegiatan</option>
                 <option
@@ -468,15 +450,16 @@ button {
               </select>
             </div>
 
-            <div v-if="jenisNomenklatur >= 4 && kegiatan" class="flex flex-col">
-              <Label for="subkegiatan">Subkegiatan</Label>
+            <!-- Sub Kegiatan Dropdown -->
+            <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 4 && kegiatan !== null" class="flex flex-col">
+              <Label for="subkegiatan">Sub Kegiatan</Label>
               <select
                 id="subkegiatan"
                 v-model="subkegiatan"
                 class="border rounded px-3 py-2"
-                :required="jenisNomenklatur >= 4"
+                required
               >
-                <option value="" disabled selected>Pilih Subkegiatan</option>
+                <option value="" disabled selected>Pilih Sub Kegiatan</option>
                 <option
                   v-for="option in subkegiatanOptions"
                   :key="option.value"
@@ -487,6 +470,7 @@ button {
               </select>
             </div>
 
+            <!-- Form Buttons -->
             <div class="flex justify-end space-x-2 pt-4">
               <button type="button" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700" @click="closeModal">
                 Batal
@@ -495,6 +479,7 @@ button {
                 type="submit" 
                 class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 :disabled="loading || !isFormValid()"
+                :class="{ 'opacity-50 cursor-not-allowed': loading || !isFormValid() }"
               >
                 {{ loading ? 'Menyimpan...' : 'Simpan' }}
               </button>

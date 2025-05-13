@@ -21,6 +21,7 @@ const props = defineProps<{
       name: string;
       skpd: { 
         nama_dinas: string;
+        nama_operator: string;
         no_dpa: string;
         kode_organisasi: string;
       } | null; 
@@ -41,10 +42,13 @@ function goToCreatePage() {
   });
 }
 
+function goToEditPage(id: number) {
+  router.visit(route('perangkatdaerah.edit', { id }));
+}
+
 function goToShow(id: number) {
   router.visit(route('perangkatdaerah.show', { id }));
 }
-
 </script>
 
 <template>
@@ -70,8 +74,10 @@ function goToShow(id: number) {
           <TableHeader>
             <TableRow>
               <TableHead class="w-[50px]">No</TableHead>
-              <TableHead>Nama</TableHead>
-              <TableHead>Nama SKPD</TableHead>
+              <TableHead>Nama Dinas</TableHead>
+              <TableHead>Nama Penanggung Jawab</TableHead>
+              <TableHead>Nama Kepala Daerah</TableHead>
+
               <TableHead>No DPA</TableHead>
               <TableHead>Kode Organisasi</TableHead>
               <TableHead class="text-center">Aksi</TableHead>
@@ -88,8 +94,9 @@ function goToShow(id: number) {
               v-for="(user, index) in props.users.data" :key="user.id"
             >
               <TableCell>{{ index + 1 }}</TableCell>
-              <TableCell>{{ user.name }}</TableCell>
               <TableCell>{{ user.skpd ? user.skpd.nama_dinas : '-' }}</TableCell>
+              <TableCell>{{ user.skpd ? user.skpd.nama_operator : '-' }}</TableCell>
+              <TableCell>{{ user.name }}</TableCell>
               <TableCell>{{ user.skpd ? user.skpd.no_dpa : '-' }}</TableCell>
               <TableCell>{{ user.skpd ? user.skpd.kode_organisasi : '-' }}</TableCell>
               <TableCell>
@@ -105,7 +112,7 @@ function goToShow(id: number) {
 
                   <Button
                     class="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-2"
-                    @click="goToCreatePage(user.id)"
+                    @click="goToEditPage(user.id)"
                   >
                     <Pencil class="w-4 h-4 mr-1" />
                     Edit
@@ -116,7 +123,6 @@ function goToShow(id: number) {
           </TableBody>
         </Table>
       </div>
-
     </div>
   </AppLayout>
 </template>

@@ -14,6 +14,7 @@ class TimKerja extends Model
     protected $fillable = [
         'skpd_id',
         'user_id',
+        'is_aktif',
     ];
 
     public function skpd()
@@ -23,6 +24,6 @@ class TimKerja extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

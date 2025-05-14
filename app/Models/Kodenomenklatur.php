@@ -58,5 +58,4 @@ class KodeNomenklatur extends Model
             return null;
         }
     }
-
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, usePage, useRouter } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
-import { Button } from '@/Components/ui/button';
-import { Label } from '@/Components/ui/label';
+import { Head, router, usePage} from '@inertiajs/vue3';
+import { ref, computed, watch, onMounted } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const props = defineProps<{
   user: {
@@ -30,10 +30,20 @@ const props = defineProps<{
       jenis_nomenklatur: number;
     }
   }[];
+  errors?: Record<string, string>;
+  flash?: {
+    success?: string;
+    error?: string;
+    info?: string;
+  };
 }>();
 
 const page = usePage();
-const flash = computed(() => (page.props.flash as { success?: string; error?: string }) || {});
+const flashMessage = computed(() => {
+  // Parse from Inertia shared props
+  const pageProps = page.props as any;
+  return pageProps.flash || {};
+});
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Perangkat Daerah', href: '/perangkatdaerah' },
@@ -50,6 +60,29 @@ const kegiatan = ref<number | null>(null);
 const subkegiatan = ref<number | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// Show flash message system
+const showFlash = ref({
+  success: false,
+  error: false,
+  info: false
+});
+
+onMounted(() => {
+  // Check if there are flash messages to show
+  if (flashMessage.value.success) {
+    showFlash.value.success = true;
+    setTimeout(() => { showFlash.value.success = false }, 5000);
+  }
+  if (flashMessage.value.error) {
+    showFlash.value.error = true;
+    setTimeout(() => { showFlash.value.error = false }, 5000);
+  }
+  if (flashMessage.value.info) {
+    showFlash.value.info = true;
+    setTimeout(() => { showFlash.value.info = false }, 5000);
+  }
+});
 
 const jenisNomenklaturOptions = [
   { value: 0, label: "Urusan" },
@@ -186,23 +219,38 @@ function resetForm() {
   error.value = null;
 }
 
-function getSelectedNomenklaturId() {
-  switch (jenisNomenklatur.value) {
-    case 0: return urusan.value;
-    case 1: return bidangUrusan.value;
-    case 2: return program.value;
-    case 3: return kegiatan.value;
-    case 4: return subkegiatan.value;
-    default: return null;
-  }
-}
-
 function saveTugas() {
   error.value = null;
   
-  const kodeNomenklaturId = getSelectedNomenklaturId();
+  // Dapatkan semua ID nomenklatur yang dipilih sesuai hierarki
+  const selectedIds = [];
   
-  if (!kodeNomenklaturId || !props.user.skpd?.id) {
+  // Selalu tambahkan ID nomenklatur urusan jika dipilih
+  if (urusan.value) {
+    selectedIds.push(urusan.value);
+  }
+  
+  // Tambahkan ID nomenklatur bidang urusan jika dipilih
+  if (bidangUrusan.value) {
+    selectedIds.push(bidangUrusan.value);
+  }
+  
+  // Tambahkan ID nomenklatur program jika dipilih
+  if (program.value) {
+    selectedIds.push(program.value);
+  }
+  
+  // Tambahkan ID nomenklatur kegiatan jika dipilih
+  if (kegiatan.value) {
+    selectedIds.push(kegiatan.value);
+  }
+  
+  // Tambahkan ID nomenklatur subkegiatan jika dipilih
+  if (subkegiatan.value) {
+    selectedIds.push(subkegiatan.value);
+  }
+  
+  if (selectedIds.length === 0 || !props.user.skpd?.id) {
     error.value = 'Silakan pilih nomenklatur dengan lengkap';
     return;
   }
@@ -211,7 +259,7 @@ function saveTugas() {
   
   router.post('/skpdtugas', {
     skpd_id: props.user.skpd.id,
-    kode_nomenklatur_id: kodeNomenklaturId,
+    nomenklatur_ids: selectedIds,
     is_aktif: 1
   }, {
     onSuccess: () => {
@@ -255,6 +303,15 @@ th, td {
 button {
   cursor: pointer;
 }
+.notification {
+  transition: opacity 0.5s ease-in-out;
+}
+.notification-enter-active, .notification-leave-active {
+  transition: opacity 0.5s;
+}
+.notification-enter-from, .notification-leave-to {
+  opacity: 0;
+}
 </style>
 
 <template>
@@ -262,13 +319,30 @@ button {
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex flex-col gap-4 p-4">
-      <!-- Flash Messages -->
-      <div v-if="flash.success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-        {{ flash.success }}
-      </div>
-      <div v-if="flash.error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        {{ flash.error }}
-      </div>
+      <!-- Flash Messages dengan animasi fadeout -->
+      <transition name="notification">
+        <div v-if="flashMessage.success && showFlash.success" 
+             class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex justify-between items-center notification">
+          <span>{{ flashMessage.success }}</span>
+          <button @click="showFlash.success = false" class="text-green-700 hover:text-green-900">×</button>
+        </div>
+      </transition>
+      
+      <transition name="notification">
+        <div v-if="flashMessage.error && showFlash.error" 
+             class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex justify-between items-center notification">
+          <span>{{ flashMessage.error }}</span>
+          <button @click="showFlash.error = false" class="text-red-700 hover:text-red-900">×</button>
+        </div>
+      </transition>
+      
+      <transition name="notification">
+        <div v-if="flashMessage.info && showFlash.info" 
+             class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 flex justify-between items-center notification">
+          <span>{{ flashMessage.info }}</span>
+          <button @click="showFlash.info = false" class="text-blue-700 hover:text-blue-900">×</button>
+        </div>
+      </transition>
 
       <!-- Header Section -->
       <div class="bg-white p-6 rounded-lg shadow-md">

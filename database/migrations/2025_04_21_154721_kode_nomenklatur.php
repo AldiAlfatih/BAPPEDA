@@ -11,29 +11,30 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Buat tabel utama terlebih dahulu
         Schema::create('kode_nomenklatur', function (Blueprint $table) {
             $table->id();
+            $table->integer('jenis_nomenklatur');
             $table->string('nomor_kode');
             $table->string('nomenklatur')->nullable(); 
-            $table->integer('jenis_kode');
-            // $table->string('bidang_urusan')->nullable();
-            // $table->string('program')->nullable();
-            // $table->string('kegiatan')->nullable();
-            // $table->string('subkegiatan')->nullable();
             $table->timestamps();
         });
+
         Schema::create('kode_nomenklatur_detail', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_nomenklatur')->constrained('kode_nomenklatur');
-            $table->foreignId('urusan')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 0
-            $table->foreignId('bidang_urusan')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 1
-            $table->foreignId('program')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 2
-            $table->foreignId('kegiatan')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 3
-            $table->foreignId('subkegiatan')->nullable()->constrained('kode_nomenklatur'); // jenis_kode 4
+            $table->foreignId('id_nomenklatur')->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_urusan')->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_bidang_urusan')->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_program')->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_kegiatan')->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_sub_kegiatan')->constrained('kode_nomenklatur')->onDelete('cascade');
+
             $table->timestamps();
         });
 
-
+        Schema::table('kode_nomenklatur', function (Blueprint $table) {
+           
+        });
     }
 
     /**
@@ -41,6 +42,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('kode_nomenklatur_detail');
         Schema::dropIfExists('kode_nomenklatur');
     }
 };

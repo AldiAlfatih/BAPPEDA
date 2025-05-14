@@ -12,8 +12,8 @@ class KodeNomenklaturController extends Controller
 {
     public function index()
     {
-        $kodenomenklatur = KodeNomenklatur::with('detail')->where('jenis_kode', 0)->get();
-        return Inertia::render('KodeNomenklatur/Index', [
+        $kodenomenklatur = KodeNomenklatur::all();
+        return Inertia::render('kode_nomenklatur/Index', [
             'kodenomenklatur' => $kodenomenklatur,
         ]);
     }

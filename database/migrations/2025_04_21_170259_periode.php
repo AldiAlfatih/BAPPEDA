@@ -11,22 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        
-        Schema::create('jenis_periode', function (Blueprint $table) {
+        Schema::create('periode_tahap', function (Blueprint $table) {
             $table->id();
-            $table->string('Jenis');
+            $table->string('tahap');
         }); 
+
+        Schema::create('periode_tahun', function (Blueprint $table) {
+            $table->id();
+            $table->integer('status')->default(0);
+            $table->year('tahun');
+            $table->timestamps();
+        });
 
         Schema::create('periode', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('jenis_periode_id')->constrained('periode');
-            $table->string('status');
+            $table->foreignId('tahap_id')->constrained('periode_tahap')->onDelete('cascade');
+            $table->foreignId('tahun_id')->nullable()->constrained('periode_tahun')->onDelete('cascade');
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
+            $table->integer('status')->default(0);
             $table->timestamps();
-
-            // Foreign key constraint ke tabel users
-            
         });
     }
 
@@ -36,5 +40,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('periode');
+        Schema::dropIfExists('periode_tahun');
+        Schema::dropIfExists('periode_tahap');
     }
 };

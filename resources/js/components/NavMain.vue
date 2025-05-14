@@ -28,7 +28,7 @@ const toggleMenu = (title: string) => {
     <SidebarGroupLabel>Menu</SidebarGroupLabel>
     <SidebarMenu>
       <SidebarMenuItem v-for="item in items" :key="item.title">
-        <template v-if="!item.guard || item.guard.includes(page.props.auth.user.role)">
+        <template v-if="!item.guard || (Array.isArray(item.guard) && item.guard.includes(page.props.auth.user.role))">
           <!-- Dropdown parent -->
           <div v-if="item.children">
             <SidebarMenuButton as-child>

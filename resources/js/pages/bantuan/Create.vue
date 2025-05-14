@@ -1,10 +1,8 @@
 <script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -12,74 +10,66 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: '/bantuan',
   },
   {
-    title: 'Tambah Bantuan',
+    title: 'Tambah',
     href: '/bantuan/create',
   },
 ];
 
-const props = defineProps<{
-  statusBantuanOptions: { id: number; nama: string }[];
-}>();
-
+// Form data untuk input
 const form = useForm({
-  jenis_bantuan: '',
-  penerima: '',
-  tanggal_disalurkan: '',
-  status_bantuan_id: '',
-});
+  judul: '',
+  balasan: '',
+  status: 0,
+  file: null as File | null,
+})
 
 function submit() {
   form.post('/bantuan', {
     onSuccess: () => {
-      form.reset();
+      console.log('Data berhasil disimpan');
     },
-  });
+    onError: (errors) => {
+      console.log('Terjadi kesalahan:', errors);
+    }
+  })
 }
+
+
+
 </script>
 
 <template>
-    <Head title="Tambah Bantuan" />
-  
-    <AppLayout :breadcrumbs="breadcrumbs">
-      <div class="max-w-2xl mx-auto p-6 bg-white rounded shadow">
-        <h1 class="text-2xl font-bold mb-4">Tambah Data Bantuan</h1>
-  
-        <form @submit.prevent="submit" class="space-y-4">
-          <div>
-            <label class="block mb-1 font-medium">Jenis Bantuan</label>
-            <input v-model="form.jenis_bantuan" type="text" class="w-full border rounded px-3 py-2" />
-            <div v-if="form.errors.jenis_bantuan" class="text-red-600 text-sm">{{ form.errors.jenis_bantuan }}</div>
-          </div>
-  
-          <div>
-            <label class="block mb-1 font-medium">Penerima</label>
-            <input v-model="form.penerima" type="text" class="w-full border rounded px-3 py-2" />
-            <div v-if="form.errors.penerima" class="text-red-600 text-sm">{{ form.errors.penerima }}</div>
-          </div>
-  
-          <div>
-            <label class="block mb-1 font-medium">Tanggal Disalurkan</label>
-            <input v-model="form.tanggal_disalurkan" type="date" class="w-full border rounded px-3 py-2" />
-            <div v-if="form.errors.tanggal_disalurkan" class="text-red-600 text-sm">{{ form.errors.tanggal_disalurkan }}</div>
-          </div>
-  
-          <div>
-            <label class="block mb-1 font-medium">Status Bantuan</label>
-            <select v-model="form.status_bantuan_id" class="w-full border rounded px-3 py-2">
-              <option value="">-- Pilih Status --</option>
-              <option v-for="status in props.statusBantuanOptions" :key="status.id" :value="status.id">
-                {{ status.nama }}
-              </option>
-            </select>
-            <div v-if="form.errors.status_bantuan_id" class="text-red-600 text-sm">{{ form.errors.status_bantuan_id }}</div>
-          </div>
-  
-          <div class="flex justify-end">
-            <Button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-              Simpan
-            </Button>
-          </div>
-        </form>
-      </div>
-    </AppLayout>
+  <Head title="Tambah Bantuan" />
+
+  <AppLayout :breadcrumbs="breadcrumbs">
+    
+    <div class="bg-white shadow-xl/30 rounded px-8 pt-6 pb-8 mb-4 mt-4 ml-3 mr-3">
+      <h1 class="text-xl font-bold mb-4 mt-2">Tambah Bantuan</h1>
+      <form @submit.prevent="submit" class="space-y-4">
+        <!-- Judul -->
+        <div>
+          <label>Judul</label>
+          <input v-model="form.judul" type="text" class="border rounded p-2 w-full" required />
+        </div>
+        
+        <!-- Isi Pesan -->
+        <div>
+          <label>Pesan</label>
+          <textarea v-model="form.balasan" class="border rounded p-2 w-full" required></textarea>
+        </div>
+        
+        <div class="">
+          <label>File</label>
+          <input
+          type="file"
+          @change="(e: Event) => form.file = (e.target as HTMLInputElement).files?.[0] ?? null"
+          class="block w-xs text-sm text-gray-700 border border-gray-300 rounded-md cursor-pointer focus:outline-none"
+        />
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
+      </form>
+    </div>
+  </AppLayout>
 </template>

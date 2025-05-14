@@ -1,172 +1,202 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { ref, computed } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-} from '@/components/ui/dropdown-menu'
+import { ref, computed, onMounted, onUnmounted } from 'vue'; 
+import AppLayout from '@/layouts/AppLayout.vue'
+import { type BreadcrumbItem } from '@/types'
+import { Head, Link } from '@inertiajs/vue3'
+import { usePage, useForm } from '@inertiajs/vue3'
+import { Inertia } from '@inertiajs/inertia'
+import 'primeicons/primeicons.css'
 
-// Data dummy (nanti bisa dari API)
-const bantuanList = ref([
+
+
+
+
+const breadcrumbs: BreadcrumbItem[] = [
   {
-    id: '1',
-    status: 'Selesai',
-    namaPerangkatDaerah: 'Dinas Pendidikan',
-    jenisBantuan: 'IT Support',
-    deskripsi: 'Perbaikan jaringan internet',
-    tanggal: '2025-04-20',
-    screenshotUrl: "/images/logo-parepare.png" ,
+    title: 'Bantuan',
+    href: '/bantuan',
   },
-  {
-    id: '2',
-    status: 'Dalam Proses',
-    namaPerangkatDaerah: 'Dinas Kesehatan',
-    jenisBantuan: 'Pengadaan Alat',
-    deskripsi: 'Permintaan laptop tambahan',
-    tanggal: '2025-04-22',
-    screenshotUrl: '/screenshots/screenshot2.png',
-  },
-])
+]
 
-const selectedRows = ref<string[]>([])
-const search = ref('')
-const showStatus = ref(true)
-const showNama = ref(true)
-const showJenisBantuan = ref(true)
-const showDeskripsi = ref(true)
-const showTanggal = ref(true)
+interface User {
+  id: number
+  name: string
+  role: string 
+}
 
-// Untuk filter berdasarkan Nama Perangkat Daerah
-const filteredBantuanList = computed(() => {
-  if (!search.value) return bantuanList.value
-  return bantuanList.value.filter((b) =>
-    b.namaPerangkatDaerah.toLowerCase().includes(search.value.toLowerCase())
-  )
+const auth = usePage().props.auth as { user: User }
+const isPD = computed(() => auth.user?.role === 'perangkat_daerah')
+const isAdmin = computed(() => auth.user?.role === 'admin' || auth.user?.role === 'operator')
+
+const props = defineProps<{
+  bantuans: Array<{
+    id: number
+    judul: string
+    created_at: string
+    status: number
+    faqs: Array<{
+      balasan: string
+    }>
+  }>
+}>()
+
+
+const searchQuery = ref('')
+const columnFilterOpen = ref(false) 
+const columns = ref({
+  no: true,
+  judul: true,
+  tanggal_dibuat: true,
+  status: true,
+  aksi: true
 })
 
-function toggleAllRows(checked: boolean) {
-  if (checked) {
-    selectedRows.value = bantuanList.value.map((b) => b.id)
-  } else {
-    selectedRows.value = []
+
+const filteredBantuans = computed(() => {
+  return props.bantuans.filter((b) => {
+    const matchSearch = b.judul.toLowerCase().includes(searchQuery.value.toLowerCase())
+    return matchSearch
+  })
+})
+
+function formatDate(date: string) {
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }
+  return new Date(date).toLocaleDateString('id-ID', options) 
+}
+
+
+function toggleColumnFilter() {
+  columnFilterOpen.value = !columnFilterOpen.value
+}
+
+
+const filterRef = ref<HTMLElement | null>(null);
+
+function closeFilterOnClickOutside(event: MouseEvent) {
+  if (filterRef.value && !filterRef.value.contains(event.target as Node)) {
+    columnFilterOpen.value = false;
   }
 }
 
-function toggleRow(id: string, checked: boolean) {
-  if (checked) {
-    if (!selectedRows.value.includes(id)) {
-      selectedRows.value.push(id)
-    }
+onMounted(() => {
+  document.addEventListener('mousedown', closeFilterOnClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', closeFilterOnClickOutside);
+});
+
+const updateStatusToDiproses = (bantuanId: number) => {
+  if (isAdmin.value) {
+    form.post(route('bantuan.updateStatusToDiproses', bantuanId), {
+      onSuccess: () => {
+        Inertia.get(route('bantuan.chat', bantuanId));
+      }
+    });
   } else {
-    selectedRows.value = selectedRows.value.filter((item) => item !== id)
+    Inertia.get(route('bantuan.chat', bantuanId));
   }
 }
 
-// Untuk melihat screenshot
-function lihatScreenshot(url: string) {
-  window.open(url, '_blank')
-}
+const form = useForm({
+  balasan: '',
+  file: null as File | null,
+});
 </script>
 
 <template>
   <Head title="Bantuan" />
 
-  <AppLayout>
-    <div class="flex flex-col gap-4 p-4">
-      <div class="relative min-h-[100vh] rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between gap-2">
-            <Input v-model="search" placeholder="Cari Perangkat Daerah..." class="max-w-sm" />
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <Button variant="outline">Columns</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuCheckboxItem v-model:modelValue="showStatus">
-                  Status
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem v-model:modelValue="showNama">
-                  Nama Perangkat Daerah
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem v-model:modelValue="showJenisBantuan">
-                  Jenis Bantuan
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem v-model:modelValue="showDeskripsi">
-                  Deskripsi
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem v-model:modelValue="showTanggal">
-                  Tanggal
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div class="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Checkbox
-                      :modelValue="selectedRows.length === bantuanList.length"
-                      :indeterminate="selectedRows.length > 0 && selectedRows.length < bantuanList.length"
-                      @update:modelValue="toggleAllRows"
-                    />
-                  </TableHead>
-                  <TableHead v-if="showStatus">Status</TableHead>
-                  <TableHead v-if="showNama">Nama Perangkat Daerah</TableHead>
-                  <TableHead v-if="showJenisBantuan">Jenis Bantuan</TableHead>
-                  <TableHead v-if="showDeskripsi">Deskripsi</TableHead>
-                  <TableHead v-if="showTanggal">Tanggal</TableHead>
-                  <TableHead class="text-left" >Detail</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="bantuan in filteredBantuanList" :key="bantuan.id">
-                  <TableCell>
-                    <Checkbox
-                      :modelValue="selectedRows.includes(bantuan.id)"
-                      @update:modelValue="(checked) => toggleRow(bantuan.id, checked)"
-                    />
-                  </TableCell>
-                  <TableCell v-if="showStatus">{{ bantuan.status }}</TableCell>
-                  <TableCell v-if="showNama">{{ bantuan.namaPerangkatDaerah }}</TableCell>
-                  <TableCell v-if="showJenisBantuan">{{ bantuan.jenisBantuan }}</TableCell>
-                  <TableCell v-if="showDeskripsi">{{ bantuan.deskripsi }}</TableCell>
-                  <TableCell v-if="showTanggal">{{ bantuan.tanggal }}</TableCell>
-                  <TableCell class="text-left">
-                    <Button size="sm" variant="outline" @click="lihatScreenshot(bantuan.screenshotUrl)">
-                      Lihat Screenshot
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-
-          <div class="text-sm text-muted-foreground">
-            {{ selectedRows.length }} dari {{ bantuanList.length }} data terpilih.
-          </div>
-
-          <div class="flex justify-end space-x-2">
-            <Button variant="outline" disabled>Previous</Button>
-            <Button variant="outline" disabled>Next</Button>
-          </div>
+  <AppLayout :breadcrumbs="breadcrumbs">
+  
+      <!-- Filter Kolom -->
+      <div class="mb-2 flex justify-start">
+        <button @click="toggleColumnFilter" class=" px-4 ml-3 mt-2 border border-gray-300 px-7 py-0,5 rounded-md">Filter</button>
+        <div 
+          v-if="columnFilterOpen" 
+          ref="filterRef" 
+          class="absolute bg-white border border-gray-300 rounded-md shadow-lg mt-2 font-serif"
+        >
+          <label class="block px-4 py-2">
+            <input type="checkbox" v-model="columns.judul" /> Judul
+          </label>
+          <label class="block px-4 py-2">
+            <input type="checkbox" v-model="columns.tanggal_dibuat" /> Tanggal Dibuat
+          </label>
+          <label class="block px-4 py-2">
+            <input type="checkbox" v-model="columns.status" /> Status
+          </label>
+          <label class="block px-4 py-2">
+            <input type="checkbox" v-model="columns.aksi" /> Aksi
+          </label>
         </div>
       </div>
-    </div>
+
+      <div class="flex flex-col gap-2 p-1">
+        <!-- Flex container untuk search dan add button -->
+        <div class="flex justify-between items-center mb-2 ml-2">
+          <!-- Kolom Pencarian -->
+          <div class="flex-1 mr-2 ">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cari berdasarkan Judul..."
+              class="w-full border border-gray-300 px-2 py-1 rounded-md w-xs"
+            />
+          </div>
+
+          <!-- Tombol Tambah -->
+          <Link 
+          v-if="isPD" 
+          :href="route('bantuan.create')" 
+          class="pi pi-plus h-full px-4 py-2 bg-green-600 text-base text-white rounded-md hover:bg-green-700"
+        >
+          Tambah
+        </Link>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg shadow border border-gray-200 ml-2 mr-2">
+          <table class="min-w-full divide-y divide-gray-200 bg-white rounded shadow">
+            <thead class="bg-gray-100">
+              <tr>
+                <th v-if="columns.no" class="px-4 py-2 text-center text-sm font-semibold text-gray-700">No</th>
+                <th v-if="columns.judul" class="px-4 py-2 text-center text-sm font-semibold text-gray-700 w-[50%]">Judul</th>
+                <th v-if="columns.tanggal_dibuat" class="px-4 py-2 text-center text-sm font-semibold text-gray-700">Tanggal Dibuat</th>
+                <th v-if="columns.status" class="px-4 py-2 text-center text-sm font-semibold text-gray-700">Status</th>
+                <th v-if="columns.aksi" class="px-4 py-2 text-center text-sm font-semibold text-gray-700">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="(b, index) in filteredBantuans" :key="b.id">
+                <td v-if="columns.no" class="px-4 py-2 text-center text-sm text-gray-700">{{ index + 1 }}</td>
+                <td v-if="columns.judul" class="px-4 py-2 text-justify text-sm text-gray-800">{{ b.judul }}</td>
+                <td v-if="columns.tanggal_dibuat" class="px-4 py-2 text-center text-sm text-gray-600">{{ formatDate(b.created_at) }}</td>
+                <td v-if="columns.status" class="px-4 py-2 text-center text-sm text-gray-600">
+                  {{ b.status === 0 ? 'Diterima' : b.status === 1 ? 'Diproses' : 'Selesai' }}
+                </td>
+                <td v-if="columns.aksi" class="px-4 py-2 text-center text-sm text-gray-700 space-x-2">
+                  <Link 
+                    :href="route('bantuan.chat', b.id)"
+                    @click.prevent="updateStatusToDiproses(b.id)"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 pi pi-comments"
+                  >
+                    Chat
+                  </Link>
+                  <Link 
+                  v-if="isAdmin"
+                  :href="route('bantuan.destroy', b.id)" method="delete" as="button" 
+                  class="pi pi-trash px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                  Hapus
+                </Link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
   </AppLayout>
 </template>

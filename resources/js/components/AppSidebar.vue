@@ -5,38 +5,92 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, Users, Monitor, Bell, Info } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
-        // guard: 'perangkat_daerah'
     },
 
     {
-        title: 'Permissions',
-        href: '/permissions',
-        icon: LayoutGrid,
-        // guard: ['admin', 'perangkat_daerah']
-    },
-
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
+        title: 'Nomenklatur',
+        href: '/kodenomenklatur',
+        guard: ['admin'],
         icon: BookOpen,
     },
+
+    {
+        title: 'Manjemen Tim',
+        href: '/usermanagement',
+        icon: Users,
+        guard: ['super_admin','admin'],
+        children: [
+        {
+            title: 'User',
+            href: '/usermanagement',
+        },
+        {
+            title: 'Perangkat Daerah',
+            href: '/perangkatdaerah',
+        },
+        ],
+
+    },
+
+
+    {
+        title: 'Monitoring',
+        href: '/monitoring',
+        icon: Monitor,
+        guard: ['admin','perangkat_daerah'],
+        children: [
+        {
+            title: 'Monitoring',
+            href: '/monitoring',
+        },
+        {
+            title: 'Starred',
+            href: '#',
+        },
+        {
+            title: 'Settings',
+            href: '#',
+        },
+        ],
+    },
+
+    {
+        title: 'Pemberitahuan',
+        href: '/pemberitahuan',
+        icon: Bell,
+    },
+
+    {
+        title: 'Informasi',
+        href: '/bantuan',
+        icon: Info,
+        children: [
+        {
+            title: 'History',
+            href: '#',
+        },
+        {
+            title: 'Starred',
+            href: '#',
+        },
+        {
+            title: 'Settings',
+            href: '#',
+        },
+        ],
+    },
+
 ];
+
 </script>
 
 <template>
@@ -62,5 +116,4 @@ const footerNavItems: NavItem[] = [
             <NavUser />
         </SidebarFooter>
     </Sidebar>
-    <slot />
 </template>

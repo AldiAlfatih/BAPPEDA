@@ -2,23 +2,25 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
-
+use Spatie\Permission\Traits\HasRoles;
+use App\Models\UserDetail;
+use App\Models\Skpd;
+use App\Models\SkpdKepala;
+use App\Models\SkpdTugas;
+use App\Models\TimKerja;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
@@ -29,7 +31,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -37,15 +39,46 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    /**
+     * Memastikan relasi ke userDetail bekerja dengan benar
+     */
+    public function userDetail()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(UserDetail::class);
     }
+
+    /**
+     * Memastikan relasi ke profileSkpd bekerja dengan benar
+     */
+    public function Skpd()
+    {
+        return $this->hasOne(Skpd::class);
+    }
+    public function skpdKepala()
+    {
+        return $this->hasMany(SkpdKepala::class);
+    }
+    public function skpdTugas()
+    {
+        return $this->hasMany(SkpdTugas::class);
+    }
+    public function timKerja()
+    {
+        return $this->hasMany(TimKerja::class);
+    }
+    public function skpds()
+    {
+        return $this->belongsTo(Skpd::class);
+    }
+
+
 }

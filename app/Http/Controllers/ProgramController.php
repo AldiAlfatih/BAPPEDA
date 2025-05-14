@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Program;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
 
 class ProgramController extends Controller
 {
@@ -12,7 +14,7 @@ class ProgramController extends Controller
      */
     public function index()
     {
-        return response()->jsonRequest([
+        return response()->json([
             'success' => true,
             'data' => Program::latest()->get()
         ]);
@@ -24,13 +26,13 @@ class ProgramController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode' => 'required|string|max:5',
-            'nama' => 'required|string',
+            'name' => 'required|string|max:255',
+            'email' => 'required|string',
         ]);
 
         $program = Program::create($request->all());
 
-        return response()->jsonRequest([
+        return response()->json([
             'success' => true,
             'message' => 'Program created successfully',
             'data' => $program

@@ -3,13 +3,21 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
+import { usePage } from '@inertiajs/vue3';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
+const page = usePage();
+const userRole = page.props.auth.user?.role;
+
+const breadcrumbs = [
+  { title: 'DASHBOARD ' + (userRole ? userRole.replace('_', ' ').toUpperCase() : '') }
 ];
+
+// const breadcrumbs: BreadcrumbItem[] = [
+//     {
+//         title: 'Dashboard',
+//         href: '/dashboard',
+//     },
+// ];
 </script>
 
 <template>

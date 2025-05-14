@@ -2,20 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Kegiatan extends Model
 {
+    use HasFactory;
     protected $table = 'kegiatan';
-    protected $fillable = ['nama', 'kode', 'program_id'];
+    protected $fillable = [
+        'id_program', 'nama'
+    ];
 
-    public function subkegiatan(): HasMany
+    public function program()
     {
-        return $this->hasMany(SubKegiatan::class, 'kegiatan_id');
+        return $this->belongsTo(Program::class);
     }
 
-    public function program():BelongsTo
+    public function subKegiatan()
     {
-        return $this->belongsTo(Program::class, 'program_id');
+        return $this->hasMany(SubKegiatan::class, 'id_kegiatan');
     }
 }

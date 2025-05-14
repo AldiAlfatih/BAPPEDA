@@ -42,7 +42,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
-        icon: LayoutGrid,
+        icon: Folder,
     },
 ];
 

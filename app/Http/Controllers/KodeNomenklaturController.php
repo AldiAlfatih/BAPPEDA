@@ -15,7 +15,7 @@ class KodeNomenklaturController extends Controller
     public function index()
     {
         $kodeNomenklatur = KodeNomenklatur::all();
-        
+
         return Inertia::render('KodeNomenklatur', [
             'kodeNomenklatur' => $kodeNomenklatur,
         ]);
@@ -30,7 +30,7 @@ class KodeNomenklaturController extends Controller
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
                 $query->select('id', 'id_nomenklatur', 'id_urusan');
-            }]) 
+            }])
             ->get()
             ->map(function($item) {
                 return [
@@ -40,7 +40,7 @@ class KodeNomenklaturController extends Controller
                     'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
                 ];
             });
-        
+
         $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -56,7 +56,7 @@ class KodeNomenklaturController extends Controller
                     'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
                 ];
             });
-        
+
         $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -73,7 +73,7 @@ class KodeNomenklaturController extends Controller
                     'program_id' => $item->details->first() ? $item->details->first()->id_program : null
                 ];
             });
-        
+
         $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -91,7 +91,7 @@ class KodeNomenklaturController extends Controller
                     'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
                 ];
             });
-        
+
         $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -110,7 +110,7 @@ class KodeNomenklaturController extends Controller
                     'subkegiatan_id' => $item->details->first() ? $item->details->first()->id_sub_kegiatan : null
                 ];
             });
-        
+
         return Inertia::render('KodeNomenklatur/Create', [
             'urusanList' => $urusanList,
             'bidangUrusanList' => $bidangUrusanList,
@@ -155,25 +155,25 @@ class KodeNomenklaturController extends Controller
                 // Untuk urusan, id_urusan merujuk ke dirinya sendiri
                 $detailData['id_urusan'] = $kodeNomenklatur->id;
                 break;
-            
+
             case 1: // Bidang Urusan
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $kodeNomenklatur->id;
                 break;
-            
+
             case 2: // Program
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
                 $detailData['id_program'] = $kodeNomenklatur->id;
                 break;
-            
+
             case 3: // Kegiatan
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
                 $detailData['id_program'] = $validated['program'];
                 $detailData['id_kegiatan'] = $kodeNomenklatur->id;
                 break;
-            
+
             case 4: // Sub Kegiatan
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
@@ -194,7 +194,7 @@ class KodeNomenklaturController extends Controller
     public function show(string $id)
     {
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
-        
+
         return Inertia::render('KodeNomenklatur/Show', [
             'kodeNomenklatur' => $kodeNomenklatur,
         ]);
@@ -207,15 +207,15 @@ class KodeNomenklaturController extends Controller
     {
         // Get the main record
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
-        
+
         // Get associated detail record
         $detail = KodeNomenklaturDetail::where('id_nomenklatur', $id)->first();
-        
+
         // Get data for dropdowns
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->get();
-        
+
         $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -230,7 +230,7 @@ class KodeNomenklaturController extends Controller
                     'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
                 ];
             });
-        
+
         $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -246,7 +246,7 @@ class KodeNomenklaturController extends Controller
                     'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
                 ];
             });
-        
+
         $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -263,7 +263,7 @@ class KodeNomenklaturController extends Controller
                     'program_id' => $item->details->first() ? $item->details->first()->id_program : null
                 ];
             });
-        
+
         $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
             ->select('id', 'nomor_kode', 'nomenklatur')
             ->with(['details' => function($query) {
@@ -281,7 +281,7 @@ class KodeNomenklaturController extends Controller
                     'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
                 ];
             });
-        
+
         return Inertia::render('KodeNomenklatur/Edit', [
             'kodeNomenklatur' => $kodeNomenklatur,
             'detail' => $detail,
@@ -320,31 +320,31 @@ class KodeNomenklaturController extends Controller
 
         // Prepare detail data based on the jenis_nomenklatur
         $detailData = [];
-        
+
         switch ($validated['jenis_nomenklatur']) {
             case 0: // Urusan
                 // For Urusan, id_urusan references itself
                 $detailData['id_urusan'] = $kodeNomenklatur->id;
                 break;
-                
+
             case 1: // Bidang Urusan
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $kodeNomenklatur->id;
                 break;
-                
+
             case 2: // Program
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
                 $detailData['id_program'] = $kodeNomenklatur->id;
                 break;
-                
+
             case 3: // Kegiatan
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
                 $detailData['id_program'] = $validated['program'];
                 $detailData['id_kegiatan'] = $kodeNomenklatur->id;
                 break;
-                
+
             case 4: // Sub Kegiatan
                 $detailData['id_urusan'] = $validated['urusan'];
                 $detailData['id_bidang_urusan'] = $validated['bidang_urusan'];
@@ -353,7 +353,7 @@ class KodeNomenklaturController extends Controller
                 $detailData['id_sub_kegiatan'] = $kodeNomenklatur->id;
                 break;
         }
-        
+
         // Update or create the detail record
         if (!empty($detailData)) {
             KodeNomenklaturDetail::updateOrCreate(
@@ -373,7 +373,7 @@ class KodeNomenklaturController extends Controller
     {
         $kodeNomenklatur = KodeNomenklatur::findOrFail($id);
         $kodeNomenklatur->delete();
-        
+
         return redirect()->route('kodenomenklatur.index')
             ->with('message', 'Kode Nomenklatur berhasil dihapus!');
     }

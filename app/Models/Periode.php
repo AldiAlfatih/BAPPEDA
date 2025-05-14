@@ -8,15 +8,29 @@ use Illuminate\Database\Eloquent\Model;
 class Periode extends Model
 {
     use HasFactory;
-
+    
+    protected $table = 'periode';
+    
     protected $fillable = [
-        'id_admin',
+        'tahap_id',
+        'tahun_id',
         'tanggal_mulai',
         'tanggal_selesai',
+        'status', // Tambahkan status: 0 = Tutup, 1 = Buka, 2 = Selesai
     ];
-
-    public function admin()
+    
+    protected $casts = [
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+    ];
+    
+    public function tahap()
     {
-        return $this->belongsTo(User::class, 'id_admin');
+        return $this->belongsTo(PeriodeTahap::class, 'tahap_id');
+    }
+    
+    public function tahun()
+    {
+        return $this->belongsTo(PeriodeTahun::class, 'tahun_id');
     }
 }

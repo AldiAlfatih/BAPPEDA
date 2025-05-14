@@ -1,26 +1,23 @@
 <?php
-
-namespace Database\Seeders;
-
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\PeriodeTahap;
+use App\Models\Periode;
+use App\Models\PeriodeTahun;
+use Database\Seeders\FiturSeeder;
+use Database\Seeders\RuleSeeder;
 
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
+     *
+     * @return void
      */
-    public function run(): void
+    public function run()
     {
-        // User::factory(10)->create();
-
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
-
-        $this->call(RuleSeeder::class); 
+        // Memanggil FiturSeeder untuk menjalankan seeding
+        $this->call(FiturSeeder::class);
+        $this->call(RuleSeeder::class);
     }
 }

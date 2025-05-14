@@ -11,21 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Schema::create('periode_tahap', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->string('tahap');
-        // }); 
+        Schema::create('periode_tahap', function (Blueprint $table) {
+            $table->id();
+            $table->string('tahap');
+        });
 
-        // Schema::create('periode', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->foreignId('tahap_id')->constrained('periode_tahap')->onDelete('cascade');
-        //     $table->string('status');
-        //     $table->date('tahun');
-        //     $table->timestamp('tanggal_mulai');
-        //     $table->timestamp('tanggal_selesai');
-        //     $table->timestamps();
-        //     // Foreign key constraint ke tabel users
-        // });
+        Schema::create('periode_tahun', function (Blueprint $table) {
+            $table->id();
+            $table->integer('status')->default(0);
+            $table->year('tahun');
+            $table->timestamps();
+        });
+
+        Schema::create('periode', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('tahap_id')->constrained('periode_tahap')->onDelete('cascade');
+            $table->foreignId('tahun_id')->nullable()->constrained('periode_tahun')->onDelete('cascade');
+            $table->date('tanggal_mulai');
+            $table->date('tanggal_selesai');
+            $table->integer('status')->default(0);
+            $table->timestamps();
+        });
     }
 
     /**
@@ -33,6 +39,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Schema::dropIfExists('periode');
+        Schema::dropIfExists('periode');
+        Schema::dropIfExists('periode_tahun');
+        Schema::dropIfExists('periode_tahap');
     }
 };

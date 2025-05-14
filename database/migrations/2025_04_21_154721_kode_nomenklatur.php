@@ -12,13 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         // Buat tabel utama terlebih dahulu
+        // Buat tabel utama terlebih dahulu
         Schema::create('kode_nomenklatur', function (Blueprint $table) {
             $table->id();
             $table->integer('jenis_nomenklatur');
+            $table->integer('jenis_nomenklatur');
             $table->string('nomor_kode');
-            $table->string('nomenklatur'); 
+            $table->string('nomenklatur');
             $table->timestamps();
         });
+
 
         Schema::create('kode_nomenklatur_detail', function (Blueprint $table) {
             $table->id();
@@ -37,6 +40,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('kode_nomenklatur_detail');
         Schema::dropIfExists('kode_nomenklatur_detail');
         Schema::dropIfExists('kode_nomenklatur');
     }

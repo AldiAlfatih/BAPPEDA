@@ -62,9 +62,9 @@ class UserManagementController extends Controller
     public function edit(User $user)
     {
         $user->load('userDetail');
-    
+
         $roles = $user->getRoleNames()->toArray();
-        
+
         return Inertia::render('usermanagement/Edit', [
             'user' => [
                 'id' => $user->id,
@@ -107,7 +107,7 @@ class UserManagementController extends Controller
             'name' => $validatedData['name'] ?? $user->name,
             'email' => $validatedData['email'],
         ])->save();
-        
+
         if (!empty($validatedData['password'])) {
             $user->update([
                 'password' => Hash::make($validatedData['password'])
@@ -122,7 +122,7 @@ class UserManagementController extends Controller
             array_intersect_key($validatedData, array_flip(['alamat', 'nip', 'no_hp', 'jenis_kelamin'])),
             function ($value) { return !is_null($value); }
         );
-        
+
         if (!empty($userDetailFields)) {
             if ($user->userDetail) {
                 $user->userDetail->update($userDetailFields);

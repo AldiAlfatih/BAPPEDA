@@ -5,16 +5,11 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
-<<<<<<< HEAD
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-=======
 use App\Models\Nomenklatur;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\RoleHasPermissions;
 use Spatie\Permission\Models\PermissionRole;
->>>>>>> Aldi
 
 class RuleSeeder extends Seeder
 {
@@ -28,67 +23,7 @@ class RuleSeeder extends Seeder
         $ra = Role::firstOrCreate(['name' => 'admin']);
         $rop = Role::firstOrCreate(['name'=> 'operator']);
         $rpd = Role::firstOrCreate(['name' => 'perangkat_daerah']);
-        
-<<<<<<< HEAD
-        // Membuat Permissions
-        // $rsa = Permission::create(['name']);
-        $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah']);
-        $createProgramPermission = Permission::firstOrCreate(['name' => 'create program']);
-        $editProgramPermission = Permission::firstOrCreate(['name' => 'edit program']);
-        $deleteProgramPermission = Permission::firstOrCreate(['name' => 'delete program']);
-        $viewProgramPermission = Permission::firstOrCreate(['name' => 'view program']);
-        $createKegiatanPermission = Permission::firstOrCreate(['name' => 'create kegiatan']);
-        $editKegiatanPermission = Permission::firstOrCreate(['name' => 'edit kegiatan']);
-        $deleteKegiatanPermission = Permission::firstOrCreate(['name' => 'delete kegiatan']);
-        $viewKegiatanPermission = Permission::firstOrCreate(['name' => 'view kegiatan']);
-        $createSubKegiatanPermission = Permission::firstOrCreate(['name' => 'create sub kegiatan']);
-        $editSubKegiatanPermission = Permission::firstOrCreate(['name' => 'edit sub kegiatan']);
-        $deleteSubKegiatanPermission = Permission::firstOrCreate(['name' => 'delete sub kegiatan']);
-        $viewSubKegiatanPermission = Permission::firstOrCreate(['name' => 'view sub kegiatan']);
-        $rsa->givePermissionTo($mpd);
 
-        // Memberikan Permissions ke Roles
-        $rsa->givePermissionTo([
-            // $createProgramPermission,
-            // $editProgramPermission,
-            // $deleteProgramPermission,
-            $viewProgramPermission,
-            // $createKegiatanPermission,
-            // $editKegiatanPermission,
-            // $deleteKegiatanPermission,
-            $viewKegiatanPermission,
-            // $createSubKegiatanPermission,
-            // $editSubKegiatanPermission,
-            // $deleteSubKegiatanPermission,
-            $viewSubKegiatanPermission
-        ]);
-
-        $ra->givePermissionTo([
-            $createProgramPermission,
-            $editProgramPermission,
-            $deleteProgramPermission,
-            $viewProgramPermission,
-            $createKegiatanPermission,
-            $editKegiatanPermission,
-            $deleteKegiatanPermission,
-            $viewKegiatanPermission,
-            $createSubKegiatanPermission,
-            $editSubKegiatanPermission,
-            $deleteSubKegiatanPermission,
-            $viewSubKegiatanPermission
-        ]);
-
-        $rop->givePermissionTo([
-            $viewProgramPermission,
-            $viewKegiatanPermission,
-            $viewSubKegiatanPermission
-        ]);
-
-        $rpd->givePermissionTo([
-            $viewProgramPermission,
-            $viewKegiatanPermission,
-            $viewSubKegiatanPermission
-=======
         // Permissions khusus untuk perangkat daerah (select dropdown)
         // $mpd = Permission::firstOrCreate(['name' => 'mengelola_perangkat_daerah', 'guard_name' => 'web']);
         $selectNomenklatur = Permission::firstOrCreate(['name' => 'select nomenklatur','guard_name' => 'web']);
@@ -156,7 +91,6 @@ class RuleSeeder extends Seeder
             $viewBantuan,
             $viewPemberitahuan,
             $viewAkunadminPDoperator,
->>>>>>> Aldi
         ]);
 
         // Membuat User
@@ -173,30 +107,18 @@ class RuleSeeder extends Seeder
         $user2->assignRole($ra);
 
         $user3 = User::factory()->create([
-<<<<<<< HEAD
-            'name' => 'Bappeda',
-            'email' => 'Bappeda@gmail.com',
-=======
             'name' => 'Operator',
             'email' => 'Operator@gmail.com',
->>>>>>> Aldi
         ]);
         $user3->assignRole($rop);
 
         $user4 = User::factory()->create([
-<<<<<<< HEAD
-            'email' => 'dinas@gmail.com',
-            'name' => 'Dinas',
-        ]);
-        $user4->assignRole($rpd);
-=======
             'name' => 'Perangkat_daerah',
             'email' => 'PD@gmail.com',
-            
+
         ]);
         $user4->assignRole($rpd);
 
         $roles = $user->getRoleNames();
->>>>>>> Aldi
     }
 }

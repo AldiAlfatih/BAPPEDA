@@ -10,6 +10,6 @@ class Panduan extends Model
     use HasFactory;
 
     protected $table = 'panduan';
-    protected $fillable = ['judul','deskripsi','file'];
+    protected $fillable = ['tahap','deskripsi','file', 'sampul'];
 
 }

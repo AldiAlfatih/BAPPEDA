@@ -2,100 +2,182 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\Bantuan;
-use App\Models\StatusBantuan;
-use App\Http\Requests\BantuanRequest;
+use App\Models\BantuanFaq;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class BantuanController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return Inertia::render('Bantuan');
-    }
+        $bantuans = Bantuan::with('user', 'faqs')->latest()->get();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $statusBantuanOptions = StatusBantuan::all();
-        return Inertia::render('bantuan/Create', [
-            'statusBantuanOptions' => $statusBantuanOptions
+        return Inertia::render('Bantuan', [
+            'bantuans' => $bantuans,
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    public function create()
+    {
+        return Inertia::render('Bantuan/Create');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
-            'jenis_bantuan' => 'required|string|max:255',
-            'penerima' => 'nullable|string',
-            'tanggal_disalurkan' => 'nullable|string',
-            'status_bantuan_id' => 'nullable|exists:status,id',
+            'judul' => 'required|string|max:255',
+            'balasan' => 'nullable|string',
+            'file' => 'nullable|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
+            'status' => 'required|integer|in:0,1,2',
         ]);
 
-        $bantuan = Bantuan::create($request->all());
+        $bantuan = Bantuan::create([
+            'user_id' => Auth::id(),
+            'judul' => $request->judul,
+            'status' => $request->status,
+        ]);
 
-        // return response()->route('bantuan.index')->with('success', 'Bantuan created successfully');
-        return redirect()->route('bantuan.index')->with('success', 'Bantuan created successfully');
+        $filePath = null;
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/bantuan');
+
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $file->move($destinationPath, $fileName);
+            $filePath = 'uploads/bantuan/' . $fileName;
+        }
+
+        BantuanFaq::create([
+            'user_id' => Auth::id(),
+            'bantuan_id' => $bantuan->id,
+            'balasan' => $request->balasan,
+            'file' => $filePath,
+        ]);
+
+        return redirect()->route('bantuan.index')->with('success', 'Data bantuan berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Bantuan $bantuan)
     {
-        $bantuan = Bantuan::findOrFail($id);
-        return Inertia::render('bantuan/Show', [
-            'bantuan' => $bantuan
+        $bantuan->load('faqs.user');
+
+        return Inertia::render('Bantuan/Show', [
+            'bantuan' => $bantuan,
+            'faqs' => $bantuan->faqs,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function chatForm(Bantuan $bantuan)
     {
-        $bantuan = Bantuan::findOrFail($id);
-        return Inertia::render('bantuan/Edit', [
-            'bantuan' => $bantuan
+        $bantuan->load(['faqs.user']);
+
+        return Inertia::render('Bantuan/Chat', [
+            'bantuan' => $bantuan,
+            'faqs' => $bantuan->faqs,
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function chatSend(Request $request, Bantuan $bantuan)
     {
         $request->validate([
-            'jenis_bantuan' => 'required|string|max:255',
-            'penerima' => 'nullable|string',
-            'tanggal_disalurkan' => 'nullable|string',
-            'status_bantuan_id' => 'nullable|exists:status,id',
+            'balasan' => 'required|string',
+            'file' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
         ]);
-        $bantuan = Bantuan::findOrFail($id);
-        $bantuan->update($request->all());
 
-        // return response()->route('bantuan.index')->with('success', 'Bantuan updated successfully');
-        return redirect()->route('bantuan.index')->with('success', 'Bantuan updated successfully');
+        $filePath = null;
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('public/images');
+
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
+            }
+
+            $file->move($destinationPath, $fileName);
+            $filePath = 'public/images/' . $fileName;
+        }
+
+        BantuanFaq::create([
+            'bantuan_id' => $bantuan->id,
+            'user_id' => Auth::id(),
+            'balasan' => $request->balasan,
+            'file' => $filePath,
+        ]);
+
+        return redirect()->back()->with('success', 'Pesan balasan berhasil dikirim.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function selesaikanChat($id)
     {
         $bantuan = Bantuan::findOrFail($id);
+        $bantuan->status = 2;
+        $bantuan->save();
+
+        return redirect()->route('bantuan.index')->with('success', 'Bantuan berhasil diselesaikan.');
+        // return Inertia::render('Bantuan');
+    }
+
+    public function updateStatusToDiproses($id)
+    {
+        $bantuan = Bantuan::findOrFail($id);
+
+        // Cek apakah statusnya 'Diterima' sebelum diubah ke 'Diproses'
+        if ($bantuan->status == 0) {
+            $bantuan->status = 1; // Ubah status menjadi 'Diproses'
+            $bantuan->save();
+        }
+
+        return redirect()->route('bantuan.chat', $bantuan->id);
+    }
+
+
+    public function edit(Bantuan $bantuan)
+    {
+        // dd(Auth::user());
+
+        $bantuan->load('faqs.user');
+        return Inertia::render('Bantuan/Edit', [
+            'auth' => [
+                'user' => Auth::user(),
+            ],
+            'bantuan' => $bantuan,
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'balasan' => 'required|string',
+            'status' => 'required|integer|in:0,1,2'
+        ]);
+
+        $bantuan = Bantuan::find($id);
+        if ($bantuan) {
+            $bantuan->update([
+                'judul' => $request->judul,
+                'status' => $request->status,
+            ]);
+        }
+
+        return redirect()->route('bantuan.index');
+    }
+
+
+    public function destroy(Bantuan $bantuan)
+    {
         $bantuan->delete();
 
-        // return response()->route('bantuan.index')->with('success', 'Bantuan deleted successfully');
-        return redirect()->route('bantuan.index')->with('success', 'Bantuan deleted successfully');
+        return redirect()->route('bantuan.index')->with('success', 'Data bantuan berhasil dihapus.');
     }
 }

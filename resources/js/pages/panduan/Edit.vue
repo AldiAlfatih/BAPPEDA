@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm} from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { ref, defineProps } from 'vue';
+import { defineProps } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
 import { type BreadcrumbItem } from '@/types';
 
@@ -46,16 +46,18 @@ const handleUpdate = async () => {
   }
 
   try {
-    await form.put(`/panduan/${props.panduan.id}`, formData, {
-      onSuccess: () => {
-        Inertia.visit('/panduan');  // Kembali ke halaman panduan setelah sukses
-        alert('Panduan berhasil diperbarui!');
-      },
-      onError: (error) => {
-        alert('Terjadi kesalahan saat menyimpan panduan');
-        console.error('Error:', error);
-      },
-    });
+    form.put(`/panduan/${props.panduan.id}`, {
+          method: 'put',
+          ...Object.fromEntries(formData),
+          onSuccess: () => {
+              Inertia.visit('/panduan'); // Kembali ke halaman panduan setelah sukses
+              alert('Panduan berhasil diperbarui!');
+          },
+          onError: (error: any) => {
+              alert('Terjadi kesalahan saat menyimpan panduan');
+              console.error('Error:', error);
+          },
+      });
   } catch (error) {
     console.error('Terjadi kesalahan:', error);
   }
@@ -68,7 +70,7 @@ const cancelEdit = () => {
 </script>
 
 <template>
-  <AppLayout>
+  <AppLayout :breadcrumbs="breadcrumbs">
     <Head title="Edit Panduan" />
     <div class="p-6 bg-white rounded-lg shadow-md">
       <h2 class="text-lg font-bold mb-4">Edit Panduan</h2>

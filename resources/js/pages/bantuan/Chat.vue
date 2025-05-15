@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { type BreadcrumbItem } from '@/types'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage} from '@inertiajs/vue3'
 import { format } from 'date-fns'
 import { computed, ref, watch } from 'vue'
-import { Inertia } from '@inertiajs/inertia'
 
 interface User {
   id: number
@@ -81,11 +80,15 @@ const updateChatStatus = () => {
   form.post(route('bantuan.chat.selesai', props.bantuan.id), {
     preserveScroll: true,
     onSuccess: () => {
-      Inertia.get('/bantuan');
+      // Mengganti Inertia.get dengan router.visit atau window.location
+      window.location.href = '/bantuan';
     },
   });
 };
 
+const navigateBack = () => {
+  window.location.href = '/bantuan';
+}
 </script>
 
 <template>
@@ -157,7 +160,7 @@ const updateChatStatus = () => {
           <button
             type="button"
             class="px-4 py-2 mr-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-            @click="Inertia.visit('/bantuan')">Kembali</button>
+            @click="navigateBack">Kembali</button>
 
           <button
             type="submit"

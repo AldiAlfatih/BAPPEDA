@@ -3,12 +3,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Eye } from 'lucide-vue-next';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
+import { Plus } from 'lucide-vue-next';
+// import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 import {
   Table,
   TableBody,
-  TableCaption,
+//   TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -135,7 +135,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </TableBody>
                 </Table>
                 <div class="py-1 leading-none">
-                    <Button size="xs" class="ml-auto flex items-center gap-1 px-2 py-1 text-sm">
+                    <Button size="sm" class="ml-auto flex items-center gap-1 px-2 py-1 text-sm">
                         <Plus class="w-4 h-4" />
                         Tambahkan
                     </Button>

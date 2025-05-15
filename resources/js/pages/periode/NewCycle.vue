@@ -1,9 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { defineProps } from 'vue'
+
+interface Tahap {
+  id: number;
+  tahap: string;
+}
 
 // Menerima props tahapList
 const props = defineProps({
-  tahapList: Array
+  tahapList: {
+    type: Array as () => Tahap[],
+    required: true
+  }
 })
 </script>
 

@@ -11,5 +11,8 @@ class Panduan extends Model
 
     protected $table = 'panduan';
     protected $fillable = ['tahap','deskripsi','file', 'sampul'];
-
+    protected $nullable = [
+        'file',
+        'sampul',
+    ];
 }

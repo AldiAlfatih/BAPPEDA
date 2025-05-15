@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, useForm } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
-import { Inertia, Method } from '@inertiajs/inertia'
+import { Inertia } from '@inertiajs/inertia'
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Periode', href: '/periode' },
@@ -32,14 +32,20 @@ const statusMessage = ref('')
 
 const statusList = ref(periodeData.value.map((item) => ({ id: item.id, status: item.status })))
 
+// Form untuk mengelola status
+const statusForm = useForm({
+  status: 0
+})
 
 function toggleStatus(id: number) {
   const item = statusList.value.find((i) => i.id === id)
   if (!item) return
 
   const newStatus = item.status === 1 ? 0 : 1
+  statusForm.status = newStatus
 
-  Inertia.put(`/periode/${id}/status`, { status: newStatus }, {
+  statusForm.put(`/periode/${id}/status`, {
+    preserveScroll: true,
     onSuccess: () => {
       item.status = newStatus
     },
@@ -55,7 +61,7 @@ function getStatusLabel(status: number) {
   return 'Selesai'
 }
 
-function canShowSelesai(p: typeof props.periode[number]) {
+function canShowSelesai(p: NonNullable<typeof props.periode>[0]) {
   if (p.status !== 0) return false
 
   // Urutkan semua periode berdasarkan id tahap (atau pakai urutan lain jika ada)
@@ -75,14 +81,16 @@ function markAsSelesai(id: number) {
   if (!item) return
 
   if (confirm('Apakah Anda yakin ingin menandai periode ini sebagai selesai?')) {
-    Inertia.put(`/periode/${id}/status`, { status: 2 }, {
+    statusForm.status = 2
+
+    statusForm.put(`/periode/${id}/status`, {
+      preserveScroll: true,
       onSuccess: () => {
         item.status = 2
       },
       onError: () => {
         alert('Gagal mengubah status ke selesai.')
-      },
-      preserveScroll: true
+      }
     })
   }
 }
@@ -91,9 +99,8 @@ const allSelesai = computed(() => {
   return periodeData.value.every(p => p.status === 2)
 })
 
-
 function editItem(id: number) {
-  Inertia.visit(`/periode/${id}/edit`)
+  window.location.href = `/periode/${id}/edit`
 }
 
 const searchQuery = ref('')
@@ -114,11 +121,11 @@ function formatDate(date: string) {
 
 const years = computed(() => props.tahuns)
 
-function deleteItem(id: number) {
-  if (confirm('Apakah Anda yakin ingin menghapus periode ini?')) {
-    Inertia.delete(`/periode/${id}`)
-  }
-}
+// function deleteItem(id: number) {
+//   if (confirm('Apakah Anda yakin ingin menghapus periode ini?')) {
+//     Inertia.delete(`/periode/${id}`)
+//   }
+// }
 
 const isPeriodExists = computed(() => {
   return periodeData.value.some((p) => p.tahun.id === yearFilter.value)
@@ -128,10 +135,13 @@ const isGenerating = ref(false)
 function generatePeriode() {
   if (confirm('Apakah Anda ingin membuat otomatis periode untuk tahun berjalan?')) {
     isGenerating.value = true
-    Inertia.visit('/periode/generate', {
-      method: 'post' as Method,
+
+    const form = useForm({
+      tahun: yearFilter.value
+    })
+
+    form.post('/periode/generate', {
       preserveScroll: true,
-      data: { tahun: yearFilter.value }, // Mengirimkan tahun yang dipilih
       onFinish: () => {
         isGenerating.value = false
       },
@@ -144,7 +154,10 @@ function generatePeriode() {
 
 function handleLanjutTahun() {
   if (confirm('Lanjutkan ke tahun berikutnya dan buat periode baru?')) {
-    Inertia.post('/periode/lanjutkanKeTahunBerikutnya', {}, {
+    const form = useForm({})
+
+    form.post('/periode/lanjutkanKeTahunBerikutnya', {
+      preserveScroll: true,
       onSuccess: (page) => {
         const newYear = page.props.newYear as string | undefined;
         if (newYear) {
@@ -152,7 +165,7 @@ function handleLanjutTahun() {
         } else {
           statusMessage.value = 'Tahun baru berhasil ditambahkan!'
         }
-        Inertia.reload({ preserveScroll: true });
+        window.location.reload()
       },
       onError: () => {
         statusMessage.value = 'Gagal menambahkan tahun.'
@@ -239,12 +252,8 @@ function handleLanjutTahun() {
                   Selesai
                 </button>
 
-
-
                 <span v-if="p.status === 2" class="text-gray-500 text-sm italic">Sudah selesai</span>
               </td>
-
-
             </tr>
           </tbody>
         </table>

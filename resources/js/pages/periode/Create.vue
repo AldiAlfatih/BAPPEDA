@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
-import { Inertia } from '@inertiajs/inertia'
+import { Inertia, Method } from '@inertiajs/inertia'
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Periode', href: '/periode' },
@@ -85,7 +85,7 @@ function generatePeriode() {
   if (confirm('Apakah Anda ingin membuat otomatis periode untuk tahun berjalan?')) {
     isGenerating.value = true
     Inertia.visit('/periode/generate', {
-      method: 'post',
+      method: 'POST' as Method,
       preserveScroll: true,
       data: { tahun: yearFilter.value }, // Mengirimkan tahun yang dipilih
       onFinish: () => {
@@ -137,7 +137,7 @@ function generatePeriode() {
             </tr>
             <tr v-for="(p, index) in filteredperiode" :key="p.id">
               <td class="px-4 py-2 text-sm text-gray-600">{{ index + 1 }}</td>
-              <td class="px-4 py-2 text-sm text-gray-600">{{ p.tahap.tahap }}</td>
+              <td class="px-4 py-2 text-sm text-gray-600">{{ p?.tahap?.tahap || '' }}</td>
               <td class="px-4 py-2 text-sm text-gray-600">{{ formatDate(p.tanggal_mulai) }}</td>
               <td class="px-4 py-2 text-sm text-gray-600">{{ formatDate(p.tanggal_selesai) }}</td>
               <td class="px-4 py-2">

@@ -28,48 +28,50 @@ class PanduanController extends Controller
         ]);
     }
 
-
-    /**
-     * Menampilkan formulir untuk membuat panduan baru.
-     */
-    public function create()
-    {
-        return Inertia::render('Panduan/Create');
-    }
-
     /**
      * Menyimpan panduan baru ke dalam penyimpanan.
      */
     public function store(Request $request)
     {
-        // Validasi input
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
+        try {
+            // Validasi input
+            $validated = $request->validate([
+                'judul' => 'required|string|max:255',
+                'deskripsi' => 'required|string',
+                'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+                'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            ]);
 
-        // Menyimpan data panduan
-        $panduan = new Panduan();
-        $panduan->judul = $request->judul;
-        $panduan->deskripsi = $request->deskripsi;
+            // Menyimpan data panduan
+            $panduan = new Panduan();
+            $panduan->judul = $validated['judul'];
+            $panduan->deskripsi = $validated['deskripsi'];
+            $panduan->file = null; // Default nilai null untuk file
+            $panduan->sampul = null; // Default nilai null untuk sampul
 
-        // Jika file panduan ada, simpan ke storage
-        if ($request->hasFile('file')) {
-            $panduan->file = $request->file('file')->store('panduan_files', 'public');
+            // Jika file panduan ada, simpan ke storage
+            if ($request->hasFile('file') && $request->file('file')->isValid()) {
+                $panduan->file = $request->file('file')->store('panduan_files', 'public');
+            }
+
+            // Jika gambar sampul ada, simpan ke storage
+            if ($request->hasFile('sampul') && $request->file('sampul')->isValid()) {
+                $panduan->sampul = $request->file('sampul')->store('panduan_sampul', 'public');
+            }
+
+            // Menyimpan data panduan ke database
+            $panduan->save();
+
+            // Mengirimkan data terbaru setelah disimpan ke Inertia
+            return redirect()->route('panduan.index')->with('success', 'Panduan berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Error menyimpan panduan: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
-
-        // Jika gambar sampul ada, simpan ke storage
-        if ($request->hasFile('sampul')) {
-            $panduan->sampul = $request->file('sampul')->store('panduan_sampul', 'public');
-        }
-
-        // Menyimpan data panduan ke database
-        $panduan->save();
-
-        // Mengirimkan data terbaru setelah disimpan ke Inertia
-        return redirect()->route('panduan.index')->with('success', 'Panduan berhasil ditambahkan.');
     }
 
     /**
@@ -77,7 +79,10 @@ class PanduanController extends Controller
      */
     public function show(string $id)
     {
-        $panduan = Panduan::findOrFail($id);  // Menampilkan panduan berdasarkan ID
+        $panduan = Panduan::findOrFail($id);
+        $panduan->file_url = $panduan->file ? Storage::url($panduan->file) : null;
+        $panduan->sampul_url = $panduan->sampul ? Storage::url($panduan->sampul) : null;
+
         return Inertia::render('Panduan/Show', ['panduan' => $panduan]);
     }
 
@@ -86,7 +91,10 @@ class PanduanController extends Controller
      */
     public function edit(string $id)
     {
-        $panduan = Panduan::findOrFail($id);  // Menampilkan panduan berdasarkan ID
+        $panduan = Panduan::findOrFail($id);
+        $panduan->file_url = $panduan->file ? Storage::url($panduan->file) : null;
+        $panduan->sampul_url = $panduan->sampul ? Storage::url($panduan->sampul) : null;
+
         return Inertia::render('panduan/Edit', ['panduan' => $panduan]);
     }
 
@@ -106,8 +114,8 @@ class PanduanController extends Controller
         $panduan = Panduan::findOrFail($id);
 
         // Tentukan file path default menggunakan file lama
-        $filePath = $panduan->file;
-        $sampulPath = $panduan->sampul;
+        $filePath = $panduan->file; // Pertahankan file lama jika tidak ada yang baru
+        $sampulPath = $panduan->sampul; // Pertahankan sampul lama jika tidak ada yang baru
 
         // Jika ada file baru, simpan file baru dan hapus file lama jika ada
         if ($request->hasFile('file')) {

@@ -19,7 +19,7 @@ const headerData = ref([
     { label: 'NAMA KEPALA SKPD', value: 'ZULKARNAEN, ST., M.Si' },
 ]);
 
-// Sample data for the program table
+// Sample data for the program table with target data
 const programData = ref([
     {
         kode: '1',
@@ -27,7 +27,13 @@ const programData = ref([
         pokok: '216.551.782.886,00',
         parsial: '211.129.110.516,00',
         perubahan: '',
-        sumberDana: 'DAU'
+        sumberDana: 'DAU',
+        targets: [
+            { kinerjaFisik: '', keuangan: '180.512.844.036,00' }, // Triwulan 1
+            { kinerjaFisik: '66,22', keuangan: '198.036.609.736,00' }, // Triwulan 2
+            { kinerjaFisik: '', keuangan: '214.222.088.060,00' }, // Triwulan 3
+            { kinerjaFisik: '', keuangan: '' }, // Triwulan 4
+        ]
     },
     {
         kode: '1.01',
@@ -35,7 +41,13 @@ const programData = ref([
         pokok: '216.551.782.886,00',
         parsial: '211.129.110.516,00',
         perubahan: '0,0',
-        sumberDana: 'DAU'
+        sumberDana: 'DAU',
+        targets: [
+            { kinerjaFisik: '', keuangan: '180.512.844.036,00' }, // Triwulan 1
+            { kinerjaFisik: '66,22', keuangan: '198.036.609.736,00' }, // Triwulan 2
+            { kinerjaFisik: '', keuangan: '214.222.088.060,00' }, // Triwulan 3
+            { kinerjaFisik: '', keuangan: '' }, // Triwulan 4
+        ]
     },
     {
         kode: '1.01.01',
@@ -43,15 +55,27 @@ const programData = ref([
         pokok: '170.351.678.486,00',
         parsial: '164.871.072.942,00',
         perubahan: '',
-        sumberDana: ''
+        sumberDana: '',
+        targets: [
+            { kinerjaFisik: '35,71', keuangan: '168.645.954.036,00' }, // Triwulan 1
+            { kinerjaFisik: '64,29', keuangan: '169.226.716.336,00' }, // Triwulan 2
+            { kinerjaFisik: '78,57', keuangan: '169.837.391.186,00' }, // Triwulan 3
+            { kinerjaFisik: '100,00', keuangan: '' }, // Triwulan 4
+        ]
     },
     {
         kode: '1.01.01.2.01',
         program: 'Perencanaan, Penganggaran dan Evaluasi Kinerja Perangkat Daerah',
-        pokok: '',
-        parsial: '',
+        pokok: '6.300.000,00',
+        parsial: '6.300.000,00',
         perubahan: '',
-        sumberDana: ''
+        sumberDana: '',
+        targets: [
+            { kinerjaFisik: '100,00', keuangan: '2.700.000,00' }, // Triwulan 1
+            { kinerjaFisik: '100,00', keuangan: '3.600.000' }, // Triwulan 2
+            { kinerjaFisik: '75,00', keuangan: '6.300.000' }, // Triwulan 3
+            { kinerjaFisik: '100,00', keuangan: '6.300.000' }, // Triwulan 4
+        ]
     },
 ]);
 </script>
@@ -78,39 +102,67 @@ const programData = ref([
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Add button -->
             </div>
 
-            <!-- Program table -->
+            <!-- Program table with targets -->
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
-                <div class="flex justify-end p-4">
-                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors">
-                        Tambahkan
-                    </button>
-                </div>
-                <table class="w-full border-collapse text-sm">
+                <table class="w-full border-collapse text-sm mt-6">
                     <thead>
-                        <tr class=" text-center">
-                            <th rowspan="3" class="border border-amber-300 px-2 py-1">kode</th>
+                        <tr class="text-center bg-amber-100">
+                            <th rowspan="3" class="border border-amber-300 px-2 py-1">KODE</th>
                             <th rowspan="3" class="border border-amber-300 px-2 py-1">PROGRAM/ KEGIATAN/ SUB KEGIATAN</th>
                             <th colspan="3" class="border border-amber-300 px-2 py-1">PAGU ANGGARAN APBD</th>
                             <th rowspan="3" class="border border-amber-300 px-2 py-1">SUMBER DANA</th>
+                            <th colspan="8" class="border border-amber-300 px-2 py-1">TARGET</th>
                         </tr>
-                        <tr class=" text-center">
+                        <tr class="text-center bg-amber-100">
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">POKOK (RP)</th>
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">PARSIAL (RP)</th>
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">PERUBAHAN (RP)</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 1</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 2</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 3</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 4</th>
+                        </tr>
+                        <tr class="text-center bg-amber-100">
+                            <!-- Triwulan 1 -->
+                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
+                            <!-- Triwulan 2 -->
+                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
+                            <!-- Triwulan 3 -->
+                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
+                            <!-- Triwulan 4 -->
+                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="item in programData" :key="item.kode" class="border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="p-3 border border-gray-200 dark:border-gray-600">{{ item.kode }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.kode }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 font-medium">{{ item.program }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.pokok }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.parsial }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.perubahan }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.sumberDana }}</td>
+                            
+                            <!-- Triwulan 1 -->
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[0].kinerjaFisik }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[0].keuangan }}</td>
+                            
+                            <!-- Triwulan 2 -->
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[1].kinerjaFisik }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[1].keuangan }}</td>
+                            
+                            <!-- Triwulan 3 -->
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[2].kinerjaFisik }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[2].keuangan }}</td>
+                            
+                            <!-- Triwulan 4 -->
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[3].kinerjaFisik }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[3].keuangan }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -120,7 +172,7 @@ const programData = ref([
 </template>
 
 <style scoped>
-/* Additional styling */
+/* Enhanced styling to match the reference image */
 table {
     border-collapse: collapse;
     width: 100%;
@@ -129,5 +181,18 @@ table {
 th, td {
     border: 1px solid #000000;
     padding: 4px 8px;
+}
+
+thead {
+    background-color: #FFF2CC;
+}
+
+thead th {
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+tbody tr:nth-child(odd) {
+    background-color: #FFFCF3;
 }
 </style>

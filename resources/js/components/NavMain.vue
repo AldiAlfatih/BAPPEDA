@@ -24,8 +24,11 @@ const toggleMenu = (title: string) => {
 </script>
 
 <template>
-  <SidebarGroup class="px-2 py-0">
-    <SidebarGroupLabel>Menu</SidebarGroupLabel>
+  <SidebarGroup class="px-2 py-0 mt-3">
+    <SidebarGroupLabel>
+      APLIKASI MONITORING
+      DAN EVALUASI
+      KEGIATAN PEMBANGUNAN</SidebarGroupLabel>
     <SidebarMenu>
       <SidebarMenuItem v-for="item in items" :key="item.title">
         <template v-if="!item.guard || item.guard.includes(page.props.auth.user.role)">

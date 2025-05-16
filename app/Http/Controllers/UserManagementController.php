@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\User;
@@ -17,7 +16,7 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('roles')->paginate(10);
+        $users = User::with('roles')->paginate(1000);
         return Inertia::render('UserManagement', [
             'users' => $users,
         ]);
@@ -59,27 +58,56 @@ class UserManagementController extends Controller
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dibuat.');
     }
 
-    public function edit(User $user)
-    {
-        $user->load('userDetail');
+    // public function edit(User $user)
+    // {
+    //     $user->load('userDetail');
     
-        $roles = $user->getRoleNames()->toArray();
+    //     $roles = $user->getRoleNames()->toArray();
         
+    //     return Inertia::render('usermanagement/Edit', [
+    //         'user' => [
+    //             'id' => $user->id,
+    //             'name' => $user->name,
+    //             'email' => $user->email,
+    //             'roles' => $roles,
+    //             'userDetail' => $user->userDetail ? [
+    //                 'alamat' => $user->userDetail->alamat,
+    //                 'nip' => $user->userDetail->nip,
+    //                 'no_hp' => $user->userDetail->no_hp,
+    //                 'jenis_kelamin' => $user->userDetail->jenis_kelamin,
+    //             ] : null,
+    //         ],
+    //     ]);
+    // }
+
+    public function edit($id)
+    {
+        $user = User::with('userDetail')->find($id);
+        
+        if (!$user) {
+            abort(404, 'User not found');
+        }
+
         return Inertia::render('usermanagement/Edit', [
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'roles' => $roles,
-                'userDetail' => $user->userDetail ? [
-                    'alamat' => $user->userDetail->alamat,
-                    'nip' => $user->userDetail->nip,
-                    'no_hp' => $user->userDetail->no_hp,
-                    'jenis_kelamin' => $user->userDetail->jenis_kelamin,
-                ] : null,
+                'roles' => $user->getRoleNames()->toArray(),
+                'userDetail' => $user->userDetail ? $user->userDetail->only([
+                    'alamat', 'nip', 'no_hp', 'jenis_kelamin',
+                ]) : [
+                    'alamat' => '',
+                    'nip' => '',
+                    'no_hp' => '',
+                    'jenis_kelamin' => '',
+                ],
             ],
         ]);
     }
+
+
+
 
     public function update(Request $request, User $user)
     {
@@ -136,5 +164,5 @@ class UserManagementController extends Controller
     {
         $user->delete();
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dihapus.');
-    }
+}
 }

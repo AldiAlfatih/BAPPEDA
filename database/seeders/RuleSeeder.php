@@ -92,33 +92,5 @@ class RuleSeeder extends Seeder
             $viewPemberitahuan,
             $viewAkunadminPDoperator,
         ]);
-
-        // Membuat User
-        $user = User::factory()->create([
-            'email' => 'super_admin@gmail.com',
-            'name' => 'Super Admin',
-        ]);
-        $user->assignRole($rsa);
-
-        $user2 = User::factory()->create([
-            'email' => 'admin@gmail.com',
-            'name' => 'Admin',
-        ]);
-        $user2->assignRole($ra);
-
-        $user3 = User::factory()->create([
-            'name' => 'Operator',
-            'email' => 'Operator@gmail.com',
-        ]);
-        $user3->assignRole($rop);
-
-        $user4 = User::factory()->create([
-            'name' => 'Perangkat_daerah',
-            'email' => 'PD@gmail.com',
-            
-        ]);
-        $user4->assignRole($rpd);
-
-        $roles = $user->getRoleNames();
     }
 }

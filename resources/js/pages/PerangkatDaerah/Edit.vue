@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { defineProps} from 'vue';
+import { defineProps } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,6 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Edit PD', href: '/perangkatdaerah/edit' },
 ];
 
-// Menerima data SKPD dan users dari props
 const props = defineProps<{
   skpd: {
     id: number;
@@ -24,10 +23,9 @@ const props = defineProps<{
     kode_organisasi: string;
     user_id: number;
   };
-  users: Array<{ id: number, name: string }>;
+  users: Array<{ id: number; name: string }>;
 }>();
 
-// Membuat form dengan useForm
 const form = useForm({
   user_id: props.skpd.user_id,
   nama_operator: props.skpd.nama_operator,
@@ -37,13 +35,15 @@ const form = useForm({
   kode_organisasi: props.skpd.kode_organisasi,
 });
 
-// Fungsi untuk mengirim data ke backend
-form.put(route('perangkatdaerah.update', props.skpd.id), {
-  onFinish: () => {
-    // tindakan setelah selesai
-  }
-});
+function submitForm() {
+  form.patch(route('perangkatdaerah.update', props.skpd.id), {
+    onFinish: () => {
+      // misalnya reset form atau show notification
+    },
+  });
+}
 </script>
+
 
 <template>
   <AppLayout :breadcrumbs="breadcrumbs">

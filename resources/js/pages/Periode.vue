@@ -228,31 +228,35 @@ function handleLanjutTahun() {
                 </span>
               </td>
               <td class="px-4 py-2">
-                <button
-                  v-if="p.status !== 2"
-                  @click="toggleStatus(p.id)"
-                  class="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  {{ p.status === 1 ? 'Tutup' : 'Buka' }}
-                </button>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-if="p.status !== 2"
+                    @click="toggleStatus(p.id)"
+                    class="px-2 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                  >
+                    {{ p.status === 1 ? 'Tutup' : 'Buka' }}
+                  </button>
 
-                <button
-                  v-if="p.status !== 2"
-                  @click="editItem(p.id)"
-                  class="text-sm text-green-600 hover:text-green-700 ml-2"
-                >
-                  Edit
-                </button>
+                  <button
+                    v-if="p.status !== 2"
+                    @click="editItem(p.id)"
+                    class="px-2 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+                  >
+                    Edit
+                  </button>
 
-                <button
-                  v-if="canShowSelesai(p)"
-                  @click="markAsSelesai(p.id)"
-                  class="text-sm text-yellow-600 hover:text-yellow-700 ml-2"
-                >
-                  Selesai
-                </button>
+                  <button
+                    v-if="canShowSelesai(p)"
+                    @click="markAsSelesai(p.id)"
+                    class="px-2 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+                  >
+                    Selesai
+                  </button>
 
-                <span v-if="p.status === 2" class="text-gray-500 text-sm italic">Sudah selesai</span>
+                  <span v-if="p.status === 2" class="px-2 py-1 bg-gray-300 text-gray-600 text-sm rounded italic">
+                    Sudah selesai
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>

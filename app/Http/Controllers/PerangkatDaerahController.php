@@ -19,7 +19,7 @@ class PerangkatDaerahController extends Controller
      */
     public function index()
     {
-        $users = User::role('perangkat_daerah')->with('skpd')->paginate(15);
+        $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
 
         return Inertia::render('PerangkatDaerah', [
             'users' => $users,

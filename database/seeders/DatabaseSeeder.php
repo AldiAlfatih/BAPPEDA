@@ -23,5 +23,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(FiturSeeder::class);
         $this->call(RuleSeeder::class);
+        $this->call(KodeNomenklaturSeeder::class);
+        $this->call(PDSeeder::class);
     }
 }

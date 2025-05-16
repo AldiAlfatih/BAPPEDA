@@ -19,7 +19,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Nomenklatur',
         href: '/kodenomenklatur',
-        guard: ['admin', 'perangkat_daerah'],
+        guard: ['admin'],
         icon: BookOpen,
     },
 
@@ -44,11 +44,12 @@ const mainNavItems: NavItem[] = [
         title: 'Monitoring',
         href: '/monitoring',
         icon: Monitor,
-        guard: ['admin'],
+        guard: ['admin', 'perangkat_daerah'],
         children: [
         {
             title: 'Manajemen Periode',
             href: '/periode',
+            guard: ['admin']
         },
         {
             title: 'Rencana Awal',

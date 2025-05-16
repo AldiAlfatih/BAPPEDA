@@ -4,14 +4,14 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  Filter, 
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
   ArrowUpDown,
   FileText,
   Info
@@ -25,7 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -67,33 +67,33 @@ const breadcrumbs: BreadcrumbItem[] = [
 // Filter dan Sorting
 const filteredData = computed(() => {
   let data = [...props.kodeNomenklatur];
-  
+
   // Filter berdasarkan pencarian
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    data = data.filter(item => 
-      item.nomor_kode.toLowerCase().includes(query) || 
+    data = data.filter(item =>
+      item.nomor_kode.toLowerCase().includes(query) ||
       item.nomenklatur.toLowerCase().includes(query) ||
       labelJenisNomenklatur(item.jenis_nomenklatur).toLowerCase().includes(query)
     );
   }
-  
+
   // Sorting
   data.sort((a, b) => {
     let aVal = getFieldValue(a, sortField.value);
     let bVal = getFieldValue(b, sortField.value);
-    
+
     // String comparison
     if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return sortDirection.value === 'asc' 
-        ? aVal.localeCompare(bVal) 
+      return sortDirection.value === 'asc'
+        ? aVal.localeCompare(bVal)
         : bVal.localeCompare(aVal);
     }
-    
+
     // Number comparison
     return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal;
   });
-  
+
   return data;
 });
 
@@ -167,8 +167,6 @@ function labelJenisNomenklatur(value: number): string {
   }
 }
 
-
-
 // Truncate text
 function truncateNomenklatur(nomenklatur: string, length: number = 30): string {
   return nomenklatur.length > length ? nomenklatur.slice(0, length) + '...' : nomenklatur;
@@ -201,9 +199,9 @@ function handleSearchChange() {
       <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div class="relative w-full sm:w-96">
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input 
-            v-model="searchQuery" 
-            placeholder="Cari kode, nomenklatur, atau jenis..." 
+          <Input
+            v-model="searchQuery"
+            placeholder="Cari kode, nomenklatur, atau jenis..."
             class="pl-10 pr-4 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
             @input="handleSearchChange"
           />
@@ -230,21 +228,21 @@ function handleSearchChange() {
                   <TableHead class="cursor-pointer group" @click="toggleSort('nomor_kode')">
                     <div class="flex items-center gap-1">
                       Kode
-                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                         :class="{'opacity-100': sortField === 'nomor_kode'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nomenklatur')">
                     <div class="flex items-center gap-1">
                       Nomenklatur
-                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                         :class="{'opacity-100': sortField === 'nomenklatur'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('jenis_nomenklatur')">
                     <div class="flex items-center gap-1">
                       Jenis
-                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                         :class="{'opacity-100': sortField === 'jenis_nomenklatur'}" />
                     </div>
                   </TableHead>
@@ -288,12 +286,12 @@ function handleSearchChange() {
                             @click.stop="toggleDetail(kode.id)">
                             <FileText class="w-4 h-4 text-blue-500" />
                           </Button> -->
-                          <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
+                          <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
                             @click.stop="goToEditPage(kode.id)">
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button>
-                          <Button size="sm" class="bg-red-600 hover:bg-red-700 text-white" 
+                          <Button size="sm" class="bg-red-600 hover:bg-red-700 text-white"
                             @click.stop="deleteKode(kode.id)">
                             <Trash2 class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Hapus</span>
@@ -301,7 +299,7 @@ function handleSearchChange() {
                         </div>
                       </TableCell>
                     </TableRow>
-                    
+
                     <!-- Detail ekspansi -->
                     <TableRow v-if="showDetailId === kode.id" class="bg-blue-50/50 dark:bg-blue-900/10">
                       <TableCell colspan="5" class="animate-fadeIn">
@@ -322,22 +320,22 @@ function handleSearchChange() {
                               <p class="text-sm text-gray-500">Nomenklatur:</p>
                               <p class="font-medium text-gray-800 dark:text-gray-200">{{ kode.nomenklatur }}</p>
                             </div>
-                            
+
                             <div v-if="kode.bidang_urusan" class="md:col-span-2">
                               <p class="text-sm text-gray-500">Bidang Urusan:</p>
                               <p>{{ kode.bidang_urusan.bidang_urusan }}</p>
                             </div>
-                            
+
                             <div v-if="kode.program" class="md:col-span-2">
                               <p class="text-sm text-gray-500">Program:</p>
                               <p>{{ kode.program.program }}</p>
                             </div>
-                            
+
                             <div v-if="kode.kegiatan" class="md:col-span-2">
                               <p class="text-sm text-gray-500">Kegiatan:</p>
                               <p>{{ kode.kegiatan.kegiatan }}</p>
                             </div>
-                            
+
                             <div v-if="kode.subkegiatan" class="md:col-span-2">
                               <p class="text-sm text-gray-500">Subkegiatan:</p>
                               <p>{{ kode.subkegiatan.subkegiatan }}</p>
@@ -365,14 +363,14 @@ function handleSearchChange() {
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex justify-between items-center">
         <div class="text-sm text-gray-500">
-          Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai 
-          {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 
+          Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai
+          {{ Math.min(currentPage * itemsPerPage, filteredData.length) }}
           dari {{ filteredData.length }} data
         </div>
         <div class="flex gap-2 items-center">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             @click="currentPage = Math.max(1, currentPage - 1)"
             :disabled="currentPage === 1"
             class="flex items-center gap-1"
@@ -380,10 +378,10 @@ function handleSearchChange() {
             <ChevronLeft class="w-4 h-4" />
             <span class="hidden sm:inline">Sebelumnya</span>
           </Button>
-          
+
           <div class="hidden sm:flex gap-1">
-            <Button 
-              v-for="page in totalPages" 
+            <Button
+              v-for="page in totalPages"
               :key="page"
               :variant="page === currentPage ? 'default' : 'outline'"
               size="sm"
@@ -393,14 +391,14 @@ function handleSearchChange() {
               {{ page }}
             </Button>
           </div>
-          
+
           <div class="sm:hidden">
             <span class="text-sm">{{ currentPage }} / {{ totalPages }}</span>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
+
+          <Button
+            variant="outline"
+            size="sm"
             @click="currentPage = Math.min(totalPages, currentPage + 1)"
             :disabled="currentPage === totalPages"
             class="flex items-center gap-1"
@@ -412,7 +410,7 @@ function handleSearchChange() {
       </div>
     </div>
   </AppLayout>
-  
+
   <!-- Dialog Konfirmasi Hapus -->
   <Dialog :open="confirmDelete !== null" @update:open="cancelDelete">
     <DialogContent class="sm:max-w-md">

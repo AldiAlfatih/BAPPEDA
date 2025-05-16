@@ -37,6 +37,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
     Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
 
+    Route::get('/usermanagement/{user}/edit', [UserManagementController::class, 'edit'])->name('usermanagement.edit');
+    Route::put('/usermanagement/{user}', [UserManagementController::class, 'update'])->name('usermanagement.update');
+
     Route::put('/periode/{id}/status', [PeriodeController::class, 'updateStatus']);
     Route::post('/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');
     Route::post('/periode/lanjutkanKeTahunBerikutnya', [PeriodeController::class, 'lanjutkanKeTahunBerikutnya'])->name('periode.lanjutkanKeTahunBerikutnya');

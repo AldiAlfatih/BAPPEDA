@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BidangUrusan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'bid_urusan';
     protected $fillable = [
@@ -15,6 +16,9 @@ class BidangUrusan extends Model
         'kode_bidang_urusan',
         'nama',
      ];
+     
+    protected $dates = ['deleted_at'];
+    
     // Relasi ke Urusan
     public function urusan()
     {

@@ -48,7 +48,6 @@ const showPassword = ref(false);
 
 // Form dengan data yang sudah terisi dari database
 const form = useForm({
-  _method: 'PATCH',
   name: props.user.name,
   email: props.user.email,
   password: '',
@@ -62,11 +61,10 @@ const form = useForm({
 
 function submit() {
   isSubmitting.value = true;
-  
-  // Kirim form ke endpoint update
-  form.post(`/usermanagement/${props.user.id}`, {
+
+  // Ganti form.post menjadi form.put untuk konsistensi dengan REST API
+  form.put(`/usermanagement/${props.user.id}`, {
     onSuccess: () => {
-      // Redirect ke halaman index setelah berhasil
       window.location.href = '/usermanagement';
     },
     onError: (errors) => {
@@ -75,9 +73,7 @@ function submit() {
     },
     onFinish: () => {
       isSubmitting.value = false;
-    },
-    // Pastikan transformasi data dimatikan agar semua field dikirim
-    // Removed invalid 'transform' property
+    }
   });
 }
 
@@ -113,9 +109,9 @@ function goBack() {
               <div class="space-y-4">
                 <div>
                   <Label for="name">Nama</Label>
-                  <Input 
-                    id="name" 
-                    v-model="form.name" 
+                  <Input
+                    id="name"
+                    v-model="form.name"
                     class="mt-1"
                   />
                   <div v-if="form.errors.name" class="text-sm text-red-500 mt-1">
@@ -125,10 +121,10 @@ function goBack() {
 
                 <div>
                   <Label for="email">Email <span class="text-red-500">*</span></Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    v-model="form.email" 
+                  <Input
+                    id="email"
+                    type="email"
+                    v-model="form.email"
                     class="mt-1"
                   />
                   <div v-if="form.errors.email" class="text-sm text-red-500 mt-1">
@@ -157,9 +153,9 @@ function goBack() {
               <div class="space-y-4">
                 <div>
                   <Label for="alamat">Alamat</Label>
-                  <Input 
-                    id="alamat" 
-                    v-model="form.alamat" 
+                  <Input
+                    id="alamat"
+                    v-model="form.alamat"
                     class="mt-1"
                   />
                   <div v-if="form.errors.alamat" class="text-sm text-red-500 mt-1">
@@ -169,9 +165,9 @@ function goBack() {
 
                 <div>
                   <Label for="nip">NIP</Label>
-                  <Input 
-                    id="nip" 
-                    v-model="form.nip" 
+                  <Input
+                    id="nip"
+                    v-model="form.nip"
                     class="mt-1"
                   />
                   <div v-if="form.errors.nip" class="text-sm text-red-500 mt-1">
@@ -181,9 +177,9 @@ function goBack() {
 
                 <div>
                   <Label for="no_hp">No. HP</Label>
-                  <Input 
-                    id="no_hp" 
-                    v-model="form.no_hp" 
+                  <Input
+                    id="no_hp"
+                    v-model="form.no_hp"
                     class="mt-1"
                   />
                   <div v-if="form.errors.no_hp" class="text-sm text-red-500 mt-1">
@@ -215,10 +211,10 @@ function goBack() {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label for="password">Password Baru</Label>
-                  <Input 
-                    id="password" 
-                    :type="showPassword ? 'text' : 'password'" 
-                    v-model="form.password" 
+                  <Input
+                    id="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    v-model="form.password"
                     class="mt-1"
                   />
                   <div v-if="form.errors.password" class="text-sm text-red-500 mt-1">
@@ -228,10 +224,10 @@ function goBack() {
 
                 <div>
                   <Label for="password_confirmation">Konfirmasi Password</Label>
-                  <Input 
-                    id="password_confirmation" 
-                    :type="showPassword ? 'text' : 'password'" 
-                    v-model="form.password_confirmation" 
+                  <Input
+                    id="password_confirmation"
+                    :type="showPassword ? 'text' : 'password'"
+                    v-model="form.password_confirmation"
                     class="mt-1"
                   />
                 </div>
@@ -249,9 +245,9 @@ function goBack() {
           <Button variant="outline" @click="goBack">
             Batal
           </Button>
-          <Button 
-            type="submit" 
-            @click="submit" 
+          <Button
+            type="submit"
+            @click="submit"
             :disabled="isSubmitting"
             class="flex items-center gap-1"
           >

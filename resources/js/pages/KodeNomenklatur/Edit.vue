@@ -4,7 +4,6 @@ import { useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
-// Removed unused Label import
 import { Head } from '@inertiajs/vue3';
 
 const props = defineProps<{
@@ -47,16 +46,16 @@ const filteredBidangUrusan = computed(() => {
 
 const filteredProgram = computed(() => {
   if (!form.urusan || !form.bidang_urusan) return [];
-  return props.programList.filter(item => 
-    item.urusan_id === form.urusan && 
+  return props.programList.filter(item =>
+    item.urusan_id === form.urusan &&
     item.bidang_urusan_id === form.bidang_urusan
   );
 });
 
 const filteredKegiatan = computed(() => {
   if (!form.urusan || !form.bidang_urusan || !form.program) return [];
-  return props.kegiatanList.filter(item => 
-    item.urusan_id === form.urusan && 
+  return props.kegiatanList.filter(item =>
+    item.urusan_id === form.urusan &&
     item.bidang_urusan_id === form.bidang_urusan &&
     item.program_id === form.program
   );
@@ -64,8 +63,8 @@ const filteredKegiatan = computed(() => {
 
 const filteredSubkegiatan = computed(() => {
   if (!form.urusan || !form.bidang_urusan || !form.program || !form.kegiatan) return [];
-  return props.subkegiatanList.filter(item => 
-    item.urusan_id === form.urusan && 
+  return props.subkegiatanList.filter(item =>
+    item.urusan_id === form.urusan &&
     item.bidang_urusan_id === form.bidang_urusan &&
     item.program_id === form.program &&
     item.kegiatan_id === form.kegiatan
@@ -135,7 +134,7 @@ function submitForm() {
             {{ form.errors.urusan }}
           </div>
         </div>
-        
+
         <div v-if="form.jenis_nomenklatur >= 2" class="mb-4">
           <label for="bidang_urusan" class="block mb-1">Bidang Urusan</label>
           <Select v-model="form.bidang_urusan" id="bidang_urusan" class="w-full">

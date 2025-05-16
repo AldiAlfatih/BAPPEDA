@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Databse\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Program extends Model
 {
     //
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     protected $table = 'program';
     protected $fillable = ['nama', 'kode'];
+
+    protected $dates = ['deleted_at'];
 
     public function kegiatan():HasMany
     {

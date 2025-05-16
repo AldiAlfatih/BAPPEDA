@@ -58,35 +58,11 @@ class UserManagementController extends Controller
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dibuat.');
     }
 
-    // public function edit(User $user)
-    // {
-    //     $user->load('userDetail');
-    
-    //     $roles = $user->getRoleNames()->toArray();
-        
-    //     return Inertia::render('usermanagement/Edit', [
-    //         'user' => [
-    //             'id' => $user->id,
-    //             'name' => $user->name,
-    //             'email' => $user->email,
-    //             'roles' => $roles,
-    //             'userDetail' => $user->userDetail ? [
-    //                 'alamat' => $user->userDetail->alamat,
-    //                 'nip' => $user->userDetail->nip,
-    //                 'no_hp' => $user->userDetail->no_hp,
-    //                 'jenis_kelamin' => $user->userDetail->jenis_kelamin,
-    //             ] : null,
-    //         ],
-    //     ]);
-    // }
-
-    public function edit($id)
+    public function edit(User $user)
     {
-        $user = User::with('userDetail')->find($id);
-        
-        if (!$user) {
-            abort(404, 'User not found');
-        }
+        $user->load('userDetail');
+
+        $roles = $user->getRoleNames()->toArray();
 
         return Inertia::render('usermanagement/Edit', [
             'user' => [
@@ -110,59 +86,71 @@ class UserManagementController extends Controller
 
 
     public function update(Request $request, User $user)
-    {
-        $validatedData = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'email' => [
-                'string',
-                'email',
-                Rule::unique('users')->ignore($user->id),
-            ],
-            'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'nullable|in:perangkat_daerah,operator',
-            'alamat' => 'nullable|string|max:255',
-            'nip' => [
-                'nullable',
-                'string',
-                'max:50',
-                Rule::unique('user_details', 'nip')->ignore($user->userDetail->id ?? 0),
-            ],
-            'no_hp' => 'nullable|string|max:20',
-            'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
+{
+    // Perbaiki validasi untuk menghindari error ketika userDetail belum dibuat
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => [
+            'required',
+            'string',
+            'email',
+            Rule::unique('users')->ignore($user->id),
+        ],
+        'password' => 'nullable|string|min:8|confirmed',
+        'role' => 'required|in:perangkat_daerah,operator',
+        'alamat' => 'required|string|max:255',
+        'nip' => [
+            'required',
+            'string',
+            'max:50',
+            Rule::unique('user_details', 'nip')->ignore($user->userDetail->id ?? null),
+        ],
+        'no_hp' => 'required|string|max:20',
+        'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+    ]);
+
+    // Update data user
+    $user->update([
+        'name' => $validatedData['name'],
+        'email' => $validatedData['email'],
+    ]);
+
+    if (!empty($validatedData['password'])) {
+        $user->update([
+            'password' => Hash::make($validatedData['password'])
         ]);
-
-        $user->fill([
-            'name' => $validatedData['name'] ?? $user->name,
-            'email' => $validatedData['email'],
-        ])->save();
-        
-        if (!empty($validatedData['password'])) {
-            $user->update([
-                'password' => Hash::make($validatedData['password'])
-            ]);
-        }
-
-        if (!empty($validatedData['role'])) {
-            $user->syncRoles([$validatedData['role']]);
-        }
-
-        $userDetailFields = array_filter(
-            array_intersect_key($validatedData, array_flip(['alamat', 'nip', 'no_hp', 'jenis_kelamin'])),
-            function ($value) { return !is_null($value); }
-        );
-        
-        if (!empty($userDetailFields)) {
-            if ($user->userDetail) {
-                $user->userDetail->update($userDetailFields);
-            }
-        }
-
-        return redirect()->route('usermanagement.index')->with('success', 'Data pengguna berhasil diperbarui.');
     }
+
+    // Update role
+    $user->syncRoles([$validatedData['role']]);
+
+    // Update atau buat user detail jika belum ada
+    if ($user->userDetail) {
+        $user->userDetail->update([
+            'alamat' => $validatedData['alamat'],
+            'nip' => $validatedData['nip'],
+            'no_hp' => $validatedData['no_hp'],
+            'jenis_kelamin' => $validatedData['jenis_kelamin'],
+        ]);
+    } else {
+        $user->userDetail()->create([
+            'alamat' => $validatedData['alamat'],
+            'nip' => $validatedData['nip'],
+            'no_hp' => $validatedData['no_hp'],
+            'jenis_kelamin' => $validatedData['jenis_kelamin'],
+        ]);
+    }
+
+    return redirect()->route('usermanagement.index')->with('success', 'Data pengguna berhasil diperbarui.');
+}
 
     public function destroy(User $user)
     {
         $user->delete();
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dihapus.');
+<<<<<<< HEAD
 }
+=======
+    }
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
 }

@@ -43,12 +43,12 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
-      skpd: { 
+      skpd: {
         nama_dinas: string;
         nama_operator: string;
         no_dpa: string;
         kode_organisasi: string;
-      } | null; 
+      } | null;
     }>;
   };
 }>();

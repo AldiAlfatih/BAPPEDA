@@ -14,6 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 // Sample data for the top table
 const headerData = ref([
     { label: 'KODE/URUSAN PEMERINTAHAN', value: '5 UNSUR PENUNJANG PEMERINTAHAN ANGGARAN APBD' },
+    { label: 'NAMA SKPD', value: 'DINAS PENDIDIDKAN' },
     { label: 'KODE ORGANISASI', value: '5.01.5.05.0.00.25.0000' },
     { label: 'NO.DPA SKPD', value: 'DPA/A.1/5.01.5.05.0.00.25.0000/001.2024' },
     { label: 'NAMA KEPALA SKPD', value: 'ZULKARNAEN, ST., M.Si' },
@@ -84,7 +85,7 @@ const programData = ref([
     <Head title="Rencana kinerja" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 p-4 bg-gray-100 dark:bg-gray-800">
+        <div class="flex h-full flex-1 w-5xl  overflow-x-hidden flex-col gap-4 p-4 bg-gray-100 dark:bg-gray-800">
             <!-- Header section -->
             <div class="bg-white dark:bg-gray-700 rounded-xl shadow">
                 <h2 class="p-2 text-xl font-semibold bg-emerald-600 text-white rounded-t-xl">
@@ -108,23 +109,23 @@ const programData = ref([
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
                 <table class="w-full border-collapse text-sm mt-6">
                     <thead>
-                        <tr class="text-center bg-amber-100">
-                            <th rowspan="3" class="border border-amber-300 px-2 py-1">KODE</th>
-                            <th rowspan="3" class="border border-amber-300 px-2 py-1">PROGRAM/ KEGIATAN/ SUB KEGIATAN</th>
-                            <th colspan="3" class="border border-amber-300 px-2 py-1">PAGU ANGGARAN APBD</th>
-                            <th rowspan="3" class="border border-amber-300 px-2 py-1">SUMBER DANA</th>
-                            <th colspan="8" class="border border-amber-300 px-2 py-1">TARGET</th>
+                        <tr class="text-center">
+                            <th rowspan="3" class="border border-amber-300 bg-white px-2 py-1">KODE</th>
+                            <th rowspan="3" class="border sticky left-0 z-10 bg-white w-[100px]">PROGRAM/ KEGIATAN/ SUB KEGIATAN</th>
+                            <th colspan="3" class="border border-amber-300 px-2 py-1 bg-amber-100">PAGU ANGGARAN APBD</th>
+                            <th rowspan="3" class="border border-amber-300 px-2 py-1 bg-amber-100">SUMBER DANA</th>
+                            <th colspan="8" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TARGET</th>
                         </tr>
                         <tr class="text-center bg-amber-100">
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">POKOK (RP)</th>
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">PARSIAL (RP)</th>
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">PERUBAHAN (RP)</th>
-                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 1</th>
-                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 2</th>
-                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 3</th>
-                            <th colspan="2" class="border border-amber-300 px-2 py-1">TRIWULAN 4</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TRIWULAN 1</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TRIWULAN 2</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TRIWULAN 3</th>
+                            <th colspan="2" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TRIWULAN 4</th>
                         </tr>
-                        <tr class="text-center bg-amber-100">
+                        <tr class="text-center bg-[#fbe9db]">
                             <!-- Triwulan 1 -->
                             <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
                             <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
@@ -142,24 +143,24 @@ const programData = ref([
                     <tbody>
                         <tr v-for="item in programData" :key="item.kode" class="border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.kode }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 font-medium">{{ item.program }}</td>
+                            <td class="p-3 border sticky left-0 z-10 bg-white w-[100px]">{{ item.program }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.pokok }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.parsial }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.perubahan }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.sumberDana }}</td>
-                            
+
                             <!-- Triwulan 1 -->
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[0].kinerjaFisik }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[0].keuangan }}</td>
-                            
+
                             <!-- Triwulan 2 -->
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[1].kinerjaFisik }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[1].keuangan }}</td>
-                            
+
                             <!-- Triwulan 3 -->
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[2].kinerjaFisik }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[2].keuangan }}</td>
-                            
+
                             <!-- Triwulan 4 -->
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[3].kinerjaFisik }}</td>
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[3].keuangan }}</td>

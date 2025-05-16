@@ -42,9 +42,14 @@ const isSubmitting = ref(false);
 const showPassword = ref(false);
 
 const form = useForm({
+<<<<<<< HEAD
   _method: 'PATCH',
   name: props.user.name || '',
   email: props.user.email || '',
+=======
+  name: props.user.name,
+  email: props.user.email,
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
   password: '',
   password_confirmation: '',
   role: props.user.roles.length > 0 ? props.user.roles[0] : '',
@@ -57,7 +62,12 @@ const form = useForm({
 function submit() {
   isSubmitting.value = true;
 
+<<<<<<< HEAD
   form.post(`/usermanagement/${props.user.id}`, {
+=======
+  // Ganti form.post menjadi form.put untuk konsistensi dengan REST API
+  form.put(`/usermanagement/${props.user.id}`, {
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
     onSuccess: () => {
       window.location.href = '/usermanagement';
     },
@@ -66,7 +76,11 @@ function submit() {
     },
     onFinish: () => {
       isSubmitting.value = false;
+<<<<<<< HEAD
     },
+=======
+    }
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
   });
 }
 
@@ -107,14 +121,37 @@ const breadcrumbs: BreadcrumbItem[] = [
               <div class="space-y-4">
                 <div>
                   <Label for="name">Nama</Label>
+<<<<<<< HEAD
                   <Input id="name" v-model="form.name" class="mt-1" />
                   <p v-if="form.errors.name" class="text-sm text-red-500 mt-1">{{ form.errors.name }}</p>
+=======
+                  <Input
+                    id="name"
+                    v-model="form.name"
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.name" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.name }}
+                  </div>
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
                 </div>
 
                 <div>
                   <Label for="email">Email <span class="text-red-500">*</span></Label>
+<<<<<<< HEAD
                   <Input id="email" type="email" v-model="form.email" class="mt-1" />
                   <p v-if="form.errors.email" class="text-sm text-red-500 mt-1">{{ form.errors.email }}</p>
+=======
+                  <Input
+                    id="email"
+                    type="email"
+                    v-model="form.email"
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.email" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.email }}
+                  </div>
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
                 </div>
 
                 <div>
@@ -136,20 +173,53 @@ const breadcrumbs: BreadcrumbItem[] = [
               <div class="space-y-4">
                 <div>
                   <Label for="alamat">Alamat</Label>
+<<<<<<< HEAD
                   <Input id="alamat" v-model="form.alamat" class="mt-1" />
                   <p v-if="form.errors.alamat" class="text-sm text-red-500 mt-1">{{ form.errors.alamat }}</p>
+=======
+                  <Input
+                    id="alamat"
+                    v-model="form.alamat"
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.alamat" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.alamat }}
+                  </div>
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
                 </div>
 
                 <div>
                   <Label for="nip">NIP</Label>
+<<<<<<< HEAD
                   <Input id="nip" v-model="form.nip" class="mt-1" />
                   <p v-if="form.errors.nip" class="text-sm text-red-500 mt-1">{{ form.errors.nip }}</p>
+=======
+                  <Input
+                    id="nip"
+                    v-model="form.nip"
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.nip" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.nip }}
+                  </div>
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
                 </div>
 
                 <div>
                   <Label for="no_hp">No. HP</Label>
+<<<<<<< HEAD
                   <Input id="no_hp" v-model="form.no_hp" class="mt-1" />
                   <p v-if="form.errors.no_hp" class="text-sm text-red-500 mt-1">{{ form.errors.no_hp }}</p>
+=======
+                  <Input
+                    id="no_hp"
+                    v-model="form.no_hp"
+                    class="mt-1"
+                  />
+                  <div v-if="form.errors.no_hp" class="text-sm text-red-500 mt-1">
+                    {{ form.errors.no_hp }}
+                  </div>
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
                 </div>
 
                 <div>
@@ -211,6 +281,24 @@ const breadcrumbs: BreadcrumbItem[] = [
             </CardFooter>
           </form>
         </CardContent>
+<<<<<<< HEAD
+=======
+        <CardFooter class="flex justify-end gap-3">
+          <Button variant="outline" @click="goBack">
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            @click="submit"
+            :disabled="isSubmitting"
+            class="flex items-center gap-1"
+          >
+            <Save class="w-4 h-4" />
+            <span v-if="isSubmitting">Menyimpan...</span>
+            <span v-else>Simpan Perubahan</span>
+          </Button>
+        </CardFooter>
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
       </Card>
     </div>
   </AppLayout>

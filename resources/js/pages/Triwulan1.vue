@@ -14,6 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 // Sample data for the top table
 const headerData = ref([
     { label: 'KODE/URUSAN PEMERINTAHAN', value: '5 UNSUR PENUNJANG PEMERINTAHAN ANGGARAN APBD' },
+    { label: 'NAMA SKPD', value: 'DINAS PENDIDIDKAN' },
     { label: 'KODE ORGANISASI', value: '5.01.5.05.0.00.25.0000' },
     { label: 'NO.DPA SKPD', value: 'DPA/A.1/5.01.5.05.0.00.25.0000/001.2024' },
     { label: 'NAMA KEPALA SKPD', value: 'ZULKARNAEN, ST., M.Si' },
@@ -98,12 +99,12 @@ const programData = ref([
 
             <!-- Program table -->
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
-                <div class="flex justify-end p-4">
+                <!-- <div class="flex justify-end p-4">
                     <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors">
                         Tambahkan
                     </button>
-                </div>
-                <table class="w-full border-collapse text-sm">
+                </div> -->
+                <table class="w-full border-collapse text-sm mt-6">
                     <thead>
                         <tr>
                             <th rowspan="3" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center align-middle">kode</th>

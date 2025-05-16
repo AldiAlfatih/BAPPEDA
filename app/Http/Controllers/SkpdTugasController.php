@@ -253,5 +253,9 @@ class SkpdTugasController extends Controller
             ->whereIn('kode_nomenklatur_id', $nomenklaturIds)
             ->pluck('id')
             ->toArray();
+<<<<<<< HEAD
 }
+=======
+    }
+>>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
 }

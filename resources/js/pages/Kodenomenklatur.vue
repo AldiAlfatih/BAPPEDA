@@ -193,7 +193,7 @@ function handleSearchChange() {
         </div>
         <Button class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" @click="goToCreatePage">
           <Plus class="w-4 h-4" />
-          Tambahkan Baru
+          Tambahkan
         </Button>
       </div>
 
@@ -226,7 +226,7 @@ function handleSearchChange() {
             <Table>
               <TableHeader class="bg-gray-50 dark:bg-gray-800">
                 <TableRow>
-                  <TableHead class="w-16 text-center">#</TableHead>
+                  <TableHead class="w-16 text-center">No</TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nomor_kode')">
                     <div class="flex items-center gap-1">
                       Kode

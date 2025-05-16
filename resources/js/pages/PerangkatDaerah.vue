@@ -103,6 +103,14 @@ function goToShow(id: number) {
                 <div class="flex items-center justify-center gap-2">
 
                   <Button
+                    class="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-2"
+                    @click="goToEditPage(user.id)"
+                  >
+                    <Pencil class="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+
+                  <Button
                     class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-2"
                     @click="goToShow(user.id)"
                   >
@@ -110,13 +118,7 @@ function goToShow(id: number) {
                     Show
                   </Button>
 
-                  <Button
-                    class="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-2"
-                    @click="goToEditPage(user.id)"
-                  >
-                    <Pencil class="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
+
                 </div>
               </TableCell>
             </TableRow>

@@ -39,7 +39,18 @@ const mainNavItems: NavItem[] = [
         },
         ],
 
+    
+
     },
+
+    
+    {
+        title: 'Monitoring',
+        href: '/monitoring',
+        icon: Monitor,
+    },
+
+
     {
         title: 'Monitoring',
         href: '/monitoring',

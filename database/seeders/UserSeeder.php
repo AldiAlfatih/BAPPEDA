@@ -6,7 +6,9 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Skpd;
 use App\Models\SkpdTugas;
+use App\Models\SkpdKepala;
 use App\Models\Kodenomenklatur;
+use App\Models\UserDetail;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str;
 
@@ -27,6 +29,7 @@ class UserSeeder extends Seeder
             'password' => \Hash::make('12345678'),
         ]);
         $admin->assignRole('admin');
+        $this->createUserDetail($admin, 1);
 
         $superadmin = User::create([
             'name' => 'Super Admin',
@@ -34,9 +37,10 @@ class UserSeeder extends Seeder
             'password' => \Hash::make('12345678'),
         ]);
         $superadmin->assignRole('super_admin');
+        $this->createUserDetail($superadmin, 2);
 
-        // Data perangkat daerah + nama dinas (34 entries sesuai Excel)
-        $pdData = [
+    // Data perangkat daerah + nama dinas
+     $pdData = [
             ['name' => 'Andi Rahmat',    'email' => 'andirahmat@gmail.com',    'nama_dinas' => 'Dinas Pendidikan dan Kebudayaan'],
             ['name' => 'Siti Marlina',   'email' => 'sitimarlina@gmail.com',   'nama_dinas' => 'Dinas Kesehatan'],
             ['name' => 'Budi Santoso',   'email' => 'budisantoso@gmail.com',   'nama_dinas' => 'RS Hasri Ainun Habibie'],
@@ -84,8 +88,9 @@ class UserSeeder extends Seeder
             'Ratna Sari', 'Anton Wijaya', 'Indah Permatasari', 'Dedi Kurniawan', 'Citra Maharani',
         ];
 
-        // Buat semua user perangkat daerah dan simpan ke array
-        $pdUsers = [];
+    // Buat semua user perangkat daerah dan simpan ke array
+    $pdUsers = [];
+        $nipCounter = 3; // Lanjut setelah admin dan superadmin
         foreach ($pdData as $item) {
             $pdUser = User::create([
                 'name' => $item['name'],
@@ -93,6 +98,7 @@ class UserSeeder extends Seeder
                 'password' => \Hash::make('12345678'),
             ]);
             $pdUser->assignRole('perangkat_daerah');
+            $this->createUserDetail($pdUser, $nipCounter++);
             $pdUsers[] = $pdUser;
         }
 
@@ -107,28 +113,31 @@ class UserSeeder extends Seeder
                 'password' => \Hash::make('12345678'),
             ]);
             $operatorUser->assignRole('operator');
-
+            $this->createUserDetail($operatorUser, $nipCounter++);
             $operatorUsers[] = $operatorUser;
         }
 
-        // Buat data SKPD dan tugas, dengan user_id yang benar dari perangkat daerah
+        // Buat data SKPD dan tugas
         foreach ($pdUsers as $index => $pdUser) {
             $operatorUser = $operatorUsers[$index] ?? null;
-            if (!$operatorUser) {
-                // Jika tidak ada operator yang cukup, skip
-                continue;
-            }
+            if (!$operatorUser) continue;
 
             $skpd = Skpd::create([
-                'user_id' => $pdUser->id, // user_id dari perangkat daerah (perangkat daerah)
-                'nama_operator' => $operatorUser->name, // nama operator dari user operator
-                'nama_skpd' => $pdData[$index]['nama_dinas'], // nama_skpd dari nama dinas
+                'user_id' => $pdUser->id,
+                'nama_operator' => $operatorUser->name,
+                'nama_skpd' => $pdUser->name,
                 'nama_dinas' => $pdData[$index]['nama_dinas'],
                 'no_dpa' => 'DPA-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
                 'kode_organisasi' => 'ORG-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
             ]);
 
-            // Tambahkan 2 entri urusan secara random
+            // Tambahkan record skpd_kepala yang menghubungkan SKPD dengan User perangkat_daerah
+            SkpdKepala::create([
+                'skpd_id' => $skpd->id,
+                'user_id' => $pdUser->id, // User perangkat daerah dimulai dari ID 3
+                'is_aktif' => true,
+            ]);
+
             $kodeUrusan = KodeNomenklatur::where('jenis_nomenklatur', 1)
                             ->inRandomOrder()
                             ->limit(2)
@@ -141,6 +150,17 @@ class UserSeeder extends Seeder
                     'is_aktif' => true,
                 ]);
             }
-}
-}
+        }
+    }
+
+    private function createUserDetail(User $user, int $nipIndex)
+    {
+        UserDetail::create([
+            'user_id' => $user->id,
+            'alamat' => 'Jl. Contoh Alamat No. ' . $nipIndex,
+            'nip' => '1987' . str_pad($nipIndex, 6, '0', STR_PAD_LEFT),
+            'no_hp' => '0812' . rand(10000000, 99999999),
+            'jenis_kelamin' => rand(0, 1) ? 'Laki-laki' : 'Perempuan',
+        ]);
+    }
 }

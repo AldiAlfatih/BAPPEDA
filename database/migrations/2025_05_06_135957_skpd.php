@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('nama_dinas');
             $table->string('no_dpa');
             $table->string('kode_organisasi');
+             $table->softDeletes(); 
             $table->timestamps();
         });
 
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->foreignId('skpd_id')->constrained('skpd'); 
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->integer('is_aktif');
+             $table->softDeletes(); 
             $table->timestamps();
         });
 
@@ -35,6 +37,7 @@ return new class extends Migration
             $table->foreignId('skpd_id')->constrained('skpd');
             $table->foreignId('kode_nomenklatur_id')->constrained('kode_nomenklatur'); 
             $table->integer('is_aktif');
+             $table->softDeletes(); 
             $table->timestamps();
         });
        Schema::create('tim_kerja', function (Blueprint $table) {
@@ -42,6 +45,7 @@ return new class extends Migration
             $table->foreignId('skpd_id')->constrained('skpd');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('is_aktif');
+             $table->softDeletes(); 
             $table->timestamps();
         });
 

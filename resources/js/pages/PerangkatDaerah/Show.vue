@@ -337,90 +337,153 @@ button {
     <Head title="Detail Perangkat Daerah" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-col gap-4 p-4">
+        <div class="flex flex-col gap-6 p-6 bg-gray-50">
             <!-- Flash Messages dengan animasi fadeout -->
             <transition name="notification">
                 <div
                     v-if="flashMessage.success && showFlash.success"
-                    class="notification mb-4 flex items-center justify-between rounded border border-green-400 bg-green-100 px-4 py-3 text-green-700"
+                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-green-500 bg-green-50 p-4 shadow-md text-green-800"
                 >
-                    <span>{{ flashMessage.success }}</span>
-                    <button @click="showFlash.success = false" class="text-green-700 hover:text-green-900">×</button>
+                    <span class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {{ flashMessage.success }}
+                    </span>
+                    <button @click="showFlash.success = false" class="text-green-700 hover:text-green-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             </transition>
 
             <transition name="notification">
                 <div
                     v-if="flashMessage.error && showFlash.error"
-                    class="notification mb-4 flex items-center justify-between rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700"
+                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-red-500 bg-red-50 p-4 shadow-md text-red-800"
                 >
-                    <span>{{ flashMessage.error }}</span>
-                    <button @click="showFlash.error = false" class="text-red-700 hover:text-red-900">×</button>
+                    <span class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ flashMessage.error }}
+                    </span>
+                    <button @click="showFlash.error = false" class="text-red-700 hover:text-red-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             </transition>
 
             <transition name="notification">
                 <div
                     v-if="flashMessage.info && showFlash.info"
-                    class="notification mb-4 flex items-center justify-between rounded border border-blue-400 bg-blue-100 px-4 py-3 text-blue-700"
+                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4 shadow-md text-blue-800"
                 >
-                    <span>{{ flashMessage.info }}</span>
-                    <button @click="showFlash.info = false" class="text-blue-700 hover:text-blue-900">×</button>
+                    <span class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ flashMessage.info }}
+                    </span>
+                    <button @click="showFlash.info = false" class="text-blue-700 hover:text-blue-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             </transition>
 
-            <!-- Header Section -->
-            <div class="rounded-lg bg-white p-6 shadow-md">
-                <h2 class="mb-4 text-2xl font-semibold">Detail Perangkat Daerah</h2>
-
-                <div class="flex justify-between">
-                    <span class="font-bold">Nama SKPD:</span>
-                    <span>{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</span>
+            <!-- Header Section with better card design -->
+            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center mb-6">
+                    <div class="rounded-full bg-blue-100 p-3 mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">Detail Perangkat Daerah</h2>
                 </div>
 
-                <div class="flex justify-between">
-                    <span class="font-bold">Kode Organisasi :</span>
-                    <span>{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</span>
-                </div>
-
-                <div class="flex justify-between">
-                    <span class="font-bold">No DPA :</span>
-                    <span>{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</span>
-                </div>
-
-                <!-- SKPD Details -->
-                <div class="space-y-4">
-                    <div class="flex justify-between">
-                        <span class="font-bold">Kepala SKPD :</span>
-                        <span>{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</span>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tasks Section -->
-            <div class="mt-6 rounded-lg bg-white p-6 shadow-md">
-                <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-xl font-semibold">Tugas PD</h3>
-                    <button class="rounded bg-black px-4 py-2 text-white hover:bg-gray-700" @click="openModal">Tambah Tugas</button>
+            <!-- Tasks Section with improved table -->
+            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <div class="rounded-full bg-green-100 p-3 mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Tugas</h3>
+                    </div>
+                    <button 
+                        class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md" 
+                        @click="openModal"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Tambah Tugas
+                    </button>
                 </div>
 
                 <!-- Table for Tugas PD and Aksi -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full table-auto">
-                        <thead>
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <th class="border px-4 py-2">Tugas PD</th>
-                                <th class="border px-4 py-2">Aksi</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tugas PD</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-if="!props.skpdTugas || props.skpdTugas.length === 0">
-                                <td colspan="2" class="border px-4 py-2 text-center">Tidak ada tugas yang tersedia</td>
+                                <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    <div class="flex flex-col items-center justify-center py-6">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        <p class="text-gray-500">Tidak ada tugas yang tersedia</p>
+                                    </div>
+                                </td>
                             </tr>
-                            <tr v-for="tugas in props.skpdTugas" :key="tugas.id">
-                                <td class="border px-4 py-2">{{ getTaskLabel(tugas) }}</td>
-                                <td class="border px-4 py-2 text-center">
-                                    <button class="text-red-500 hover:text-red-700" @click="deleteTugas(tugas.id)">Hapus</button>
+                            <tr v-for="tugas in props.skpdTugas" :key="tugas.id" class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ getTaskLabel(tugas) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button 
+                                        class="text-red-600 hover:text-red-900 flex items-center justify-end w-full" 
+                                        @click="deleteTugas(tugas.id)"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Hapus
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -428,36 +491,54 @@ button {
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end">
+            <div class="mt-2 flex justify-end">
                 <Button
                     type="button"
                     variant="outline"
-                    class="rounded bg-gray-600 px-6 py-2 text-white hover:bg-gray-700"
+                    class="flex items-center px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 shadow-md"
                     @click="router.visit('/perangkatdaerah')"
                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
                     Kembali
                 </Button>
             </div>
 
-            <!-- Modal for Adding Tasks -->
-            <div v-if="isModalOpen" class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-gray-600">
-                <div class="w-1/3 rounded-lg bg-white p-6 shadow-md">
-                    <h4 class="mb-4 text-xl font-semibold">TAMBAHKAN TUGAS</h4>
-
-                    <!-- Error message -->
-                    <div v-if="error" class="mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
-                        {{ error }}
+            <!-- Modal for Adding Tasks with improved styling -->
+            <div v-if="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="relative bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-xl font-bold text-gray-800">Tambahkan Tugas</h4>
+                        <button 
+                            @click="closeModal" 
+                            class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
-                    <form @submit.prevent="saveTugas()" class="space-y-4">
+                    <!-- Error message -->
+                    <div v-if="error" class="mb-6 rounded-lg border-l-4 border-red-500 bg-red-50 p-4 text-red-800">
+                        <div class="flex">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {{ error }}
+                        </div>
+                    </div>
+
+                    <form @submit.prevent="saveTugas()" class="space-y-5">
                         <!-- Jenis Nomenklatur Dropdown -->
-                        <div class="flex flex-col">
-                            <Label for="jenis_nomenklatur">Jenis Nomenklatur</Label>
+                        <div class="space-y-2">
+                            <Label for="jenis_nomenklatur" class="text-sm font-medium text-gray-700">Jenis Nomenklatur</Label>
                             <select
                                 id="jenis_nomenklatur"
                                 v-model="jenisNomenklatur"
                                 @change="handleJenisChange(Number(($event.target as HTMLSelectElement).value))"
-                                class="rounded border px-3 py-2"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
                                 required
                             >
                                 <option value="" disabled selected>Pilih jenis...</option>
@@ -468,9 +549,14 @@ button {
                         </div>
 
                         <!-- Urusan Dropdown (Always visible if jenisNomenklatur is selected) -->
-                        <div v-if="jenisNomenklatur !== null" class="flex flex-col">
-                            <Label for="urusan">Urusan</Label>
-                            <select id="urusan" v-model="urusan" class="rounded border px-3 py-2" required>
+                        <div v-if="jenisNomenklatur !== null" class="space-y-2">
+                            <Label for="urusan" class="text-sm font-medium text-gray-700">Urusan</Label>
+                            <select 
+                                id="urusan" 
+                                v-model="urusan" 
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                                required
+                            >
                                 <option value="" disabled selected>Pilih Urusan</option>
                                 <option v-for="option in urusanOptions" :key="option.value" :value="option.value">
                                     {{ option.label }}
@@ -479,9 +565,14 @@ button {
                         </div>
 
                         <!-- Bidang Urusan Dropdown -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 1 && urusan !== null" class="flex flex-col">
-                            <Label for="bidang_urusan">Bidang Urusan</Label>
-                            <select id="bidang_urusan" v-model="bidangUrusan" class="rounded border px-3 py-2" required>
+                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 1 && urusan !== null" class="space-y-2">
+                            <Label for="bidang_urusan" class="text-sm font-medium text-gray-700">Bidang Urusan</Label>
+                            <select 
+                                id="bidang_urusan" 
+                                v-model="bidangUrusan" 
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                                required
+                            >
                                 <option value="" disabled selected>Pilih Bidang Urusan</option>
                                 <option v-for="option in bidangUrusanOptions" :key="option.value" :value="option.value">
                                     {{ option.label }}
@@ -490,9 +581,14 @@ button {
                         </div>
 
                         <!-- Program Dropdown -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 2 && bidangUrusan !== null" class="flex flex-col">
-                            <Label for="program">Program</Label>
-                            <select id="program" v-model="program" class="rounded border px-3 py-2" required>
+                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 2 && bidangUrusan !== null" class="space-y-2">
+                            <Label for="program" class="text-sm font-medium text-gray-700">Program</Label>
+                            <select 
+                                id="program" 
+                                v-model="program" 
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                                required
+                            >
                                 <option value="" disabled selected>Pilih Program</option>
                                 <option v-for="option in programOptions" :key="option.value" :value="option.value">
                                     {{ option.label }}
@@ -501,9 +597,14 @@ button {
                         </div>
 
                         <!-- Kegiatan Dropdown -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 3 && program !== null" class="flex flex-col">
-                            <Label for="kegiatan">Kegiatan</Label>
-                            <select id="kegiatan" v-model="kegiatan" class="rounded border px-3 py-2" required>
+                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 3 && program !== null" class="space-y-2">
+                            <Label for="kegiatan" class="text-sm font-medium text-gray-700">Kegiatan</Label>
+                            <select 
+                                id="kegiatan" 
+                                v-model="kegiatan" 
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                                required
+                            >
                                 <option value="" disabled selected>Pilih Kegiatan</option>
                                 <option v-for="option in kegiatanOptions" :key="option.value" :value="option.value">
                                     {{ option.label }}
@@ -512,9 +613,14 @@ button {
                         </div>
 
                         <!-- Sub Kegiatan Dropdown -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 4 && kegiatan !== null" class="flex flex-col">
-                            <Label for="subkegiatan">Sub Kegiatan</Label>
-                            <select id="subkegiatan" v-model="subkegiatan" class="rounded border px-3 py-2" required>
+                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 4 && kegiatan !== null" class="space-y-2">
+                            <Label for="subkegiatan" class="text-sm font-medium text-gray-700">Sub Kegiatan</Label>
+                            <select 
+                                id="subkegiatan" 
+                                v-model="subkegiatan" 
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                                required
+                            >
                                 <option value="" disabled selected>Pilih Sub Kegiatan</option>
                                 <option v-for="option in subkegiatanOptions" :key="option.value" :value="option.value">
                                     {{ option.label }}
@@ -523,14 +629,30 @@ button {
                         </div>
 
                         <!-- Form Buttons -->
-                        <div class="flex justify-end space-x-2 pt-4">
-                            <button type="button" class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700" @click="closeModal">Batal</button>
+                        <div class="flex justify-end space-x-3 pt-6">
+                            <button 
+                                type="button" 
+                                class="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-20 transition-colors duration-200" 
+                                @click="closeModal"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Batal
+                            </button>
                             <button
                                 type="submit"
-                                class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                                class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200"
                                 :disabled="loading || !isFormValid()"
-                                :class="{ 'cursor-not-allowed opacity-50': loading || !isFormValid() }"
+                                :class="{ 'opacity-50 cursor-not-allowed': loading || !isFormValid() }"
                             >
+                                <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
                                 {{ loading ? 'Menyimpan...' : 'Simpan' }}
                             </button>
                         </div>

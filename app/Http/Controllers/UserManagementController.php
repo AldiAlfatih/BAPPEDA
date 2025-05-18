@@ -148,9 +148,5 @@ class UserManagementController extends Controller
     {
         $user->delete();
         return redirect()->route('usermanagement.index')->with('success', 'Akun berhasil dihapus.');
-<<<<<<< HEAD
 }
-=======
-    }
->>>>>>> 68308d5d53b358f0d97cc96f37ad9ffcb4e08cb8
 }

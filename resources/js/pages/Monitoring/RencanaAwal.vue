@@ -14,30 +14,37 @@ const props = defineProps<{
   };
   tugas: {
     id: number;
-    kode_nomenklatur: { nomor_kode: string; nomenklatur: string };
+    kode_nomenklatur: { 
+      nomor_kode: string; 
+      nomenklatur: string;
+      details: Array<{
+        id_urusan: number;
+        id_bidang_urusan: number;
+        id_program: number;
+        id_kegiatan: number;
+      }>;
+    };
     skpd: {
       nama_dinas: string;
       kode_organisasi?: string;
       no_dpa?: string;
-      kepala_skpd?: string;
+      skpd_kepala: Array<{
+        user: {
+          user_detail: {
+            nama: string;
+          };
+        };
+      }>;
     };
     rencana_awal?: {
       indikator: string;
       target: string;
     } | null;
   };
-  programData: {
-    kode: string;
-    program: string;
-    pokok: number;
-    parsial: number;
-    perubahan: number;
-    sumberDana: string;
-    targets: {
-      kinerjaFisik: number;
-      keuangan: number;
-    }[];
-  }[];
+  programTugas: Array<any>;
+  kegiatanTugas: Array<any>;
+  subkegiatanTugas: Array<any>;
+  kepalaSkpd?: string;
 }>();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
@@ -66,18 +73,16 @@ function goToCreate() {
 
                 <!-- Top table -->
                     <div class="p-4">
-
                         <div class="mb-2">
-                        <strong>KODE/URUSAN PEMERINTAHAN:</strong>
-                        {{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}
+                            <strong>KODE/URUSAN PEMERINTAHAN:</strong>
+                            {{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}
                         </div>
 
-
                         <div class="mb-2">
-                        <strong>Nama SKPD:</strong>
-                        {{ tugas.skpd.nama_dinas }}
+                            <strong>Nama SKPD:</strong>
+                            {{ tugas.skpd.nama_dinas }}
                         </div>
-                         <div class="mb-2">
+                        <div class="mb-2">
                             <strong>Kode Organisasi:</strong>
                             {{ tugas.skpd.kode_organisasi ?? '-' }}
                         </div>
@@ -89,17 +94,17 @@ function goToCreate() {
 
                         <div class="mb-2">
                             <strong>Kepala SKPD:</strong>
-                            {{ tugas.skpd.kepala_skpd ?? '-' }}
+                            {{ kepalaSkpd ?? tugas.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}
                         </div>
 
                         <div class="mt-4 p-4 border rounded bg-gray-100" v-if="tugas.rencana_awal">
-                        <h2 class="font-semibold">Rencana Awal:</h2>
-                        <p><strong>Indikator:</strong> {{ tugas.rencana_awal.indikator }}</p>
-                        <p><strong>Target:</strong> {{ tugas.rencana_awal.target }}</p>
+                            <h2 class="font-semibold">Rencana Awal:</h2>
+                            <p><strong>Indikator:</strong> {{ tugas.rencana_awal.indikator }}</p>
+                            <p><strong>Target:</strong> {{ tugas.rencana_awal.target }}</p>
                         </div>
 
                         <div v-else class="mt-4 p-4 border rounded bg-yellow-100 text-yellow-800">
-                        Belum ada data rencana awal.
+                            Belum ada data rencana awal.
                         </div>
                     </div>
             </div>
@@ -108,10 +113,10 @@ function goToCreate() {
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
                 <div class="flex justify-end p-4">
                     <button
-                    @click="goToCreate"
-                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                        @click="goToCreate"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
                     >
-                    Tambahkan
+                        Tambahkan
                     </button>
                 </div>
                 <table class="w-full border-collapse text-sm">
@@ -133,45 +138,70 @@ function goToCreate() {
                             <th colspan="2" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TRIWULAN 4</th>
                         </tr>
                         <tr class="text-center bg-[#fbe9db]">
-                            <!-- Triwulan 1 -->
-                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">FISIK (%)</th>
                             <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
-                            <!-- Triwulan 2 -->
-                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">FISIK (%)</th>
                             <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
-                            <!-- Triwulan 3 -->
-                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">FISIK (%)</th>
                             <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
-                            <!-- Triwulan 4 -->
-                            <th class="border border-amber-300 px-2 py-1">KINERJA FISIK (%)</th>
+                            <th class="border border-amber-300 px-2 py-1">FISIK (%)</th>
                             <th class="border border-amber-300 px-2 py-1">KEUANGAN (RP)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in programData" :key="item.kode">
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.kode }}</td>
-                            <td class="p-3 border sticky left-0 z-10 bg-white w-[100px]">{{ item.program }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.pokok }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.parsial }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.perubahan }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.sumberDana }}</td>
-
-                            <!-- Triwulan 1 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[0].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[0].keuangan }}</td>
-
-                            <!-- Triwulan 2 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[1].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[1].keuangan }}</td>
-
-                            <!-- Triwulan 3 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[2].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[2].keuangan }}</td>
-
-                            <!-- Triwulan 4 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[3].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[3].keuangan }}</td>
-                        </tr>
+                        <!-- Programs -->
+                        <template v-for="program in programTugas" :key="program.id">
+                            <tr>
+                                <td class="border border-amber-300 px-2 py-1">{{ program.kode_nomenklatur.nomor_kode }}</td>
+                                <td class="border border-amber-300 px-2 py-1 sticky left-0 bg-white">{{ program.kode_nomenklatur.nomenklatur }}</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                            </tr>
+                            
+                            <!-- Kegiatan untuk program ini -->
+                            <template v-for="kegiatan in kegiatanTugas.filter(k => k.kode_nomenklatur.details[0]?.id_program === program.kode_nomenklatur.id)" :key="kegiatan.id">
+                                <tr>
+                                    <td class="border border-amber-300 px-2 py-1">{{ kegiatan.kode_nomenklatur.nomor_kode }}</td>
+                                    <td class="border border-amber-300 px-2 py-1 sticky left-0 bg-white pl-8">{{ kegiatan.kode_nomenklatur.nomenklatur }}</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                </tr>
+                                
+                                <!-- Subkegiatan untuk kegiatan ini -->
+                                <template v-for="subKegiatan in subkegiatanTugas.filter(sk => sk.kode_nomenklatur.details[0]?.id_kegiatan === kegiatan.kode_nomenklatur.id)" :key="subKegiatan.id">
+                                    <tr>
+                                        <td class="border border-amber-300 px-2 py-1">{{ subKegiatan.kode_nomenklatur.nomor_kode }}</td>
+                                        <td class="border border-amber-300 px-2 py-1 sticky left-0 bg-white pl-12">{{ subKegiatan.kode_nomenklatur.nomenklatur }}</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                        <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </template>
                     </tbody>
                 </table>
             </div>

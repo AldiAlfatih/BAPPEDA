@@ -1,18 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, router } from '@inertiajs/vue3';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Rencana Awal PD',
-        href: '/rencanaawal',
-    },
-];
 
-// Sample data for the top table
-defineProps<{
+
+const props = defineProps<{
+  user?: {
+    skpd?: {
+      nama_skpd?: string;
+    };
+  };
   tugas: {
     id: number;
     kode_nomenklatur: { nomor_kode: string; nomenklatur: string };
@@ -27,7 +26,7 @@ defineProps<{
       target: string;
     } | null;
   };
-programData: {
+  programData: {
     kode: string;
     program: string;
     pokok: number;
@@ -41,7 +40,16 @@ programData: {
   }[];
 }>();
 
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+  { title: 'Monitoring', href: '/Monitoring' },
+  { title: `Monitoring Detail ${props.user?.skpd?.nama_skpd ?? '-'}`, href: 'monitoring/show' },
+  { title: 'Rencana Awal PD', href: '/rencanaawal' },
+]);
 
+
+function goToCreate() {
+  router.visit('/rencanaawal/create');
+}
 
 </script>
 
@@ -63,7 +71,7 @@ programData: {
                         <strong>KODE/URUSAN PEMERINTAHAN:</strong>
                         {{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}
                         </div>
-                        
+
 
                         <div class="mb-2">
                         <strong>Nama SKPD:</strong>
@@ -99,8 +107,11 @@ programData: {
             <!-- Program table with targets -->
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
                 <div class="flex justify-end p-4">
-                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors">
-                        Tambahkan
+                    <button
+                    @click="goToCreate"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                    Tambahkan
                     </button>
                 </div>
                 <table class="w-full border-collapse text-sm">

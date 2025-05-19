@@ -38,17 +38,14 @@ const mainNavItems: NavItem[] = [
             href: '/perangkatdaerah',
         },
         ],
-
-    
-
     },
 
-    
-    {
-        title: 'Monitoring',
-        href: '/monitoring',
-        icon: Monitor,
-    },
+
+    // {
+    //     title: 'Monitoring',
+    //     href: '/monitoring',
+    //     icon: Monitor,
+    // },
 
 
     {
@@ -64,7 +61,7 @@ const mainNavItems: NavItem[] = [
         },
         {
             title: 'Rencana Awal',
-            href: '/rencanaawal',
+            href: '/monitoring',
         },
         {
             title: 'Triwulan 1',

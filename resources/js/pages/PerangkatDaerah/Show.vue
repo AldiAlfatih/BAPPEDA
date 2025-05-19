@@ -412,17 +412,17 @@ button {
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
-                    
+
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
-                    
+
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
                     </div>
-                    
+
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
@@ -441,8 +441,8 @@ button {
                         </div>
                         <h3 class="text-xl font-bold text-gray-800">Tugas</h3>
                     </div>
-                    <button 
-                        class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md" 
+                    <button
+                        class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md"
                         @click="openModal"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -475,8 +475,8 @@ button {
                             <tr v-for="tugas in props.skpdTugas" :key="tugas.id" class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ getTaskLabel(tugas) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button 
-                                        class="text-red-600 hover:text-red-900 flex items-center justify-end w-full" 
+                                    <button
+                                        class="text-red-600 hover:text-red-900 flex items-center justify-end w-full"
                                         @click="deleteTugas(tugas.id)"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -510,8 +510,8 @@ button {
                 <div class="relative bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
                     <div class="flex items-center justify-between mb-6">
                         <h4 class="text-xl font-bold text-gray-800">Tambahkan Tugas</h4>
-                        <button 
-                            @click="closeModal" 
+                        <button
+                            @click="closeModal"
                             class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -551,10 +551,10 @@ button {
                         <!-- Urusan Dropdown (Always visible if jenisNomenklatur is selected) -->
                         <div v-if="jenisNomenklatur !== null" class="space-y-2">
                             <Label for="urusan" class="text-sm font-medium text-gray-700">Urusan</Label>
-                            <select 
-                                id="urusan" 
-                                v-model="urusan" 
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                            <select
+                                id="urusan"
+                                v-model="urusan"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
                                 required
                             >
                                 <option value="" disabled selected>Pilih Urusan</option>
@@ -567,10 +567,10 @@ button {
                         <!-- Bidang Urusan Dropdown -->
                         <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 1 && urusan !== null" class="space-y-2">
                             <Label for="bidang_urusan" class="text-sm font-medium text-gray-700">Bidang Urusan</Label>
-                            <select 
-                                id="bidang_urusan" 
-                                v-model="bidangUrusan" 
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                            <select
+                                id="bidang_urusan"
+                                v-model="bidangUrusan"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
                                 required
                             >
                                 <option value="" disabled selected>Pilih Bidang Urusan</option>
@@ -583,10 +583,10 @@ button {
                         <!-- Program Dropdown -->
                         <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 2 && bidangUrusan !== null" class="space-y-2">
                             <Label for="program" class="text-sm font-medium text-gray-700">Program</Label>
-                            <select 
-                                id="program" 
-                                v-model="program" 
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                            <select
+                                id="program"
+                                v-model="program"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
                                 required
                             >
                                 <option value="" disabled selected>Pilih Program</option>
@@ -599,10 +599,10 @@ button {
                         <!-- Kegiatan Dropdown -->
                         <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 3 && program !== null" class="space-y-2">
                             <Label for="kegiatan" class="text-sm font-medium text-gray-700">Kegiatan</Label>
-                            <select 
-                                id="kegiatan" 
-                                v-model="kegiatan" 
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                            <select
+                                id="kegiatan"
+                                v-model="kegiatan"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
                                 required
                             >
                                 <option value="" disabled selected>Pilih Kegiatan</option>
@@ -615,10 +615,10 @@ button {
                         <!-- Sub Kegiatan Dropdown -->
                         <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 4 && kegiatan !== null" class="space-y-2">
                             <Label for="subkegiatan" class="text-sm font-medium text-gray-700">Sub Kegiatan</Label>
-                            <select 
-                                id="subkegiatan" 
-                                v-model="subkegiatan" 
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20" 
+                            <select
+                                id="subkegiatan"
+                                v-model="subkegiatan"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20"
                                 required
                             >
                                 <option value="" disabled selected>Pilih Sub Kegiatan</option>
@@ -630,9 +630,9 @@ button {
 
                         <!-- Form Buttons -->
                         <div class="flex justify-end space-x-3 pt-6">
-                            <button 
-                                type="button" 
-                                class="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-20 transition-colors duration-200" 
+                            <button
+                                type="button"
+                                class="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-20 transition-colors duration-200"
                                 @click="closeModal"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

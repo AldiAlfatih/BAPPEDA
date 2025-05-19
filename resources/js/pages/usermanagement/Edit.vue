@@ -93,10 +93,6 @@ const breadcrumbs: BreadcrumbItem[] = [
               <CardTitle class="text-xl font-bold">Edit User</CardTitle>
               <CardDescription>Perbarui informasi pengguna</CardDescription>
             </div>
-            <Button variant="outline" @click="goBack" class="flex items-center gap-1">
-              <ArrowLeft class="w-4 h-4" />
-              Kembali
-            </Button>
           </div>
         </CardHeader>
 
@@ -202,7 +198,13 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <CardFooter class="flex justify-end gap-3">
-              <Button variant="outline" @click="goBack">Batal</Button>
+                <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                @click="$inertia.visit('/usermanagement')"
+              >
+                Kembali
+              </button>
               <Button type="submit" :disabled="isSubmitting" class="flex items-center gap-1">
                 <Save class="w-4 h-4" />
                 <span v-if="isSubmitting">Menyimpan...</span>

@@ -18,4 +18,12 @@ class RencanaAwalController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        $kodeNomenklatur = KodeNomenklatur::all();
+        return Inertia::render('Monitoring/Create', [
+            'kodeNomenklatur' => $kodeNomenklatur,
+        ]);
+    }
+
 }

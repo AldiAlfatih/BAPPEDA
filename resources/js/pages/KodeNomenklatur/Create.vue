@@ -42,7 +42,7 @@ const urusanOptions = computed(() =>
 
 const bidangUrusanOptions = computed(() => {
   if (!urusan.value) return [];
-  
+
   return props.bidangUrusanList
     .filter((item: any) => item.urusan_id == urusan.value)
     .map((item: any) => ({
@@ -53,7 +53,7 @@ const bidangUrusanOptions = computed(() => {
 
 const programOptions = computed(() => {
   if (!bidangUrusan.value) return [];
-  
+
   return props.programList
     .filter((item: any) => item.bidang_urusan_id == bidangUrusan.value)
     .map((item: any) => ({
@@ -64,7 +64,7 @@ const programOptions = computed(() => {
 
 const kegiatanOptions = computed(() => {
   if (!program.value) return [];
-  
+
   return props.kegiatanList
     .filter((item: any) => item.program_id == program.value)
     .map((item: any) => ({
@@ -75,7 +75,7 @@ const kegiatanOptions = computed(() => {
 
 const subkegiatanOptions = computed(() => {
   if (!kegiatan.value) return [];
-  
+
   return props.subkegiatanList
     .filter((item: any) => item.kegiatan_id == kegiatan.value)
     .map((item: any) => ({
@@ -86,13 +86,13 @@ const subkegiatanOptions = computed(() => {
 
 function handleJenisChange(value: number) {
   jenisNomenklatur.value = value;
-  
+
   urusan.value = null;
   bidangUrusan.value = null;
   program.value = null;
   kegiatan.value = null;
   subkegiatan.value = null;
-  
+
   // Generate nomor kode untuk Urusan
   if (value === 0) {
     const nextUrusanNumber = props.urusanList.length + 1;
@@ -339,9 +339,19 @@ function handleSubmit() {
           <Label for="nomenklatur">Nomenklatur</Label>
           <Input id="nomenklatur" v-model="nomenklatur" type="text" required />
         </div>
-        
-        
-        <div class="flex justify-end">
+
+
+
+        <div class="flex justify-end mt-8 gap-4">
+
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                @click="$inertia.visit('/kodenomenklatur')"
+              >
+                Kembali
+              </button>
+
           <Button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">
             Simpan
           </Button>

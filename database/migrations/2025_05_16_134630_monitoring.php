@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->integer('pagu_anggaran');
             $table->timestamps();
         });
+        
         Schema::create('monitoring_realisasi', function (Blueprint $table) {
             $table->id();
             $table->foreignId('monitoring_id')->constrained('monitoring');

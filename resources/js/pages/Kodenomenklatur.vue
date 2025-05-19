@@ -186,10 +186,10 @@ function handleSearchChange() {
       <!-- Header dengan judul dan action -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Kode Nomenklatur</h1>
+          <h1 class="text-2xl font-bold text-gray-600 dark:text-gray-100">Kode Nomenklatur</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data kode nomenklatur</p>
         </div>
-        <Button class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" @click="goToCreatePage">
+        <Button class="flex items-center bg-blue-800 gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" @click="goToCreatePage">
           <Plus class="w-4 h-4" />
           Tambahkan
         </Button>
@@ -224,29 +224,29 @@ function handleSearchChange() {
             <Table>
               <TableHeader class="bg-gray-50 dark:bg-gray-800">
                 <TableRow>
-                  <TableHead class="w-16 text-center">No</TableHead>
+                  <TableHead class="w-16 text-center text-gray-600">No</TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nomor_kode')">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 text-gray-600">
                       Kode
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                         :class="{'opacity-100': sortField === 'nomor_kode'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nomenklatur')">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 text-gray-600">
                       Nomenklatur
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                         :class="{'opacity-100': sortField === 'nomenklatur'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('jenis_nomenklatur')">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 text-gray-600">
                       Jenis
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                         :class="{'opacity-100': sortField === 'jenis_nomenklatur'}" />
                     </div>
                   </TableHead>
-                  <TableHead>Aksi</TableHead>
+                  <TableHead class="text-gray-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,27 +256,27 @@ function handleSearchChange() {
                     <TableRow class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                       :class="{'bg-blue-50 dark:bg-blue-900/20': showDetailId === kode.id}"
                       @click="toggleDetail(kode.id)">
-                      <TableCell class="text-center font-medium">
+                      <TableCell class="text-center font-medium text-gray-500">
                         {{ (currentPage - 1) * itemsPerPage + index + 1 }}
                       </TableCell>
-                      <TableCell class="font-mono">{{ kode.nomor_kode }}</TableCell>
+                      <TableCell class="font-mono text-gray-500">{{ kode.nomor_kode }}</TableCell>
                       <TableCell>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 text-gray-500">
                           <span>{{ truncateNomenklatur(kode.nomenklatur) }}</span>
                           <TooltipProvider v-if="kode.nomenklatur.length > 30">
                             <Tooltip>
                               <TooltipTrigger>
-                                <Info class="w-4 h-4 text-blue-500" />
+                                <Info class="w-4 h-4 text-grey-700" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <div class="max-w-md p-2">{{ kode.nomenklatur }}</div>
+                                <div class="max-w-md p-2 text-gray-500">{{ kode.nomenklatur }}</div>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge>
+                        <Badge class="text-gray-500">
                           {{ labelJenisNomenklatur(kode.jenis_nomenklatur) }}
                         </Badge>
                       </TableCell>
@@ -286,12 +286,12 @@ function handleSearchChange() {
                             @click.stop="toggleDetail(kode.id)">
                             <FileText class="w-4 h-4 text-blue-500" />
                           </Button> -->
-                          <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
+                          <Button size="sm" class="bg-green-900 hover:bg-green-700 text-white"
                             @click.stop="goToEditPage(kode.id)">
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button>
-                          <Button size="sm" class="bg-red-600 hover:bg-red-700 text-white"
+                          <Button size="sm" class="bg-red-700 hover:bg-red-700 text-white"
                             @click.stop="deleteKode(kode.id)">
                             <Trash2 class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Hapus</span>
@@ -304,41 +304,41 @@ function handleSearchChange() {
                     <TableRow v-if="showDetailId === kode.id" class="bg-blue-50/50 dark:bg-blue-900/10">
                       <TableCell colspan="5" class="animate-fadeIn">
                         <div class="p-4 space-y-3">
-                          <h3 class="text-lg font-semibold">Detail Lengkap</h3>
+                          <h3 class="text-lg font-semibold text-gray-600">Detail Lengkap</h3>
                           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p class="text-sm text-gray-500">Kode:</p>
-                              <p class="font-mono text-lg">{{ kode.nomor_kode }}</p>
+                              <p class="text-sm text-gray-600">Kode:</p>
+                              <p class="font-mono text-lg text-gray-500">{{ kode.nomor_kode }}</p>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-500">Jenis:</p>
-                              <Badge>
+                              <p class="text-sm text-gray-600">Jenis:</p>
+                              <Badge class="text-gray-500">
                                 {{ labelJenisNomenklatur(kode.jenis_nomenklatur) }}
                               </Badge>
                             </div>
                             <div class="md:col-span-2">
-                              <p class="text-sm text-gray-500">Nomenklatur:</p>
-                              <p class="font-medium text-gray-800 dark:text-gray-200">{{ kode.nomenklatur }}</p>
+                              <p class="text-sm text-gray-600">Nomenklatur:</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ kode.nomenklatur }}</p>
                             </div>
 
                             <div v-if="kode.bidang_urusan" class="md:col-span-2">
-                              <p class="text-sm text-gray-500">Bidang Urusan:</p>
-                              <p>{{ kode.bidang_urusan.bidang_urusan }}</p>
+                              <p class="text-sm text-gray-600">Bidang Urusan:</p>
+                              <p class="text-gray-500">{{ kode.bidang_urusan.bidang_urusan }}</p>
                             </div>
 
                             <div v-if="kode.program" class="md:col-span-2">
-                              <p class="text-sm text-gray-500">Program:</p>
-                              <p>{{ kode.program.program }}</p>
+                              <p class="text-sm text-gray-600">Program:</p>
+                              <p class="text-gray-500">{{ kode.program.program }}</p>
                             </div>
 
                             <div v-if="kode.kegiatan" class="md:col-span-2">
-                              <p class="text-sm text-gray-500">Kegiatan:</p>
-                              <p>{{ kode.kegiatan.kegiatan }}</p>
+                              <p class="text-sm text-gray-600">Kegiatan:</p>
+                              <p class="text-gray-500">{{ kode.kegiatan.kegiatan }}</p>
                             </div>
 
                             <div v-if="kode.subkegiatan" class="md:col-span-2">
-                              <p class="text-sm text-gray-500">Subkegiatan:</p>
-                              <p>{{ kode.subkegiatan.subkegiatan }}</p>
+                              <p class="text-sm text-gray-600">Subkegiatan:</p>
+                              <p class="text-gray-500">{{ kode.subkegiatan.subkegiatan }}</p>
                             </div>
                           </div>
                         </div>
@@ -349,8 +349,8 @@ function handleSearchChange() {
                 <TableRow v-else>
                   <TableCell colspan="5" class="text-center py-10">
                     <div class="flex flex-col items-center justify-center gap-2">
-                      <p class="text-gray-500 text-lg">Tidak ada data yang ditemukan</p>
-                      <p class="text-gray-400 text-sm" v-if="searchQuery">Coba ubah kriteria pencarian</p>
+                      <p class="text-gray-600 text-lg">Tidak ada data yang ditemukan</p>
+                      <p class="text-gray-600 text-sm" v-if="searchQuery">Coba ubah kriteria pencarian</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -362,7 +362,7 @@ function handleSearchChange() {
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
+        <div class="text-sm text-gray-600">
           Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai
           {{ Math.min(currentPage * itemsPerPage, filteredData.length) }}
           dari {{ filteredData.length }} data

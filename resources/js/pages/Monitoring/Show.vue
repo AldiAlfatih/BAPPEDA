@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref, } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { Eye } from 'lucide-vue-next';
 
 const props = defineProps<{
     user: {
@@ -39,7 +40,6 @@ const props = defineProps<{
 
 const page = usePage();
 const flashMessage = computed(() => {
-    // Parse from Inertia shared props
     const pageProps = page.props as any;
     return pageProps.flash || {};
 });
@@ -49,7 +49,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
-// Show flash message system
 const showFlash = ref({
     success: false,
     error: false,
@@ -57,24 +56,17 @@ const showFlash = ref({
 });
 
 onMounted(() => {
-    // Check if there are flash messages to show
     if (flashMessage.value.success) {
         showFlash.value.success = true;
-        setTimeout(() => {
-            showFlash.value.success = false;
-        }, 5000);
+        setTimeout(() => (showFlash.value.success = false), 5000);
     }
     if (flashMessage.value.error) {
         showFlash.value.error = true;
-        setTimeout(() => {
-            showFlash.value.error = false;
-        }, 5000);
+        setTimeout(() => (showFlash.value.error = false), 5000);
     }
     if (flashMessage.value.info) {
         showFlash.value.info = true;
-        setTimeout(() => {
-            showFlash.value.info = false;
-        }, 5000);
+        setTimeout(() => (showFlash.value.info = false), 5000);
     }
 });
 
@@ -86,64 +78,35 @@ const jenisNomenklaturOptions = [
     { value: 4, label: 'Sub Kegiatan' },
 ];
 
-// Filtered options for each dropdown
+// Filter hanya tugas dengan jenis nomenklatur = 0 (Urusan)
+const urusanTugas = computed(() => {
+    return props.skpdTugas.filter(tugas => tugas.kode_nomenklatur.jenis_nomenklatur === 0);
+});
+
 const urusanOptions = computed(() => {
     return props.urusanList
-        .filter((item) => item.jenis_nomenklatur === 0)
-        .map((item) => ({
+        .filter(item => item.jenis_nomenklatur === 0)
+        .map(item => ({
             label: `${item.nomor_kode} - ${item.nomenklatur}`,
             value: item.id,
         }));
 });
 
 function ShowTugas(tugasId: number) {
-    router.visit(` /monitoring/rencanaawal/${tugasId}`);
+    router.visit(`/monitoring/rencanaawal/${tugasId}`);
 }
-
-// function ShowTugas(tugasId: number) {
-//   router.visit(route('monitoring.rencanaawal', { tugasId }));
-// }
-//  monitoring/rencanaawal/{id}
 
 function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: any } }) {
     return `${task.kode_nomenklatur.nomor_kode} - ${task.kode_nomenklatur.nomenklatur}`;
 }
-
 </script>
-
-<style scoped>
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th,
-td {
-    padding: 12px;
-    text-align: left;
-    border: 1px solid #e2e8f0;
-}
-button {
-    cursor: pointer;
-}
-.notification {
-    transition: opacity 0.5s ease-in-out;
-}
-.notification-enter-active,
-.notification-leave-active {
-    transition: opacity 0.5s;
-}
-.notification-enter-from,
-.notification-leave-to {
-    opacity: 0;
-}
-</style>
 
 <template>
     <Head title="Detail Perangkat Daerah" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-4 p-4">
-            <!-- Flash Messages dengan animasi fadeout -->
+            <!-- Flash messages -->
             <transition name="notification">
                 <div
                     v-if="flashMessage.success && showFlash.success"
@@ -174,58 +137,59 @@ button {
                 </div>
             </transition>
 
-            <!-- Header Section -->
+            <!-- SKPD Info -->
             <div class="rounded-lg bg-white p-6 shadow-md">
-                <h2 class="mb-4 text-2xl font-semibold">Detail Perangkat Daerah</h2>
+                <h2 class="mb-4 text-2xl font-semibold text-gray-600">Detail Perangkat Daerah</h2>
 
                 <div class="flex justify-between">
-                    <span class="font-bold">Nama SKPD:</span>
-                    <span>{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</span>
+                    <span class="font-bold text-gray-600">Nama SKPD:</span>
+                    <span class="text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</span>
                 </div>
 
                 <div class="flex justify-between">
-                    <span class="font-bold">Kode Organisasi :</span>
-                    <span>{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</span>
+                    <span class="font-bold text-gray-600">Kode Organisasi :</span>
+                    <span class="text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</span>
                 </div>
 
                 <div class="flex justify-between">
-                    <span class="font-bold">No DPA :</span>
-                    <span>{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</span>
+                    <span class="font-bold text-gray-600">No DPA :</span>
+                    <span class="text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</span>
                 </div>
 
-                <!-- SKPD Details -->
                 <div class="space-y-4">
                     <div class="flex justify-between">
-                        <span class="font-bold">Kepala SKPD :</span>
-                        <span>{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</span>
+                        <span class="font-bold text-gray-600">Kepala SKPD :</span>
+                        <span class="text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Tasks Section -->
+            <!-- Tugas PD Table -->
             <div class="mt-6 rounded-lg bg-white p-6 shadow-md">
-                <!-- <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-xl font-semibold">Tugas PD</h3>
-                    <button class="rounded bg-black px-4 py-2 text-white hover:bg-gray-700" @click="openModal">Tambah Tugas</button>
-                </div> -->
-
-                <!-- Table for Tugas PD and Aksi -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full table-auto">
                         <thead>
                             <tr>
-                                <th class="border px-4 py-2">Tugas PD</th>
-                                <th class="border px-4 py-2">Aksi</th>
+                                <th class="border px-4 py-2 text-gray-600">Tugas PD</th>
+                                <th class="border px-4 py-2 w-32 text-center text-gray-600">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="!props.skpdTugas || props.skpdTugas.length === 0">
-                                <td colspan="2" class="border px-4 py-2 text-center">Tidak ada tugas yang tersedia</td>
+                            <tr v-if="!urusanTugas || urusanTugas.length === 0">
+                                <td colspan="2" class="border px-4 py-2 text-center text-gray-600">Tidak ada tugas yang tersedia</td>
                             </tr>
-                            <tr v-for="tugas in props.skpdTugas" :key="tugas.id">
-                                <td class="border px-4 py-2">{{ getTaskLabel(tugas) }}</td>
-                                <td class="border px-4 py-2 text-center">
-                                    <button class="text-red-500 hover:text-red-700" @click="ShowTugas(tugas.id)">Show</button>
+                            <tr v-for="tugas in urusanTugas" :key="tugas.id">
+                                <td class="border px-4 py-2 text-gray-500">{{ getTaskLabel(tugas) }}</td>
+                                <td class="border px-4 py-2 w-32">
+                                    <div class="flex justify-center">
+                                        <button
+                                            class="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-medium px-3 py-1 rounded"
+                                            @click="ShowTugas(tugas.id)"
+                                        >
+                                            <Eye class="w-4 h-4 mr-1" />
+                                            Show
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -246,3 +210,30 @@ button {
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #e2e8f0;
+}
+button {
+    cursor: pointer;
+}
+.notification {
+    transition: opacity 0.5s ease-in-out;
+}
+.notification-enter-active,
+.notification-leave-active {
+    transition: opacity 0.5s;
+}
+.notification-enter-from,
+.notification-leave-to {
+    opacity: 0;
+}
+</style>

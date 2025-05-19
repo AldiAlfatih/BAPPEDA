@@ -200,12 +200,12 @@ function handleLanjutTahun() {
         <table class="min-w-full divide-y divide-gray-200 bg-white rounded shadow">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">No</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Tahap</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Tanggal Mulai</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Tanggal Berakhir</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Status</th>
-              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Aksi</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">No</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Tahap</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Tanggal Mulai</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Tanggal Berakhir</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Status</th>
+              <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
@@ -213,15 +213,17 @@ function handleLanjutTahun() {
               <td colspan="6" class="px-4 py-2 text-center text-gray-500">Tidak ada data periode tersedia</td>
             </tr>
             <tr v-for="(p, index) in filteredperiode" :key="p.id">
-              <td class="px-4 py-2 text-sm text-gray-600">{{ index + 1 }}</td>
-              <td class="px-4 py-2 text-sm text-gray-600">{{ p.tahap?.tahap || '-' }}</td>
-              <td class="px-4 py-2 text-sm text-gray-600">{{ formatDate(p.tanggal_mulai) }}</td>
-              <td class="px-4 py-2 text-sm text-gray-600">{{ formatDate(p.tanggal_selesai) }}</td>
+              <td class="px-4 py-2 text-sm text-gray-500">{{ index + 1 }}</td>
+              <td class="px-4 py-2 text-sm text-gray-500">{{ p.tahap?.tahap || '-' }}</td>
+              <td class="px-4 py-2 text-sm text-gray-500">{{ formatDate(p.tanggal_mulai) }}</td>
+              <td class="px-4 py-2 text-sm text-gray-500">{{ formatDate(p.tanggal_selesai) }}</td>
               <td class="px-4 py-2">
                 <span
+                  class="px-2 py-1 rounded text-sm font-medium"
                   :class="{
-                    'text-green-600': p.status === 1,
-                    'text-red-600': p.status === 0
+                    'text-green-600 bg-green-100 border border-green-600': p.status === 1,
+                    'text-red-600 bg-red-100 border border-red-600': p.status === 0,
+                    'text-blue-600 bg-blue-100 border border-blue-600': p.status === 2
                   }"
                 >
                   {{ getStatusLabel(p.status) }}
@@ -232,7 +234,7 @@ function handleLanjutTahun() {
                   <button
                     v-if="p.status !== 2"
                     @click="toggleStatus(p.id)"
-                    class="px-2 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                    class="px-2 py-1 bg-blue-800 text-white text-sm rounded hover:bg-blue-600"
                   >
                     {{ p.status === 1 ? 'Tutup' : 'Buka' }}
                   </button>
@@ -240,7 +242,7 @@ function handleLanjutTahun() {
                   <button
                     v-if="p.status !== 2"
                     @click="editItem(p.id)"
-                    class="px-2 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+                    class="px-2 py-1 bg-green-900 text-white text-sm rounded hover:bg-green-600"
                   >
                     Edit
                   </button>
@@ -248,7 +250,7 @@ function handleLanjutTahun() {
                   <button
                     v-if="canShowSelesai(p)"
                     @click="markAsSelesai(p.id)"
-                    class="px-2 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+                    class="px-2 py-1 bg-red-800 text-white text-sm rounded hover:bg-yellow-600"
                   >
                     Selesai
                   </button>

@@ -26,17 +26,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 
 const props = defineProps<{
   users: {
@@ -229,29 +220,29 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                 <TableRow>
                   <TableHead class="w-16 text-center">No</TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nama_dinas')">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 text-gray-600">
                       Nama Dinas
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
                         :class="{'opacity-100': sortField === 'nama_dinas'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nama_operator')">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 text-gray-600">
                       Nama Penanggung Jawab
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
                         :class="{'opacity-100': sortField === 'nama_operator'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('name')">
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 text-gray-600">
                       Nama Kepala Daerah
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
                         :class="{'opacity-100': sortField === 'name'}" />
                     </div>
                   </TableHead>
-                  <TableHead class="hidden md:table-cell">No DPA</TableHead>
-                  <TableHead class="hidden md:table-cell">Kode Organisasi</TableHead>
-                  <TableHead>Aksi</TableHead>
+                  <TableHead class="hidden md:table-cell text-gray-600">No DPA</TableHead>
+                  <TableHead class="hidden md:table-cell text-gray-600">Kode Organisasi</TableHead>
+                  <TableHead class="text-gray-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -261,11 +252,11 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                     <TableRow class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                       :class="{'bg-blue-50 dark:bg-blue-900/20': showDetailId === user.id}"
                       @click="toggleDetail(user.id)">
-                      <TableCell class="text-center font-medium">
+                      <TableCell class="text-center font-medium text-gray-500">
                         {{ (currentPage - 1) * itemsPerPage + index + 1 }}
                       </TableCell>
                       <TableCell class="font-medium">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 text-gray-500">
                           <span>{{ truncateText(user.skpd?.nama_dinas) }}</span>
                           <TooltipProvider v-if="user.skpd?.nama_dinas && user.skpd.nama_dinas.length > 30">
                             <Tooltip>
@@ -279,10 +270,10 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                      <TableCell>{{ user.skpd?.nama_operator || '-' }}</TableCell>
-                      <TableCell>{{ user.name || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono">{{ user.skpd?.no_dpa || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
+                      <TableCell class="text-gray-500">{{ user.skpd?.nama_operator || '-' }}</TableCell>
+                      <TableCell class="text-gray-500">{{ user.name || '-' }}</TableCell>
+                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
+                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
                           <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
@@ -290,7 +281,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button> -->
-                          <Button size="sm" class="bg-blue-600 hover:bg-blue-700 text-white" 
+                          <Button size="sm" class="bg-yellow-500 hover:bg-yellow-700 text-white" 
                             @click.stop="goToShowPage(user.id)">
                             <Eye class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Detail</span>
@@ -303,15 +294,15 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                     <TableRow v-if="showDetailId === user.id" class="bg-blue-50/50 dark:bg-blue-900/10">
                       <TableCell colspan="7" class="animate-fadeIn">
                         <div class="p-4 space-y-3">
-                          <h3 class="text-lg font-semibold">Detail Perangkat Daerah</h3>
+                          <h3 class="text-lg font-semibold text-gray-600">Detail Perangkat Daerah</h3>
                           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="flex items-center gap-3">
                               <div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
                                 <Building2 class="h-12 w-12 text-blue-600" />
                               </div>
                               <div>
-                                <p class="text-sm text-gray-500">ID Perangkat Daerah:</p>
-                                <p class="font-mono text-lg">{{ user.id }}</p>
+                                <p class="text-sm text-gray-600">ID Perangkat Daerah:</p>
+                                <p class="font-mono text-lg text-gray-400">{{ user.id }}</p>
                               </div>
                             </div>
                             <div class="flex items-center gap-3">
@@ -319,25 +310,25 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                                 <User class="h-12 w-12 text-green-600" />
                               </div>
                               <div>
-                                <p class="text-sm text-gray-500">Kepala Daerah:</p>
-                                <p class="font-medium text-lg">{{ user.name || '-' }}</p>
+                                <p class="text-sm text-gray-600">Kepala Daerah:</p>
+                                <p class="font-medium text-lg text-gray-500">{{ user.name || '-' }}</p>
                               </div>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-500">Nama Dinas:</p>
-                              <p class="font-medium text-gray-800 dark:text-gray-200">{{ user.skpd?.nama_dinas || '-' }}</p>
+                              <p class="text-sm text-gray-600">Nama Dinas:</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_dinas || '-' }}</p>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-500">Nama Penanggung Jawab:</p>
-                              <p class="font-medium text-gray-800 dark:text-gray-200">{{ user.skpd?.nama_operator || '-' }}</p>
+                              <p class="text-sm text-gray-600">Nama Penanggung Jawab:</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_operator || '-' }}</p>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-500">No DPA:</p>
-                              <p class="font-mono text-gray-800 dark:text-gray-200">{{ user.skpd?.no_dpa || '-' }}</p>
+                              <p class="text-sm text-gray-600">No DPA:</p>
+                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.no_dpa || '-' }}</p>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-500">Kode Organisasi:</p>
-                              <p class="font-mono text-gray-800 dark:text-gray-200">{{ user.skpd?.kode_organisasi || '-' }}</p>
+                              <p class="text-sm text-gray-600">Kode Organisasi:</p>
+                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.kode_organisasi || '-' }}</p>
                             </div>
                           </div>
                           <div class="pt-3 flex justify-end gap-2">
@@ -346,7 +337,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               <Pencil class="w-4 h-4 mr-2" />
                               Edit Data
                             </Button> -->
-                            <Button size="sm" class="bg-blue-600 hover:bg-blue-700 text-white" 
+                            <Button size="sm" class="bg-yellow-500 hover:bg-blue-700 text-white" 
                               @click.stop="goToShowPage(user.id)">
                               <Eye class="w-4 h-4 mr-1" />
                               Lihat Detail Lengkap

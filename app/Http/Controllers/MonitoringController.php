@@ -2,90 +2,171 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Monitoring;
+use App\Models\User;
+use App\Models\UserDetail;
+use App\Models\KodeNomenklatur;
+use App\Models\SkpdTugas;
+use App\Models\SkpdKepala;
+use App\Models\Skpd;
+use App\Models\Periode;
 use Illuminate\Http\Request;
-use App\Models\Monitoring;;
 use Inertia\Inertia;
 
 class MonitoringController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return Inertia::render('Monitoring');
+        $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
+
+        return Inertia::render('Monitoring', [
+            'users' => $users,
+        ]);
     }
-    /**
-     * Show the form for creating a new resource.
-     */
+
     public function create()
     {
-        return Inertia::render('Monitoring/Create');    
+        $skpds = Skpd::all();
+        $periodes = Periode::all();
+        return view('monitoring.create', compact('skpds', 'periodes'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'status_monitoring' => 'required|string|max:255',
-            'catatan_monitoring' => 'nullable|text|max:255',
-            'rekomendasi' => 'nullable|text|max:255',
+        $validated = $request->validate([
+            'skpd_id' => 'required|exists:skpd,id',
+            'sumber_dana' => 'required|string|max:255',
+            'periode_id' => 'nullable|exists:periode,id',
+            'tahun' => 'required|digits:4|integer',
+            'deskripsi' => 'required|string',
+            'pagu_anggaran' => 'required|integer',
         ]);
 
-        Monitoring::create($request->all());
+        Monitoring::create($validated);
 
-        return redirect()->route('monitoring.index')->with('success', 'Monitoring created successfully');
+        return redirect()->route('monitoring.index')->with('success', 'Data monitoring berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
-    {
-        $monitoring = Monitoring::findOrFail($id);
-        return Inertia::render('Monitoring/Show', [
-            'monitoring' => $monitoring,
-        ]);
-    }
+   {
+       $user = User::with('skpd')->findOrFail($id);
+       
+       $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
+       
+       $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_urusan');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
+               ];
+           });
+       
+       $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
+               ];
+           });
+       
+       $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_program');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'program_id' => $item->details->first() ? $item->details->first()->id_program : null
+               ];
+           });
+       
+       $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_kegiatan');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
+               ];
+           });
+       
+       $skpdTugas = SkpdTugas::where('skpd_id', $user->skpd->id)
+           ->where('is_aktif', 1)
+           ->with('kodeNomenklatur')
+           ->get();
+       
+       return Inertia::render('Monitoring/Show', [
+           'user' => $user,
+           'skpdTugas' => $skpdTugas,
+           'urusanList' => $urusanList,
+           'bidangUrusanList' => $bidangUrusanList,
+           'programList' => $programList,
+           'kegiatanList' => $kegiatanList,
+           'subkegiatanList' => $subkegiatanList,
+       ]);
+   }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        $monitoring = Monitoring::findOrFail($id);
-        return Inertia::render('Monitoring/Edit', [
-            'monitoring' => $monitoring,
-        ]);
-    }
+    // public function rencanaAwal($id)
+    // {
+    //     $tugas = SkpdTugas::with('kodeNomenklatur')->findOrFail($id);
+    //     return Inertia::render('Monitoring/RencanaAwal', [
+    //         'tugas' => $tugas,
+    //     ]);
+    // }
+    // public function edit($id)
+    // {
+    //     $monitoring = Monitoring::findOrFail($id);
+    //     $skpds = Skpd::all();
+    //     $periodes = Periode::all();
+    //     return view('monitoring.edit', compact('monitoring', 'skpds', 'periodes'));
+    // }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        $request->validate([
-            'status_monitoring' => 'required|string|max:255',
-            'catatan_monitoring' => 'nullable|text|max:255',
-            'rekomendasi' => 'nullable|text|max:255',
-        ]);
+    // public function update(Request $request, $id)
+    // {
+    //     $monitoring = Monitoring::findOrFail($id);
 
-        $monitoring = Monitoring::findOrFail($id);
-        $monitoring->update($request->all());
+    //     $validated = $request->validate([
+    //         'skpd_id' => 'required|exists:skpd,id',
+    //         'sumber_dana' => 'required|string|max:255',
+    //         'periode_id' => 'nullable|exists:periode,id',
+    //         'tahun' => 'required|digits:4|integer',
+    //         'deskripsi' => 'required|string',
+    //         'pagu_anggaran' => 'required|integer',
+    //     ]);
 
-        return redirect()->route('monitoring.index')->with('success', 'Monitoring updated successfully');
-    }
+    //     $monitoring->update($validated);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $monitoring = Monitoring::findOrFail($id);
-        $monitoring->delete();
+    //     return redirect()->route('monitoring.index')->with('success', 'Data monitoring berhasil diperbarui.');
+    // }
 
-        return redirect()->route('monitoring.index')->with('success', 'Monitoring deleted successfully');
-    }
+    // public function destroy($id)
+    // {
+    //     $monitoring = Monitoring::findOrFail($id);
+    //     $monitoring->delete();
+
+    //     return redirect()->route('monitoring.index')->with('success', 'Data monitoring berhasil dihapus.');
+    // }
 }

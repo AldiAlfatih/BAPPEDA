@@ -16,24 +16,19 @@ return new class extends Migration
             $table->id();
             $table->integer('jenis_nomenklatur');
             $table->string('nomor_kode');
-            $table->string('nomenklatur')->nullable(); 
+            $table->string('nomenklatur'); 
             $table->timestamps();
         });
 
         Schema::create('kode_nomenklatur_detail', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_nomenklatur')->constrained('kode_nomenklatur')->onDelete('cascade');
-            $table->foreignId('id_urusan')->constrained('kode_nomenklatur')->onDelete('cascade');
-            $table->foreignId('id_bidang_urusan')->constrained('kode_nomenklatur')->onDelete('cascade');
-            $table->foreignId('id_program')->constrained('kode_nomenklatur')->onDelete('cascade');
-            $table->foreignId('id_kegiatan')->constrained('kode_nomenklatur')->onDelete('cascade');
-            $table->foreignId('id_sub_kegiatan')->constrained('kode_nomenklatur')->onDelete('cascade');
-
+            $table->foreignId('id_urusan')->nullable()->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_bidang_urusan')->nullable()->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_program')->nullable()->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_kegiatan')->nullable()->constrained('kode_nomenklatur')->onDelete('cascade');
+            $table->foreignId('id_sub_kegiatan')->nullable()->constrained('kode_nomenklatur')->onDelete('cascade');
             $table->timestamps();
-        });
-
-        Schema::table('kode_nomenklatur', function (Blueprint $table) {
-           
         });
     }
 

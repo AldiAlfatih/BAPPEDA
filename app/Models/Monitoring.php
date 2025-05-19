@@ -10,5 +10,33 @@ class Monitoring extends Model
     use HasFactory;
 
     protected $table = 'monitoring';
-    protected $fillable = ['status_monitoring', 'catatan_monitoring', 'rekomendasi'];
+
+    protected $fillable = [
+        'skpd_id',
+        'sumber_dana',
+        'periode_id',
+        'tahun',
+        'deskripsi',
+        'pagu_anggaran',
+    ];
+
+    public function skpd()
+    {
+        return $this->belongsTo(Skpd::class);
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(Periode::class);
+    }
+
+    public function target()
+    {
+        return $this->hasMany(MonitoringTarget::class);
+    }
+
+    public function realisasi()
+    {
+        return $this->hasMany(MonitoringRealisasi::class);
+    }
 }

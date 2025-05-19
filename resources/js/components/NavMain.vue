@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -16,10 +10,17 @@ defineProps<{
 }>();
 
 const page = usePage<SharedData>();
-
 const openMenus = ref<Record<string, boolean>>({});
+
 const toggleMenu = (title: string) => {
   openMenus.value[title] = !openMenus.value[title];
+};
+
+const canAccess = (guards: string[] | undefined): boolean => {
+  const userRole = page.props.auth.user?.role;
+  console.log("User Role:", userRole);
+  if (!guards) return true;
+  return guards.some((guard) => guard === userRole);  
 };
 </script>
 
@@ -28,8 +29,7 @@ const toggleMenu = (title: string) => {
     <SidebarGroupLabel>Menu</SidebarGroupLabel>
     <SidebarMenu>
       <SidebarMenuItem v-for="item in items" :key="item.title">
-        <template v-if="!item.guard || (Array.isArray(item.guard) && item.guard.includes(page.props.auth.user.role))">
-          <!-- Dropdown parent -->
+        <template v-if="canAccess(item.guard)">
           <div v-if="item.children">
             <SidebarMenuButton as-child>
               <button
@@ -45,24 +45,17 @@ const toggleMenu = (title: string) => {
               </button>
             </SidebarMenuButton>
 
-            <!-- Dropdown children -->
             <div v-if="openMenus[item.title]" class="ml-6 mt-1 space-y-1">
-            <SidebarMenuItem
-                v-for="child in item.children"
-                :key="child.title"
-            >
-                <SidebarMenuButton
-                as-child
-                :is-active="child.href === page.url"
-                :tooltip="child.title"
-                >
-                <Link :href="child.href">
-                    <span class="ml-1 text-sm">{{ child.title }}</span>
-                </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+              <SidebarMenuItem v-for="child in item.children" :key="child.title">
+                <template v-if="canAccess(child.guard)">
+                  <SidebarMenuButton as-child :is-active="child.href === page.url">
+                    <Link :href="child.href">
+                      <span class="ml-1 text-sm">{{ child.title }}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </template>
+              </SidebarMenuItem>
             </div>
-
           </div>
 
           <!-- Single-level item -->

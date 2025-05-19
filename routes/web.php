@@ -10,6 +10,8 @@ use App\Http\Controllers\KodeNomenklaturController;
 use App\Http\Controllers\PeriodeController;
 use App\Http\Controllers\RencanaAwalController;
 use App\Http\Controllers\Triwulan1Controller;
+use App\Http\Controllers\SkpdTugasController;
+use App\Http\Controllers\PerangkatDaerahController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -31,6 +33,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('periode', PeriodeController::class)->names('periode');
     Route::resource('rencanaawal', RencanaAwalController::class)->names('rencanaawal');
     Route::resource('triwulan1', Triwulan1Controller::class)->names('triwulan1');
+    Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
+    Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
+
     
     Route::put('/periode/{id}/status', [PeriodeController::class, 'updateStatus']);
     Route::post('/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');

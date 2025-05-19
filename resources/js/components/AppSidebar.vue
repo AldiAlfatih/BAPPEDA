@@ -8,110 +8,114 @@ import { Link } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, Users, Monitor, Bell, Info, BadgeHelp } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
-
 const mainNavItems: NavItem[] = [
+  {
+    title: 'Dashboard',
+    href: '/dashboard',
+    icon: LayoutGrid,
+  },
+  {
+    title: 'Nomenklatur',
+    href: '/kodenomenklatur',
+    guard: ['admin', 'perangkat_daerah'],
+    icon: BookOpen,
+  },
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-    
-    {
-        title: 'Nomenklatur',
-        href: '/kodenomenklatur',
-        guard: ['admin', 'perangkat_daerah'],
-        icon: BookOpen,
-    },
-
-    {
-        title: 'Manjemen Tim Kerja',
+        title: 'Manajemen Tim',
         href: '/usermanagement',
         icon: Users,
         guard: ['super_admin','admin'],
-    },
-    {
-        title: 'Monitoring',
-        href: '/monitoring',
-        icon: Monitor,
-        guard: ['admin'],
         children: [
         {
-            title: 'Manajemen Periode',
-            href: '/periode',
+            title: 'User',
+            href: '/usermanagement',
         },
         {
-            title: 'Rencana Awal',
-            href: '/rencanaawal',
-        },
-        {
-            title: 'Triwulan 1',
-            href: 'triwulan1',
-        },
-        {
-            title: 'Triwulan 2',
-            href: '#',
-        },
-        {
-            title: 'Triwulan 3',
-            href: '#',
-        },
-        {
-            title: 'Triwulan 4',
-            href: '#',
-        },
-        {
-            title: 'Laporan Akhir',
-            href: '#',
+            title: 'Perangkat Daerah',
+            href: '/perangkatdaerah',
         },
         ],
+
     },
-
-    {
-        title: 'pemberitahuan',
-        href: '/pemberitahuan',
-        icon: Bell,
-    },
-
-
+  {
+    title: 'Monitoring',
+    href: '/monitoring',
+    icon: Monitor,
+    guard: ['admin', 'perangkat_daerah'],
+    children: [
+      {
+        title: 'Manajemen Periode',
+        href: '/periode',
+        guard: ['admin'],
+      },
+      {
+        title: 'Rencana Awal',
+        href: '/rencanaawal',
+      },
+      {
+        title: 'Triwulan 1',
+        href: 'triwulan1',
+      },
+      {
+        title: 'Triwulan 2',
+        href: '#',
+      },
+      {
+        title: 'Triwulan 3',
+        href: '#',
+      },
+      {
+        title: 'Triwulan 4',
+        href: '#',
+      },
+      {
+        title: 'Laporan Akhir',
+        href: '#',
+      },
+    ],
+  },
+  {
+    title: 'Pemberitahuan',
+    href: '/pemberitahuan',
+    icon: Bell,
+  },
 ];
 
-
 const footerNavItems: NavItem[] = [
-{
-        title: 'Bantuan',
-        href: '/bantuan',
-        icon: BadgeHelp,
-    },
-    {
-        title: 'Panduan',
-        href: '/panduan',
-        icon: BookOpen,
-    },
+  {
+    title: 'Bantuan',
+    href: '/bantuan',
+    icon: BadgeHelp,
+  },
+  {
+    title: 'Panduan',
+    href: '/panduan',
+    icon: BookOpen,
+  },
 ];
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
-        <SidebarHeader>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('dashboard')">
-                            <AppLogo />
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-        </SidebarHeader>
+  <Sidebar collapsible="icon" variant="inset">
+    <SidebarHeader>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" as-child>
+            <Link :href="route('dashboard')">
+              <AppLogo />
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarHeader>
 
-        <SidebarContent>
-            <NavMain :items="mainNavItems" />
-        </SidebarContent>
-        
+    <SidebarContent>
+      <NavMain :items="mainNavItems" />
+    </SidebarContent>
 
-        <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
-            <NavUser />
-        </SidebarFooter>
-    </Sidebar>
+    <SidebarFooter>
+      <NavFooter :items="footerNavItems" />
+      <NavUser />
+    </SidebarFooter>
+  </Sidebar>
 </template>

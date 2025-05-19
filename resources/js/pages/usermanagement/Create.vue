@@ -2,19 +2,10 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'User Management',
-    href: '/usermanagement',
-  },
-  {
-    title: 'Tambah User',
-    href: '/usermanagement/create',
-  },
+  { title: 'User Management', href: '/usermanagement' },
+  { title: 'Tambah User', href: '/usermanagement/create' },
 ];
 
 // form binding
@@ -28,129 +19,200 @@ const form = useForm({
   nip: '',
   no_hp: '',
   jenis_kelamin: '',
-  tgl_lahir: '',
-  nama_kepala_skpd: '',
-  kode_urusan: '',
-  nama_skpd: '',
-  kode_organisasi: '',
-  errors: {}, // Pastikan errors didefinisikan
+  // nama_skpd: '',
+  // no_dpa: '',
+  // kode_organisasi: '',
+  errors: {},
 });
 
-
-// submit ke backend
-// submit ke backend
+// handle submit to backend
 function submit() {
   form.post(route('usermanagement.store'), {
     onSuccess: () => form.reset(),
-    onError: (errors) => console.log(errors), // Periksa error yang diterima
+    onError: (errors) => console.log(errors),
   });
 }
-
 </script>
 
 <template>
   <Head title="Tambah User" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-4">Tambah User</h1>
+    <div class="flex flex-col gap-6 p-4">
+      <div class="bg-white shadow-md rounded-lg dark:bg-gray-800">
 
-      <form @submit.prevent="submit" class="flex flex-col gap-4">
-        <div>
-          <Label for="name">Nama</Label>
-          <Input id="name" v-model="form.name" type="text" required />
-          <div v-if="form.errors.name" class="text-red-500 text-sm mt-1">{{ form.errors.name }}</div>
+        <div class="p-6">
+          <form @submit.prevent="submit">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Data User -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Data User</h3>
+                
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama</label>
+                  <input 
+                    v-model="form.name" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.name" class="text-sm text-red-600">{{ form.errors.name }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                  <input 
+                    v-model="form.email" 
+                    type="email"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.email" class="text-sm text-red-600">{{ form.errors.email }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                  <input 
+                    v-model="form.password" 
+                    type="password"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.password" class="text-sm text-red-600">{{ form.errors.password }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Konfirmasi Password</label>
+                  <input 
+                    v-model="form.password_confirmation" 
+                    type="password"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.password_confirmation" class="text-sm text-red-600">{{ form.errors.password_confirmation }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" >Role</label>
+                  <select 
+                    v-model="form.role" 
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" 
+                    required
+                  >
+                    <option value="operator">Operator Bappeda</option>
+                    <option value="perangkat_daerah">Kepala Perangkat Daerah</option>
+                  </select>
+                  <p v-if="form.errors.role" class="text-sm text-red-600">{{ form.errors.role }}</p>
+                </div>
+              </div>
+
+              <!-- Data Detail User -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Detail User</h3>
+                
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alamat</label>
+                  <input 
+                    v-model="form.alamat" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.alamat" class="text-sm text-red-600">{{ form.errors.alamat }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">NIP</label>
+                  <input 
+                    v-model="form.nip" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.nip" class="text-sm text-red-600">{{ form.errors.nip }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">No. HP</label>
+                  <input 
+                    v-model="form.no_hp" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                  <p v-if="form.errors.no_hp" class="text-sm text-red-600">{{ form.errors.no_hp }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jenis Kelamin</label>
+                  <select 
+                    v-model="form.jenis_kelamin"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    required
+                  >
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                  <p v-if="form.errors.jenis_kelamin" class="text-sm text-red-600">{{ form.errors.jenis_kelamin }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Profile SKPD (Hanya muncul jika role Perangkat Daerah) -->
+            <!-- <div v-if="form.role === 'perangkat_daerah'" class="mt-8 space-y-4">
+              <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Data Perangkat Daerah</h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Kepala SKPD</label>
+                  <input 
+                    v-model="form.nama_skpd" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p v-if="form.errors.nama_skpd" class="text-sm text-red-600">{{ form.errors.nama_skpd }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kode Urusan</label>
+                  <input 
+                    v-model="form.no_dpa" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p v-if="form.errors.no_dpa" class="text-sm text-red-600">{{ form.errors.no_dpa }}</p>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kode Organisasi</label>
+                  <input 
+                    v-model="form.kode_organisasi" 
+                    type="text"
+                    class="w-full rounded-md border border-gray-300 py-2 px-3 text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p v-if="form.errors.kode_organisasi" class="text-sm text-red-600">{{ form.errors.kode_organisasi }}</p>
+                </div>
+              </div>
+            </div> -->
+
+            <div class="flex justify-end mt-8 gap-4">
+              <button 
+                type="button" 
+                class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                @click="$inertia.visit('/usermanagement')"
+              >
+                Kembali
+              </button>
+              <button 
+                type="submit" 
+                class="px-4 py-2 text-sm font-medium rounded-md border border-transparent bg-blue-600 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-700"
+              >
+                Simpan User
+              </button>
+            </div>
+          </form>
         </div>
-
-        <div>
-          <Label for="email">Email</Label>
-          <Input id="email" v-model="form.email" type="email" required />
-          <div v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</div>
-        </div>
-
-        <div>
-          <Label for="password">Password</Label>
-          <Input id="password" v-model="form.password" type="password" required />
-          <div v-if="form.errors.password" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</div>
-        </div>
-
-        <div>
-          <Label for="password_confirmation">Confirm Password</Label>
-          <Input id="password_confirmation" v-model="form.password_confirmation" type="password" required />
-          <div v-if="form.errors.password_confirmation" class="text-red-500 text-sm mt-1">{{ form.errors.password_confirmation }}</div>
-        </div>
-
-        <div>
-          <Label for="role">Role</Label>
-          <select id="role" v-model="form.role" class="h-8 border border-grey-500 rounded-md" required>
-            <option value="perangkat_daerah">Perangkat Daerah</option>
-            <option value="operator" class="text-grey-500">Operator</option>
-          </select>
-          <div v-if="form.errors.role" class="text-red-500 text-sm mt-1">{{ form.errors.role }}</div>
-        </div>
-
-        <div>
-          <Label for="alamat">Alamat</Label>
-          <Input id="alamat" v-model="form.alamat" type="text" required />
-          <div v-if="form.errors.alamat" class="text-red-500 text-sm mt-1">{{ form.errors.alamat }}</div>
-        </div>
-
-        <div>
-          <Label for="nip">NIP</Label>
-          <Input id="nip" v-model="form.nip" type="text" required />
-          <div v-if="form.errors.nip" class="text-red-500 text-sm mt-1">{{ form.errors.nip }}</div>
-        </div>
-
-        <div>
-          <Label for="no_hp">No HP</Label>
-          <Input id="no_hp" v-model="form.no_hp" type="text" required />
-          <div v-if="form.errors.no_hp" class="text-red-500 text-sm mt-1">{{ form.errors.no_hp }}</div>
-        </div>
-
-        <div>
-          <Label for="jenis_kelamin">Jenis Kelamin</Label>
-          <select id="jenis_kelamin" v-model="form.jenis_kelamin" required>
-            <option value="Laki-laki">Laki-laki</option>
-            <option value="Perempuan">Perempuan</option>
-          </select>
-          <div v-if="form.errors.jenis_kelamin" class="text-red-500 text-sm mt-1">{{ form.errors.jenis_kelamin }}</div>
-        </div>
-
-        <div>
-          <Label for="tgl_lahir">Tanggal Lahir</Label>
-          <Input id="tgl_lahir" v-model="form.tgl_lahir" type="date" required />
-          <div v-if="form.errors.tgl_lahir" class="text-red-500 text-sm mt-1">{{ form.errors.tgl_lahir }}</div>
-        </div>
-
-        <div v-if="form.role === 'perangkat_daerah'">
-          <div>
-            <Label for="nama_kepala_skpd">Nama Kepala SKPD</Label>
-            <Input id="nama_kepala_skpd" v-model="form.nama_kepala_skpd" type="text" />
-          </div>
-
-          <div>
-            <Label for="kode_urusan">Kode Urusan</Label>
-            <Input id="kode_urusan" v-model="form.kode_urusan" type="text" />
-          </div>
-
-          <div>
-            <Label for="nama_skpd">Nama SKPD</Label>
-            <Input id="nama_skpd" v-model="form.nama_skpd" type="text" />
-          </div>
-
-          <div>
-            <Label for="kode_organisasi">Kode Organisasi</Label>
-            <Input id="kode_organisasi" v-model="form.kode_organisasi" type="text" />
-          </div>
-        </div>
-
-        <div class="flex gap-4 mt-6">
-          <Button type="submit" class="bg-blue-600 hover:bg-blue-700">Simpan</Button>
-          <Button type="button" variant="outline" @click="$inertia.visit(route('usermanagement.index'))">
-            Batal
-          </Button>
-        </div>
-      </form>
+      </div>
     </div>
   </AppLayout>
 </template>

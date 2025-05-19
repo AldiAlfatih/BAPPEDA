@@ -37,4 +37,8 @@ class SkpdKepala extends Model
             'id' // User primary key
         );
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 012c04395253e81a93d673750c56d366e7cb168f

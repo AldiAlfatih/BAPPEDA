@@ -14,8 +14,8 @@ const props = defineProps<{
   };
   tugas: {
     id: number;
-    kode_nomenklatur: { 
-      nomor_kode: string; 
+    kode_nomenklatur: {
+      nomor_kode: string;
       nomenklatur: string;
       details: Array<{
         id_urusan: number;
@@ -45,8 +45,11 @@ const props = defineProps<{
   kegiatanTugas: Array<any>;
   subkegiatanTugas: Array<any>;
   kepalaSkpd?: string;
+<<<<<<< HEAD
   urusan: number[]; 
   bidangUrusan: number[];
+=======
+>>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
 }>();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
@@ -112,6 +115,15 @@ function goToCreate() {
             <!-- Program table with targets -->
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
                 <div class="flex justify-end p-4">
+<<<<<<< HEAD
+=======
+                    <button
+                        @click="goToCreate"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                    >
+                        Tambahkan
+                    </button>
+>>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
                 </div>
                 <table class="w-full border-collapse text-sm">
                     <thead>
@@ -158,10 +170,13 @@ function goToCreate() {
                                 <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                 <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                 <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+<<<<<<< HEAD
                                 <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                 <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+=======
+>>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
                             </tr>
-                            
+
                             <!-- Kegiatan untuk program ini -->
                             <template v-for="kegiatan in kegiatanTugas.filter(k => k.kode_nomenklatur.details[0]?.id_program === program.kode_nomenklatur.id)" :key="kegiatan.id">
                                 <tr>
@@ -177,10 +192,13 @@ function goToCreate() {
                                     <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                     <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                     <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+<<<<<<< HEAD
                                     <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                     <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+=======
+>>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
                                 </tr>
-                                
+
                                 <!-- Subkegiatan untuk kegiatan ini -->
                                 <template v-for="subKegiatan in subkegiatanTugas.filter(sk => sk.kode_nomenklatur.details[0]?.id_kegiatan === kegiatan.kode_nomenklatur.id)" :key="subKegiatan.id">
                                     <tr>
@@ -196,8 +214,11 @@ function goToCreate() {
                                         <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                         <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                         <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+<<<<<<< HEAD
                                         <td class="border border-amber-300 px-2 py-1 text-right">-</td>
                                         <td class="border border-amber-300 px-2 py-1 text-right">-</td>
+=======
+>>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
                                     </tr>
                                 </template>
                             </template>

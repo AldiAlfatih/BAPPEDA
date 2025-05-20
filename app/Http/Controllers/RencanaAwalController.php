@@ -24,16 +24,7 @@ class RencanaAwalController extends Controller
             ->with('kodeNomenklatur.details')
             ->get();
 
-        // Ambil id_urusan dan id_bidang_urusan dari details yang terkait dengan tugas utama
-        $details = $tugas->kodeNomenklatur->details;
-
-        // Ambil unique urusan dan bidang urusan dari details ini
-        $urusan = $details->pluck('id_urusan')->unique()->values();
-        $bidangUrusan = $details->pluck('id_bidang_urusan')->unique()->values();
-
-        // Filter berdasarkan urusan yang ada di details pertama (seperti semula)
-        $urusanId = $details->first()->id_urusan ?? null;
-
+        $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
 
         $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
@@ -67,11 +58,8 @@ class RencanaAwalController extends Controller
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
-            'urusan' => $urusan,
-            'bidangUrusan' => $bidangUrusan,
         ]);
     }
-
 
     public function create()
     {

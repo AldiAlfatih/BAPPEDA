@@ -24,38 +24,18 @@ class RencanaAwalController extends Controller
             ->with('kodeNomenklatur.details')
             ->get();
 
-<<<<<<< HEAD
-        // Ambil id_urusan dan id_bidang_urusan dari details yang terkait dengan tugas utama
-        $details = $tugas->kodeNomenklatur->details;
-
-        // Ambil unique urusan dan bidang urusan dari details ini
-        $urusan = $details->pluck('id_urusan')->unique()->values();
-        $bidangUrusan = $details->pluck('id_bidang_urusan')->unique()->values();
-
-        // Filter berdasarkan urusan yang ada di details pertama (seperti semula)
-        $urusanId = $details->first()->id_urusan ?? null;
-=======
         $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
->>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
 
         $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
                 && $item->kodeNomenklatur->details->first()
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
-<<<<<<< HEAD
-
-=======
->>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
         $kegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 3
                 && $item->kodeNomenklatur->details->first()
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
-<<<<<<< HEAD
-
-=======
->>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
         $subkegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 4
                 && $item->kodeNomenklatur->details->first()
@@ -78,14 +58,8 @@ class RencanaAwalController extends Controller
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
-<<<<<<< HEAD
-            'urusan' => $urusan,
-            'bidangUrusan' => $bidangUrusan,
-=======
->>>>>>> 012c04395253e81a93d673750c56d366e7cb168f
         ]);
     }
-
 
     public function create()
     {

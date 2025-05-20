@@ -138,28 +138,35 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
             </transition>
 
             <!-- SKPD Info -->
-            <div class="rounded-lg bg-white p-6 shadow-md">
-                <h2 class="mb-4 text-2xl font-semibold text-gray-600">Detail Perangkat Daerah</h2>
-
-                <div class="flex justify-between">
-                    <span class="font-bold text-gray-600">Nama SKPD:</span>
-                    <span class="text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</span>
+            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center mb-6">
+                    <div class="rounded-full bg-blue-100 p-3 mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
                 </div>
 
-                <div class="flex justify-between">
-                    <span class="font-bold text-gray-600">Kode Organisasi :</span>
-                    <span class="text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</span>
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                    </div>
 
-                <div class="flex justify-between">
-                    <span class="font-bold text-gray-600">No DPA :</span>
-                    <span class="text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</span>
-                </div>
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
+                    </div>
 
-                <div class="space-y-4">
-                    <div class="flex justify-between">
-                        <span class="font-bold text-gray-600">Kepala SKPD :</span>
-                        <span class="text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</span>
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
                     </div>
                 </div>
             </div>

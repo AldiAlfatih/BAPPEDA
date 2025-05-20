@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { ArrowUpDown, Search } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
+import { ArrowUpDown, Search, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { Input } from '@/components/ui/input';
 
 const props = defineProps<{
     user: {
@@ -395,52 +395,9 @@ function deleteTugas(id: number) {
     }
 }
 
-// Pagination controls
-function nextPage() {
-    if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-    }
+function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: any } }) {
+    return `${task.kode_nomenklatur.nomor_kode} - ${task.kode_nomenklatur.nomenklatur}`;
 }
-
-function prevPage() {
-    if (currentPage.value > 1) {
-        currentPage.value--;
-    }
-}
-
-function goToPage(page: number) {
-    if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page;
-    }
-}
-
-// Generate page numbers for pagination
-const pageNumbers = computed(() => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPages.value <= maxVisiblePages) {
-        // Show all pages if total pages are less than or equal to maxVisiblePages
-        for (let i = 1; i <= totalPages.value; i++) {
-            pages.push(i);
-        }
-    } else {
-        // Logic for showing current page and adjacent pages
-        let startPage = Math.max(1, currentPage.value - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages.value, startPage + maxVisiblePages - 1);
-        
-        // Adjust startPage if we're near the end
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-        
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
-    }
-    
-    return pages;
-});
 </script>
 
 <style scoped>
@@ -468,16 +425,26 @@ button {
 .notification-leave-to {
     opacity: 0;
 }
+
+/* Animation for table rows */
 .animate-fadeIn {
     animation: fadeIn 0.3s ease-in-out;
 }
+
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
-.table-row-hover:hover {
-    background-color: #f3f4f6;
-    transition: background-color 0.15s ease-in-out;
+
+/* Transition hover for rows */
+.table-row-hover {
+    transition: background-color 0.2s ease;
 }
 </style>
 
@@ -552,35 +519,35 @@ button {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
+                    <h2 class="text-2xl font-bold text-gray-800">Detail Perangkat Daerah</h2>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Tasks Section with improved table -->
             <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center">
                         <div class="rounded-full bg-green-100 p-3 mr-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -589,7 +556,7 @@ button {
                         </div>
                         <h3 class="text-xl font-bold text-gray-800">Tugas</h3>
                     </div>
-                    <Button
+                    <button
                         class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md"
                         @click="openModal"
                     >
@@ -597,7 +564,7 @@ button {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         Tambah Tugas
-                    </Button>
+                    </button>
                 </div>
 
                 <!-- Filter and Search for Tasks -->
@@ -613,10 +580,7 @@ button {
                     </div>
                     <div class="flex gap-2 items-center">
                         <span class="text-sm text-gray-500">Tampilkan:</span>
-                        <select 
-                            v-model="itemsPerPage" 
-                            class="rounded-md border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <select v-model="itemsPerPage" class="rounded-md border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
                             <option value="5">5</option>
                             <option value="10">10</option>
                             <option value="25">25</option>
@@ -662,43 +626,46 @@ button {
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-if="paginatedTugas.length === 0">
-                                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            <tr v-if="!paginatedTugas.length" class="hover:bg-gray-50">
+                                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
                                     <div class="flex flex-col items-center justify-center py-6">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                         </svg>
-                                        <p class="text-lg font-medium">Tidak ada data tugas</p>
-                                        <p class="text-sm text-gray-500 mt-1">Tambahkan tugas baru untuk perangkat daerah ini</p>
+                                        <p class="font-medium">Tidak ada tugas yang ditambahkan</p>
+                                        <p class="mt-1 text-gray-500">Klik tombol "Tambah Tugas" untuk menambahkan tugas baru.</p>
                                     </div>
                                 </td>
                             </tr>
-                            <tr v-for="(tugas, index) in paginatedTugas" :key="tugas.id" class="table-row-hover">
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                            <tr v-for="(tugas, index) in paginatedTugas" :key="tugas.id" class="animate-fadeIn table-row-hover hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {{ (currentPage - 1) * itemsPerPage + index + 1 }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                                     {{ tugas.kode_nomenklatur.nomor_kode }}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-500">
+                                <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">
                                     {{ tugas.kode_nomenklatur.nomenklatur }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
-                                          :class="{
-                                            'bg-blue-100 text-blue-800': tugas.kode_nomenklatur.jenis_nomenklatur === 0,
-                                            'bg-indigo-100 text-indigo-800': tugas.kode_nomenklatur.jenis_nomenklatur === 1,
-                                            'bg-purple-100 text-purple-800': tugas.kode_nomenklatur.jenis_nomenklatur === 2,
-                                            'bg-green-100 text-green-800': tugas.kode_nomenklatur.jenis_nomenklatur === 3,
-                                            'bg-yellow-100 text-yellow-800': tugas.kode_nomenklatur.jenis_nomenklatur === 4,
-                                          }">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    <span 
+                                        class="px-2 py-1 text-xs font-medium rounded-full"
+                                        :class="{
+                                            'bg-purple-100 text-purple-800': tugas.kode_nomenklatur.jenis_nomenklatur === 0,
+                                            'bg-blue-100 text-blue-800': tugas.kode_nomenklatur.jenis_nomenklatur === 1,
+                                            'bg-green-100 text-green-800': tugas.kode_nomenklatur.jenis_nomenklatur === 2,
+                                            'bg-yellow-100 text-yellow-800': tugas.kode_nomenklatur.jenis_nomenklatur === 3,
+                                            'bg-red-100 text-red-800': tugas.kode_nomenklatur.jenis_nomenklatur === 4,
+                                        }"
+                                    >
                                         {{ getJenisNomenklaturName(tugas.kode_nomenklatur.jenis_nomenklatur) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button
                                         @click="deleteTugas(tugas.id)"
-                                        class="text-red-600 hover:text-red-900 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        class="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                        title="Hapus Tugas"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -710,196 +677,188 @@ button {
                     </table>
                 </div>
 
-                <!-- Pagination -->
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 text-sm" v-if="filteredTugas.length > 0">
-                    <div class="text-gray-500">
-                        Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredTugas.length) }} dari {{ filteredTugas.length }} tugas
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button
-                            @click="prevPage"
-                            :disabled="currentPage === 1"
-                            :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                            class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        
-                        <button
-                            v-for="page in pageNumbers"
-                            :key="page"
-                            @click="goToPage(page)"
-                            :class="{ 'bg-blue-600 text-white': currentPage === page, 'bg-white text-gray-700': currentPage !== page }"
-                            class="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                        >
-                            {{ page }}
-                        </button>
-                        
-                        <button
-                            @click="nextPage"
-                            :disabled="currentPage === totalPages"
-                            :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-                            class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal for adding a task -->
-        <div v-if="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="flex min-h-screen items-center justify-center p-4 text-center">
-                <!-- Background overlay -->
-                <div class="fixed inset-0 bg-black bg-opacity-30 transition-opacity" @click="closeModal"></div>
-
-                <!-- Modal panel -->
-                <div class="animate-fadeIn w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                    <div class="flex items-center justify-between pb-4 border-b border-gray-200 mb-6">
-                        <h3 class="text-lg font-medium leading-6 text-gray-900">Tambah Tugas</h3>
-                        <button 
-                            @click="closeModal" 
-                            class="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Error message -->
-                    <div 
-                        v-if="error" 
-                        class="mb-4 flex items-center rounded-lg border-l-4 border-red-500 bg-red-50 p-4 text-red-800"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {{ error }}
-                    </div>
-
-                    <!-- Form fields -->
-                    <div class="space-y-4">
-                        <!-- Jenis Nomenklatur -->
+                <!-- Pagination controls -->
+                <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 sm:px-6">
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                         <div>
-                            <Label for="jenis-nomenklatur" class="mb-1 block text-sm font-medium text-gray-700">Jenis Nomenklatur</Label>
-                            <select
-                                id="jenis-nomenklatur"
-                                v-model="jenisNomenklatur"
-                                @change="(e) => handleJenisChange(Number((e.target as HTMLSelectElement).value))"
-                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="" disabled selected>Pilih Jenis Nomenklatur</option>
-                                <option v-for="option in jenisNomenklaturOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
+                            <p class="text-sm text-gray-700">
+                                Menampilkan <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> sampai <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredTugas.length) }}</span> dari <span class="font-medium">{{ filteredTugas.length }}</span> hasil
+                            </p>
                         </div>
-
-                        <!-- Urusan (selalu muncul) -->
-                        <div v-if="jenisNomenklatur !== null">
-                            <Label for="urusan" class="mb-1 block text-sm font-medium text-gray-700">Urusan</Label>
-                            <select
-                                id="urusan"
-                                v-model="urusan"
-                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="" disabled selected>Pilih Urusan</option>
-                                <option v-for="option in urusanOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button 
+                                    @click="currentPage > 1 ? currentPage-- : null"
+                                    :disabled="currentPage === 1"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <span class="sr-only">Previous</span>
+                                    <ChevronLeft class="h-5 w-5" aria-hidden="true" />
+                                </button>
+                                <button
+                                    v-for="page in totalPages"
+                                    :key="page"
+                                    @click="currentPage = page"
+                                    :class="[
+                                        'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
+                                        currentPage === page 
+                                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                    ]"
+                                >
+                                    {{ page }}
+                                </button>
+                                <button
+                                    @click="currentPage < totalPages ? currentPage++ : null"
+                                    :disabled="currentPage === totalPages"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <span class="sr-only">Next</span>
+                                    <ChevronRight class="h-5 w-5" aria-hidden="true" />
+                                </button>
+                            </nav>
                         </div>
-
-                        <!-- Bidang Urusan (muncul jika jenis >= 1) -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 1 && urusan !== null">
-                            <Label for="bidang-urusan" class="mb-1 block text-sm font-medium text-gray-700">Bidang Urusan</Label>
-                            <select
-                                id="bidang-urusan"
-                                v-model="bidangUrusan"
-                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="" disabled selected>Pilih Bidang Urusan</option>
-                                <option v-for="option in bidangUrusanOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Program (muncul jika jenis >= 2) -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 2 && bidangUrusan !== null">
-                            <Label for="program" class="mb-1 block text-sm font-medium text-gray-700">Program</Label>
-                            <select
-                                id="program"
-                                v-model="program"
-                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="" disabled selected>Pilih Program</option>
-                                <option v-for="option in programOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Kegiatan (muncul jika jenis >= 3) -->
-                        <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 3 && program !== null">
-                            <Label for="kegiatan" class="mb-1 block text-sm font-medium text-gray-700">Kegiatan</Label>
-                            <select
-                                id="kegiatan"
-                                v-model="kegiatan"
-                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="" disabled selected>Pilih Kegiatan</option>
-                                <option v-for="option in kegiatanOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Sub Kegiatan (muncul jika jenis = 4) -->
-                        <div v-if="jenisNomenklatur === 4 && kegiatan !== null">
-                            <Label for="subkegiatan" class="mb-1 block text-sm font-medium text-gray-700">Sub Kegiatan</Label>
-                            <select
-                                id="subkegiatan"
-                                v-model="subkegiatan"
-                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="" disabled selected>Pilih Sub Kegiatan</option>
-                                <option v-for="option in subkegiatanOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Form actions -->
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button
-                            @click="closeModal"
-                            class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            @click="saveTugas"
-                            :disabled="!isFormValid() || loading"
-                            :class="{ 'opacity-50 cursor-not-allowed': !isFormValid() || loading }"
-                            class="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            <svg v-if="loading" class="h-4 w-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Simpan
-                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </AppLayout>
+
+    <!-- Modal for adding a new task -->
+    <div v-if="isModalOpen" class="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center">
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="closeModal"></div>
+        
+        <div class="relative bg-white rounded-lg max-w-2xl w-full mx-auto shadow-xl transform transition-all p-6" @click.stop>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-gray-900">Tambah Tugas Baru</h3>
+                <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
+                {{ error }}
+            </div>
+
+            <div class="space-y-4">
+                <!-- Jenis Nomenklatur Selection -->
+                <div class="space-y-2">
+                    <Label for="jenis_nomenklatur" class="text-sm font-medium text-gray-700">Jenis Nomenklatur</Label>
+                    <select
+                        id="jenis_nomenklatur"
+                        v-model="jenisNomenklatur"
+                        @change="handleJenisChange($event.target.value)"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="" disabled selected>Pilih Jenis Nomenklatur</option>
+                        <option v-for="option in jenisNomenklaturOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Urusan Selection (Always shown) -->
+                <div class="space-y-2">
+                    <Label for="urusan" class="text-sm font-medium text-gray-700">Urusan</Label>
+                    <select
+                        id="urusan"
+                        v-model="urusan"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        :disabled="!jenisNomenklatur && jenisNomenklatur !== 0"
+                    >
+                        <option value="" disabled selected>Pilih Urusan</option>
+                        <option v-for="option in urusanOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Bidang Urusan Selection (Shown for all except Urusan) -->
+                <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 1" class="space-y-2">
+                    <Label for="bidangUrusan" class="text-sm font-medium text-gray-700">Bidang Urusan</Label>
+                    <select
+                        id="bidangUrusan"
+                        v-model="bidangUrusan"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        :disabled="!urusan"
+                    >
+                        <option value="" disabled selected>Pilih Bidang Urusan</option>
+                        <option v-for="option in bidangUrusanOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Program Selection (Shown for Program, Kegiatan, Subkegiatan) -->
+                <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 2" class="space-y-2">
+                    <Label for="program" class="text-sm font-medium text-gray-700">Program</Label>
+                    <select
+                        id="program"
+                        v-model="program"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        :disabled="!bidangUrusan"
+                    >
+                        <option value="" disabled selected>Pilih Program</option>
+                        <option v-for="option in programOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Kegiatan Selection (Shown for Kegiatan and Subkegiatan) -->
+                <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 3" class="space-y-2">
+                    <Label for="kegiatan" class="text-sm font-medium text-gray-700">Kegiatan</Label>
+                    <select
+                        id="kegiatan"
+                        v-model="kegiatan"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        :disabled="!program"
+                    >
+                        <option value="" disabled selected>Pilih Kegiatan</option>
+                        <option v-for="option in kegiatanOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Subkegiatan Selection (Shown only for Subkegiatan) -->
+                <div v-if="jenisNomenklatur !== null && jenisNomenklatur >= 4" class="space-y-2">
+                    <Label for="subkegiatan" class="text-sm font-medium text-gray-700">Sub Kegiatan</Label>
+                    <select
+                        id="subkegiatan"
+                        v-model="subkegiatan"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        :disabled="!kegiatan"
+                    >
+                        <option value="" disabled selected>Pilih Sub Kegiatan</option>
+                        <option v-for="option in subkegiatanOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <Button variant="outline" @click="closeModal" class="px-4 py-2">
+                    Batal
+                </Button>
+                <Button 
+                    @click="saveTugas" 
+                    :disabled="!isFormValid() || loading" 
+                    class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span v-if="loading" class="flex items-center">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Menyimpan...
+                    </span>
+                    <span v-else>Simpan</span>
+                </Button>
+            </div>
+        </div>
+    </div>
 </template>

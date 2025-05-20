@@ -5,24 +5,29 @@ import { Separator } from '@/components/ui/separator';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 
-const sidebarNavItems: NavItem[] = [
-    {
-        title: 'Profile',
-        href: '/settings/profile',
-    },
-    {
-        title: 'Password',
-        href: '/settings/password',
-    },
-    {
-        title: 'Appearance',
-        href: '/settings/appearance',
-    },
-];
-
+// Ambil props dari Inertia
 const page = usePage();
-
 const currentPath = page.props.ziggy?.location ? new URL(page.props.ziggy.location).pathname : '';
+
+// Ambil role user (dari backend)
+const role = page.props.auth?.user?.role ?? ''; // sesuaikan nama key jika perlu
+
+// Daftar menu sesuai role
+let sidebarNavItems: NavItem[] = [];
+
+if (role === 'admin' || role === 'operator') {
+    sidebarNavItems = [
+        { title: 'Profile', href: '/settings/profile' },
+        { title: 'Password', href: '/settings/password' },
+        { title: 'Appearance', href: '/settings/appearance' },
+    ];
+} else if (role === 'perangkat_daerah') {
+    sidebarNavItems = [
+        { title: 'Profil SKPD', href: '/settings/profiledetail' },
+        { title: 'Password', href: '/settings/password' },
+        { title: 'Appearance', href: '/settings/appearance' },
+    ];
+}
 </script>
 
 <template>

@@ -4,6 +4,21 @@ import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
+interface Target {
+    kinerjaFisik: string;
+    keuangan: string;
+}
+
+interface ProgramData {
+    kode: string;
+    program: string;
+    pokok: string;
+    parsial: string;
+    perubahan: string;
+    sumberDana: string;
+    targets: Target[];
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Rencana Awal',
@@ -21,7 +36,7 @@ const headerData = ref([
 ]);
 
 // Sample data for the program table with target data
-const programData = ref([
+const programData = ref<ProgramData[]>([
     {
         kode: '1',
         program: 'URUSAN PEMERINTAHAN WAJIB YANG BERKAITAN DENGAN PELAYANAN DASAR',
@@ -79,6 +94,55 @@ const programData = ref([
         ]
     },
 ]);
+
+// Add new refs for editing functionality
+const isEditing = ref(false);
+const editingRow = ref<ProgramData | null>(null);
+const editedData = ref<Omit<ProgramData, 'kode' | 'program'>>({
+    pokok: '',
+    parsial: '',
+    perubahan: '',
+    sumberDana: '',
+    targets: [
+        { kinerjaFisik: '', keuangan: '' },
+        { kinerjaFisik: '', keuangan: '' },
+        { kinerjaFisik: '', keuangan: '' },
+        { kinerjaFisik: '', keuangan: '' },
+    ]
+});
+
+// Methods for handling edit functionality
+const startEditing = (row: ProgramData) => {
+    isEditing.value = true;
+    editingRow.value = row;
+    editedData.value = {
+        pokok: row.pokok,
+        parsial: row.parsial,
+        perubahan: row.perubahan,
+        sumberDana: row.sumberDana,
+        targets: [...row.targets]
+    };
+};
+
+const saveChanges = () => {
+    if (editingRow.value) {
+        const index = programData.value.findIndex(item => item.kode === editingRow.value?.kode);
+        if (index !== -1) {
+            programData.value[index] = {
+                ...programData.value[index],
+                ...editedData.value
+            };
+        }
+    }
+    isEditing.value = false;
+    editingRow.value = null;
+};
+
+const updateAllData = () => {
+    // Here you would typically make an API call to save all the data
+    console.log('Updating all data:', programData.value);
+    // Add your API call here
+};
 </script>
 
 <template>
@@ -115,6 +179,7 @@ const programData = ref([
                             <th colspan="3" class="border border-amber-300 px-2 py-1 bg-amber-100">PAGU ANGGARAN APBD</th>
                             <th rowspan="3" class="border border-amber-300 px-2 py-1 bg-amber-100">SUMBER DANA</th>
                             <th colspan="8" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TARGET</th>
+                            <th rowspan="3" class="border border-amber-300 px-2 py-1 bg-white">AKSI</th>
                         </tr>
                         <tr class="text-center bg-amber-100">
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">POKOK (RP)</th>
@@ -144,29 +209,123 @@ const programData = ref([
                         <tr v-for="item in programData" :key="item.kode" class="border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
                             <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.kode }}</td>
                             <td class="p-3 border sticky left-0 z-10 bg-white w-[100px]">{{ item.program }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.pokok }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.parsial }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.perubahan }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.sumberDana }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.pokok" 
+                                       type="text" 
+                                       class="w-full text-right bg-transparent">
+                                <span v-else>{{ item.pokok }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.parsial" 
+                                       type="text" 
+                                       class="w-full text-right bg-transparent">
+                                <span v-else>{{ item.parsial }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.perubahan" 
+                                       type="text" 
+                                       class="w-full text-center bg-transparent">
+                                <span v-else>{{ item.perubahan }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.sumberDana" 
+                                       type="text" 
+                                       class="w-full text-center bg-transparent">
+                                <span v-else>{{ item.sumberDana }}</span>
+                            </td>
 
                             <!-- Triwulan 1 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[0].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[0].keuangan }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[0].kinerjaFisik" 
+                                       type="text" 
+                                       class="w-full text-center bg-transparent">
+                                <span v-else>{{ item.targets[0].kinerjaFisik }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[0].keuangan" 
+                                       type="text" 
+                                       class="w-full text-right bg-transparent">
+                                <span v-else>{{ item.targets[0].keuangan }}</span>
+                            </td>
 
                             <!-- Triwulan 2 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[1].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[1].keuangan }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[1].kinerjaFisik" 
+                                       type="text" 
+                                       class="w-full text-center bg-transparent">
+                                <span v-else>{{ item.targets[1].kinerjaFisik }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[1].keuangan" 
+                                       type="text" 
+                                       class="w-full text-right bg-transparent">
+                                <span v-else>{{ item.targets[1].keuangan }}</span>
+                            </td>
 
                             <!-- Triwulan 3 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[2].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[2].keuangan }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[2].kinerjaFisik" 
+                                       type="text" 
+                                       class="w-full text-center bg-transparent">
+                                <span v-else>{{ item.targets[2].kinerjaFisik }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[2].keuangan" 
+                                       type="text" 
+                                       class="w-full text-right bg-transparent">
+                                <span v-else>{{ item.targets[2].keuangan }}</span>
+                            </td>
 
                             <!-- Triwulan 4 -->
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ item.targets[3].kinerjaFisik }}</td>
-                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">{{ item.targets[3].keuangan }}</td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[3].kinerjaFisik" 
+                                       type="text" 
+                                       class="w-full text-center bg-transparent">
+                                <span v-else>{{ item.targets[3].kinerjaFisik }}</span>
+                            </td>
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
+                                <input v-if="isEditing && editingRow?.kode === item.kode" 
+                                       v-model="editedData.targets[3].keuangan" 
+                                       type="text" 
+                                       class="w-full text-right bg-transparent">
+                                <span v-else>{{ item.targets[3].keuangan }}</span>
+                            </td>
+
+                            <!-- Action column -->
+                            <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+                                <button v-if="!isEditing || editingRow?.kode !== item.kode"
+                                        @click="startEditing(item)"
+                                        class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                    Isi
+                                </button>
+                                <button v-else
+                                        @click="saveChanges"
+                                        class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                    Simpan
+                                </button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- Update button at the bottom -->
+                <div class="p-4 flex justify-end">
+                    <button @click="updateAllData"
+                            class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
+                        Update
+                    </button>
+                </div>
             </div>
         </div>
     </AppLayout>
@@ -195,5 +354,16 @@ thead th {
 
 tbody tr:nth-child(odd) {
     background-color: #FFFCF3;
+}
+
+input {
+    border: 1px solid #ddd;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+input:focus {
+    outline: none;
+    border-color: #4CAF50;
 }
 </style>

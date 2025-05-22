@@ -5,7 +5,7 @@ import NavFooter from '@/components/NavFooter.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, Monitor, Bell, Info, BadgeHelp } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, Users, Monitor, BadgeHelp } from 'lucide-vue-next';
 // import AppLogo from './AppLogo.vue';
 
 
@@ -41,13 +41,6 @@ const mainNavItems: NavItem[] = [
     },
 
 
-    // {
-    //     title: 'Monitoring',
-    //     href: '/monitoring',
-    //     icon: Monitor,
-    // },
-
-
     {
         title: 'Monitoring',
         href: '/monitoring',
@@ -65,19 +58,19 @@ const mainNavItems: NavItem[] = [
         },
         {
             title: 'Triwulan 1',
-            href: 'triwulan1',
+            href: '/triwulan1',
         },
         {
             title: 'Triwulan 2',
-            href: '#',
+            href: '/triwulan2',
         },
         {
             title: 'Triwulan 3',
-            href: '#',
+            href: '/triwulan3',
         },
         {
             title: 'Triwulan 4',
-            href: '#',
+            href: '/triwulan4',
         },
         {
             title: 'Laporan Akhir',

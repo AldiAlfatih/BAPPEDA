@@ -17,6 +17,11 @@ class MonitoringController extends Controller
 {
     public function index()
     {
+    $user = auth()->user();
+
+    if ($user->hasRole('perangkat_daerah')) {
+        return redirect()->route('monitoring.show', $user->id);}
+
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
 
         return Inertia::render('Monitoring', [
@@ -39,7 +44,9 @@ class MonitoringController extends Controller
             'periode_id' => 'nullable|exists:periode,id',
             'tahun' => 'required|digits:4|integer',
             'deskripsi' => 'required|string',
-            'pagu_anggaran' => 'required|integer',
+            'pagu_pokok' => 'required|integer',
+            'pagu_parsial' => 'nullable|integer',
+            'pagu_perubahan' => 'nullable|integer',
         ]);
 
         Monitoring::create($validated);
@@ -50,9 +57,9 @@ class MonitoringController extends Controller
     public function show(string $id)
    {
        $user = User::with('skpd')->findOrFail($id);
-       
+
        $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
-       
+
        $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
            ->with(['details' => function($query) {
                $query->select('id', 'id_nomenklatur', 'id_urusan');
@@ -67,7 +74,7 @@ class MonitoringController extends Controller
                    'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
                ];
            });
-       
+
        $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
            ->with(['details' => function($query) {
                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
@@ -82,7 +89,7 @@ class MonitoringController extends Controller
                    'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
                ];
            });
-       
+
        $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
            ->with(['details' => function($query) {
                $query->select('id', 'id_nomenklatur', 'id_program');
@@ -97,7 +104,7 @@ class MonitoringController extends Controller
                    'program_id' => $item->details->first() ? $item->details->first()->id_program : null
                ];
            });
-       
+
        $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
            ->with(['details' => function($query) {
                $query->select('id', 'id_nomenklatur', 'id_kegiatan');
@@ -112,12 +119,12 @@ class MonitoringController extends Controller
                    'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
                ];
            });
-       
+
        $skpdTugas = SkpdTugas::where('skpd_id', $user->skpd->id)
            ->where('is_aktif', 1)
            ->with('kodeNomenklatur')
            ->get();
-       
+
        return Inertia::render('Monitoring/Show', [
            'user' => $user,
            'skpdTugas' => $skpdTugas,

@@ -12,10 +12,12 @@ return new class extends Migration {
             $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');
             $table->year('tahun');
             $table->text('deskripsi');
-            $table->integer('pagu_anggaran');
+            $table->integer('pagu_pokok');
+            $table->integer('pagu_parsial')->nullable();
+            $table->integer('pagu_perubahan')->nullable();
             $table->timestamps();
         });
-        
+
         Schema::create('monitoring_realisasi', function (Blueprint $table) {
             $table->id();
             $table->foreignId('monitoring_id')->constrained('monitoring');

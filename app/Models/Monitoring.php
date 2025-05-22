@@ -18,8 +18,17 @@ class Monitoring extends Model
         'tahun',
         'deskripsi',
         'pagu_anggaran',
+        'pagu_pokok',
+        'pagu_parsial',
+        'pagu_perubahan',
+        'is_finalized',
     ];
 
+    public function targets()
+    {
+        return $this->hasMany(MonitoringTarget::class);
+    }
+    
     public function skpd()
     {
         return $this->belongsTo(Skpd::class);

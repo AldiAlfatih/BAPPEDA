@@ -7,12 +7,12 @@ use App\Models\User;
 use Inertia\Inertia;
 use App\Models\SkpdTugas;
 use App\Models\KodeNomenklatur;
-class Triwulan1Controller extends Controller
+class Triwulan4Controller extends Controller
 {
     public function index()
     {
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
-        return Inertia::render('Triwulan1', [
+        return Inertia::render('Triwulan4', [
             'users' => $users,
         ]);
     }
@@ -88,7 +88,7 @@ class Triwulan1Controller extends Controller
            ->with('kodeNomenklatur')
            ->get();
 
-       return Inertia::render('Triwulan1/Show', [
+       return Inertia::render('Triwulan4/Show', [
            'user' => $user,
            'skpdTugas' => $skpdTugas,
            'urusanList' => $urusanList,
@@ -142,7 +142,7 @@ class Triwulan1Controller extends Controller
             }
         }
 
-        return Inertia::render('Triwulan1/Detail', [
+        return Inertia::render('Triwulan4/Detail', [
             'tugas' => $tugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,

@@ -144,7 +144,7 @@ function toggleSort(field: string) {
 // }
 
 function goToShowPage(id: number) {
-  router.visit(route('triwulan1.show', { id }));
+  router.visit(route('triwulan3.show', { id }));
 }
 
 function toggleDetail(id: number) {

@@ -17,7 +17,9 @@ class Monitoring extends Model
         'periode_id',
         'tahun',
         'deskripsi',
-        'pagu_anggaran',
+        'pagu_pokok',
+        'pagu_parsial',
+        'pagu_perubahan',
     ];
 
     public function skpd()
@@ -30,7 +32,7 @@ class Monitoring extends Model
         return $this->belongsTo(Periode::class);
     }
 
-    public function target()
+    public function targets()
     {
         return $this->hasMany(MonitoringTarget::class);
     }

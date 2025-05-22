@@ -51,7 +51,7 @@ const toggleMenu = (title: string) => {
             <!-- Dropdown children -->
             <div v-if="openMenus[item.title]" class="ml-6 mt-1 space-y-1">
             <SidebarMenuItem
-                v-for="child in item.children"
+                v-for="child in item.children.filter(child => !child.guard || child.guard.includes(page.props.auth.user.role))"
                 :key="child.title"
             >
                 <SidebarMenuButton

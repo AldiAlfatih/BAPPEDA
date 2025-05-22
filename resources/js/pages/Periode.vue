@@ -41,6 +41,29 @@ function toggleStatus(id: number) {
   const item = statusList.value.find((i) => i.id === id)
   if (!item) return
 
+  // Ambil urutan list yang sudah difilter dan diurutkan
+  const sorted = [...filteredperiode.value].sort((a, b) => a.id - b.id)
+  const currentIndex = sorted.findIndex(p => p.id === id)
+  const current = sorted[currentIndex]
+
+  if (!current) return
+
+  // Cegah membuka jika sudah ada yang terbuka selain yang sedang diklik
+  const isOtherOpen = sorted.some(p => p.id !== id && p.status === 1)
+  if (isOtherOpen) {
+    alert('Tidak bisa membuka tahap ini karena ada tahap lain yang sedang dibuka.')
+    return
+  }
+
+  // Cegah membuka jika tahap sebelumnya belum selesai
+  if (currentIndex > 0) {
+    const previous = sorted[currentIndex - 1]
+    if (previous.status !== 2) {
+      alert('Tahap sebelumnya belum selesai.')
+      return
+    }
+  }
+
   const newStatus = item.status === 1 ? 0 : 1
   statusForm.status = newStatus
 
@@ -54,6 +77,7 @@ function toggleStatus(id: number) {
     }
   })
 }
+
 
 function getStatusLabel(status: number) {
   if (status === 1) return 'Buka'

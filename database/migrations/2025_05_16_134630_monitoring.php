@@ -12,7 +12,10 @@ return new class extends Migration {
             $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');
             $table->year('tahun');
             $table->text('deskripsi');
-            $table->integer('pagu_anggaran');
+            $table->integer('pagu_pokok')->nullable();
+            $table->integer('pagu_parsial')->nullable();
+            $table->integer(column: 'pagu_perubahan')->nullable();
+
             $table->timestamps();
         });
         

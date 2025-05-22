@@ -14,6 +14,12 @@ class KodeNomenklaturController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
+
+        if ($user->hasRole('perangkat_daerah')) {
+            return redirect()->route('kodenomenklatur.show', $user->id);
+        }
+
         $kodeNomenklatur = KodeNomenklatur::all();
         
         return Inertia::render('KodeNomenklatur', [

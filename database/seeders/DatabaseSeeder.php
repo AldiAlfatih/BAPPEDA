@@ -25,5 +25,6 @@ class DatabaseSeeder extends Seeder
         $this->call(RuleSeeder::class);
         $this->call(KodeNomenklaturSeeder::class);
         $this->call(UserSeeder::class);
-    }
+        $this->call(PanduanSeeder::class);
+}
 }

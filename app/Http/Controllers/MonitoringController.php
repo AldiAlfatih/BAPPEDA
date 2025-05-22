@@ -17,6 +17,7 @@ class MonitoringController extends Controller
 {
     public function index()
     {
+<<<<<<< HEAD
         $user = auth()->user();
 
         if ($user->hasRole('perangkat_daerah')) {
@@ -34,6 +35,12 @@ class MonitoringController extends Controller
                 'users' => $users,
             ]);
         }
+=======
+    $user = auth()->user();
+
+    if ($user->hasRole('perangkat_daerah')) {
+        return redirect()->route('monitoring.show', $user->id);}
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
 
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
 
@@ -71,8 +78,91 @@ class MonitoringController extends Controller
     }
 
     public function show(string $id)
+<<<<<<< HEAD
     {
         $user = User::with('skpd')->findOrFail($id);
+=======
+   {
+       $user = User::with('skpd')->findOrFail($id);
+
+       $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
+
+       $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_urusan');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'urusan_id' => $item->details->first() ? $item->details->first()->id_urusan : null
+               ];
+           });
+
+       $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'bidang_urusan_id' => $item->details->first() ? $item->details->first()->id_bidang_urusan : null
+               ];
+           });
+
+       $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_program');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'program_id' => $item->details->first() ? $item->details->first()->id_program : null
+               ];
+           });
+
+       $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
+           ->with(['details' => function($query) {
+               $query->select('id', 'id_nomenklatur', 'id_kegiatan');
+           }])
+           ->get()
+           ->map(function($item) {
+               return [
+                   'id' => $item->id,
+                   'nomor_kode' => $item->nomor_kode,
+                   'nomenklatur' => $item->nomenklatur,
+                   'jenis_nomenklatur' => $item->jenis_nomenklatur,
+                   'kegiatan_id' => $item->details->first() ? $item->details->first()->id_kegiatan : null
+               ];
+           });
+
+       $skpdTugas = SkpdTugas::where('skpd_id', $user->skpd->id)
+           ->where('is_aktif', 1)
+           ->with('kodeNomenklatur')
+           ->get();
+
+       return Inertia::render('Monitoring/Show', [
+           'user' => $user,
+           'skpdTugas' => $skpdTugas,
+           'urusanList' => $urusanList,
+           'bidangUrusanList' => $bidangUrusanList,
+           'programList' => $programList,
+           'kegiatanList' => $kegiatanList,
+           'subkegiatanList' => $subkegiatanList,
+       ]);
+   }
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
 
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 

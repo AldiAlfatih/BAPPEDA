@@ -45,7 +45,11 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
+<<<<<<< HEAD
     { title: 'Monitoring', href: '/triwulan3' },
+=======
+    { title: 'Monitoring', href: '/Monitoring' },
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
@@ -243,4 +247,8 @@ button {
 .notification-leave-to {
     opacity: 0;
 }
+<<<<<<< HEAD
 </style>
+=======
+</style>
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114

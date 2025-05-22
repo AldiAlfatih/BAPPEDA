@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
 
     Route::resource('triwulan1', Triwulan1Controller::class)->names('triwulan1');
+<<<<<<< HEAD
     Route::get('triwulan1/Detail/{id}', [Triwulan1Controller::class, 'showDetail'])->name('triwulan1.showDetail');
     Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
     Route::get('triwulan2/Detail/{id}', [Triwulan2Controller::class, 'showDetail'])->name('triwulan2.showDetail');
@@ -44,6 +45,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('triwulan3/Detail/{id}', [Triwulan3Controller::class, 'showDetail'])->name('triwulan3.showDetail');
     Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
     Route::get('triwulan4/Detail/{id}', [Triwulan4Controller::class, 'showDetail'])->name('triwulan4.showDetail');
+=======
+    Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
+    Route::resource('triwulan3', Triwulan3Controller::class)->names('triwulan3');
+    Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
     Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
     Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
 
@@ -62,11 +68,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bantuan/chat/selesai/{id}', [BantuanController::class, 'selesaikanChat'])->name('bantuan.chat.selesai');
     Route::post('/bantuan/update-status/{id}', [BantuanController::class, 'updateStatusToDiproses'])->name('bantuan.updateStatusToDiproses');
 
+<<<<<<< HEAD
 
     Route::get('/monitoring/user/{id}', [MonitoringController::class, 'showUserMonitoring']);
     Route::get('/monitoring/tugas/{id}', [MonitoringController::class, 'showTugas']);
     Route::get('/monitoring/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('rencanaawal');
     Route::post('/rencanaawal', [MonitoringController::class, 'saveMonitoringData'])->name('monitoring.save');
+=======
+    
+    Route::post('/rencanaawal/save-monitoring', [RencanaAwalController::class, 'saveMonitoringData'])->name('rencanaawal.save-monitoring');
+    Route::post('/rencanaawal/finalize', [RencanaAwalController::class, 'finalizeMonitoring'])
+        ->name('rencanaawal.finalize');
+    Route::post('/rencanaawal/finalize-row', [RencanaAwalController::class, 'finalizeRow'])->name('rencanaawal.finalize-row');
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
 });
 
 require __DIR__.'/settings.php';

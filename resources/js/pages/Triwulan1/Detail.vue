@@ -332,4 +332,8 @@ input:focus {
     outline: none;
     border-color: #4CAF50;
 }
+<<<<<<< HEAD
 </style>
+=======
+</style>
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114

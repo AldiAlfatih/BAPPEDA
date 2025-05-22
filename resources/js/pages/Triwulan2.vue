@@ -434,4 +434,8 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 .table-row-hover {
   transition: background-color 0.2s ease;
 }
+<<<<<<< HEAD
 </style>
+=======
+</style>
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114

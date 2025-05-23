@@ -27,28 +27,21 @@ const goToLogin = () => {
           @click="goToLogin"
         >
           <img src="/images/icon-1.png" class="w-8 h-8"/>
-          <span class="text-lg">Sistem Inovasi Dan Perancangan Pembangunan</span>
+          <span class="text-lg">Sistem Inovasi Daerah</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
           <img src="/images/icon-2.png" class="w-8 h-8"/>
-          <span class="text-lg">e-Monev</span>
+          <span class="text-lg">Monitoring Pembangunan</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
           <img src="/images/icon-3.png" class="w-8 h-8"/>
-          <span class="text-lg">e-Kinerja</span>
-        </div>
-        <div
-          class="flex items-center space-x-4 cursor-pointer hover:underline"
-          @click="goToLogin"
-        >
-          <img src="/images/icon-4.png" class="w-8 h-8"/>
-          <span class="text-lg">Dana Pembangunan Daerah</span>
+          <span class="text-lg">Indikator Kinerja</span>
         </div>
       </div>
     </div>

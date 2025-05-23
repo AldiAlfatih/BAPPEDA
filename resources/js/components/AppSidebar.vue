@@ -41,23 +41,25 @@ const mainNavItems: NavItem[] = [
     },
 
 
-    // {
-    //     title: 'Monitoring',
-    //     href: '/monitoring',
-    //     icon: Monitor,
-    // },
+
+    {
+        title: 'Perangkat Daerah',
+        href: '/perangkatdaerah',
+        guard: ['perangkat_daerah'],
+        icon: Users,
+    },
+
 
 
     {
         title: 'Monitoring',
         href: '/monitoring',
         icon: Monitor,
-        guard: ['admin', 'perangkat_daerah'],
         children: [
         {
             title: 'Manajemen Periode',
             href: '/periode',
-            guard: ['admin']
+            guard: ['admin'],
         },
         {
             title: 'Rencana Awal',
@@ -65,19 +67,19 @@ const mainNavItems: NavItem[] = [
         },
         {
             title: 'Triwulan 1',
-            href: 'triwulan1',
+            href: '/triwulan1',
         },
         {
             title: 'Triwulan 2',
-            href: '#',
+            href: '/triwulan2',
         },
         {
             title: 'Triwulan 3',
-            href: '#',
+            href: '/triwulan3',
         },
         {
             title: 'Triwulan 4',
-            href: '#',
+            href: '/triwulan4',
         },
         {
             title: 'Laporan Akhir',

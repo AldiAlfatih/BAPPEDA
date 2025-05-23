@@ -221,7 +221,7 @@ const viewFile = (fileUrl: string | undefined | null) => {
             <Button
               v-if="item.file_url"
               @click="viewFile(item.file_url)"
-              class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-4 py-2 rounded font-bold"
+              class="bg-orange-500 hover:bg-orange-600 text-white text-xs px-4 py-2 rounded font-bold"
             >
               Lihat File
             </Button>

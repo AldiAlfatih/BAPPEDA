@@ -8,14 +8,14 @@ use Inertia\Inertia;
 use App\Models\Skpd;
 use App\Models\SkpdTugas;
 use App\Models\KodeNomenklatur;
-class Triwulan1Controller extends Controller
+class Triwulan2Controller extends Controller
 {
     public function index()
     {
         $user = auth()->user();
 
         if ($user->hasRole('perangkat_daerah')) {
-            return redirect()->route('triwulan1.show', $user->id);
+            return redirect()->route('triwulan2.show', $user->id);
         }
 
         if ($user->hasRole('operator')) {
@@ -25,13 +25,13 @@ class Triwulan1Controller extends Controller
                 ->with('skpd')
                 ->paginate(1000);
 
-            return Inertia::render('Triwulan1', [
+            return Inertia::render('Triwulan2', [
                 'users' => $users,
             ]);
         }
 
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
-        return Inertia::render('Triwulan1', [
+        return Inertia::render('Triwulan2', [
             'users' => $users,
         ]);
     }
@@ -107,7 +107,7 @@ class Triwulan1Controller extends Controller
            ->with('kodeNomenklatur')
            ->get();
 
-       return Inertia::render('Triwulan1/Show', [
+       return Inertia::render('Triwulan2/Show', [
            'user' => $user,
            'skpdTugas' => $skpdTugas,
            'urusanList' => $urusanList,
@@ -161,7 +161,7 @@ class Triwulan1Controller extends Controller
             }
         }
 
-        return Inertia::render('Triwulan1/Detail', [
+        return Inertia::render('Triwulan2/Detail', [
             'tugas' => $tugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,

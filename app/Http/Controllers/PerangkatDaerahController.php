@@ -16,9 +16,15 @@ class PerangkatDaerahController extends Controller
 {
     /**
      * Display a listing of the resource.
-     */
+     */ 
     public function index()
     {
+        $user = auth()->user();
+
+        if ($user->hasRole('perangkat_daerah')) {
+            return redirect()->route('perangkatdaerah.show', $user->id);
+        }
+
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
 
         return Inertia::render('PerangkatDaerah', [

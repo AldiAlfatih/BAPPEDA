@@ -5,13 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Inertia\Inertia;
+<<<<<<< HEAD
 use App\Models\Skpd;
+=======
+<<<<<<< HEAD
+use App\Models\Skpd;
+=======
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 use App\Models\SkpdTugas;
 use App\Models\KodeNomenklatur;
 class Triwulan4Controller extends Controller
 {
     public function index()
     {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 
         $user = auth()->user();
 
@@ -31,6 +42,11 @@ class Triwulan4Controller extends Controller
             ]);
         }
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
         return Inertia::render('Triwulan4', [
             'users' => $users,
@@ -174,4 +190,12 @@ class Triwulan4Controller extends Controller
             ]
         ]);
     }
+<<<<<<< HEAD
 }
+=======
+<<<<<<< HEAD
+}
+=======
+}
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c

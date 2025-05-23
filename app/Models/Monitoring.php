@@ -17,11 +17,30 @@ class Monitoring extends Model
         'periode_id',
         'tahun',
         'deskripsi',
+<<<<<<< HEAD
         'pagu_pokok',
         'pagu_parsial',
         'pagu_perubahan',
+=======
+<<<<<<< HEAD
+        'pagu_pokok',
+        'pagu_parsial',
+        'pagu_perubahan',
+=======
+        'pagu_anggaran',
+        'pagu_pokok',
+        'pagu_parsial',
+        'pagu_perubahan',
+        'is_finalized',
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
     ];
 
+    public function targets()
+    {
+        return $this->hasMany(MonitoringTarget::class);
+    }
+    
     public function skpd()
     {
         return $this->belongsTo(Skpd::class);

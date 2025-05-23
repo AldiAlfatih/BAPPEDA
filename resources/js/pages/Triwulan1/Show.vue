@@ -45,7 +45,15 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
+<<<<<<< HEAD
     { title: 'Monitoring', href: '/triwulan1' },
+=======
+<<<<<<< HEAD
+    { title: 'Monitoring', href: '/triwulan1' },
+=======
+    { title: 'Monitoring', href: '/Monitoring' },
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
@@ -190,11 +198,19 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                                 <td class="border px-4 py-2 w-32">
                                     <div class="flex justify-center">
                                         <button
+<<<<<<< HEAD
                                             class="flex items-center gap-1 bg-orange-500 hover:bg-orange-700 text-white text-sm font-medium px-3 py-1 rounded"
                                             @click="ShowTugas(tugas.id)"
                                         >
                                             <Eye class="w-4 h-4 mr-1" />
                                             Detail
+=======
+                                            class="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-medium px-3 py-1 rounded"
+                                            @click="ShowTugas(tugas.id)"
+                                        >
+                                            <Eye class="w-4 h-4 mr-1" />
+                                            Show
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
                                         </button>
                                     </div>
                                 </td>
@@ -243,4 +259,12 @@ button {
 .notification-leave-to {
     opacity: 0;
 }
+<<<<<<< HEAD
 </style>
+=======
+<<<<<<< HEAD
+</style>
+=======
+</style>
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c

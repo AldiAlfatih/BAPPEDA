@@ -5,7 +5,7 @@ import NavFooter from '@/components/NavFooter.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, Monitor, Bell, Info, BadgeHelp } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, Users, Monitor, BadgeHelp } from 'lucide-vue-next';
 // import AppLogo from './AppLogo.vue';
 
 
@@ -41,6 +41,10 @@ const mainNavItems: NavItem[] = [
     },
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 
     {
         title: 'Perangkat Daerah',
@@ -48,9 +52,15 @@ const mainNavItems: NavItem[] = [
         guard: ['perangkat_daerah'],
         icon: Users,
     },
+<<<<<<< HEAD
+
+=======
+>>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 
 
 
+=======
+>>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
     {
         title: 'Monitoring',
         href: '/monitoring',

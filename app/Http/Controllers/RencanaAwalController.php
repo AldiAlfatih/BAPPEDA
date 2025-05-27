@@ -7,18 +7,6 @@ use App\Models\KodeNomenklatur;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Monitoring;
-<<<<<<< HEAD
-
-class RencanaAwalController extends Controller
-{
-   
-=======
-<<<<<<< HEAD
-
-class RencanaAwalController extends Controller
-{
-   
-=======
 use App\Models\MonitoringTarget;
 use Illuminate\Support\Facades\DB;
 
@@ -417,6 +405,4 @@ class RencanaAwalController extends Controller
             return back()->with('error', 'Gagal memfinalisasi baris: ' . $e->getMessage());
         }
     }
->>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 }

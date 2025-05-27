@@ -14,6 +14,8 @@ use App\Http\Controllers\Triwulan3Controller;
 use App\Http\Controllers\Triwulan4Controller;
 use App\Http\Controllers\SkpdTugasController;
 use App\Http\Controllers\PerangkatDaerahController;
+use App\Http\Controllers\RencanaAwalController;
+use App\Http\Controllers\ManajemenAnggaranController;
 
 
 Route::get('/', function () {
@@ -34,13 +36,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('usermanagement', UserManagementController::class)->names('usermanagement');
     Route::resource('panduan', PanduanController::class)->names('panduan');
     Route::resource('periode', PeriodeController::class)->names('periode');
+    Route::resource('manajemenanggaran', ManajemenAnggaranController::class)->names('manajemenanggaran');
     
 
     Route::resource('triwulan1', Triwulan1Controller::class)->names('triwulan1');
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
     Route::get('triwulan1/Detail/{id}', [Triwulan1Controller::class, 'showDetail'])->name('triwulan1.showDetail');
     Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
     Route::get('triwulan2/Detail/{id}', [Triwulan2Controller::class, 'showDetail'])->name('triwulan2.showDetail');
@@ -48,14 +47,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('triwulan3/Detail/{id}', [Triwulan3Controller::class, 'showDetail'])->name('triwulan3.showDetail');
     Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
     Route::get('triwulan4/Detail/{id}', [Triwulan4Controller::class, 'showDetail'])->name('triwulan4.showDetail');
-<<<<<<< HEAD
-=======
-=======
     Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
     Route::resource('triwulan3', Triwulan3Controller::class)->names('triwulan3');
     Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
->>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
     Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
     Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
 
@@ -74,25 +68,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bantuan/chat/selesai/{id}', [BantuanController::class, 'selesaikanChat'])->name('bantuan.chat.selesai');
     Route::post('/bantuan/update-status/{id}', [BantuanController::class, 'updateStatusToDiproses'])->name('bantuan.updateStatusToDiproses');
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 
     Route::get('/monitoring/user/{id}', [MonitoringController::class, 'showUserMonitoring']);
     Route::get('/monitoring/tugas/{id}', [MonitoringController::class, 'showTugas']);
     Route::get('/monitoring/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('rencanaawal');
     Route::post('/rencanaawal', [MonitoringController::class, 'saveMonitoringData'])->name('monitoring.save');
-<<<<<<< HEAD
-=======
-=======
-    
+
     Route::post('/rencanaawal/save-monitoring', [RencanaAwalController::class, 'saveMonitoringData'])->name('rencanaawal.save-monitoring');
     Route::post('/rencanaawal/finalize', [RencanaAwalController::class, 'finalizeMonitoring'])
         ->name('rencanaawal.finalize');
     Route::post('/rencanaawal/finalize-row', [RencanaAwalController::class, 'finalizeRow'])->name('rencanaawal.finalize-row');
->>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
 });
 
 require __DIR__.'/settings.php';

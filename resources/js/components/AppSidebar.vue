@@ -41,26 +41,13 @@ const mainNavItems: NavItem[] = [
     },
 
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
-
     {
         title: 'Perangkat Daerah',
         href: '/perangkatdaerah',
         guard: ['perangkat_daerah'],
         icon: Users,
     },
-<<<<<<< HEAD
 
-=======
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
-
-
-
-=======
->>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
     {
         title: 'Monitoring',
         href: '/monitoring',
@@ -70,6 +57,10 @@ const mainNavItems: NavItem[] = [
             title: 'Manajemen Periode',
             href: '/periode',
             guard: ['admin'],
+        },
+        {
+            title: 'Monitoring Anggaran',
+            href: '/manajemenanggaran',
         },
         {
             title: 'Rencana Awal',

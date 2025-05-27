@@ -281,11 +281,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button> -->
-<<<<<<< HEAD
                           <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
-=======
-                          <Button size="sm" class="bg-yellow-500 hover:bg-yellow-700 text-white"
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
                             @click.stop="goToShowPage(user.id)">
                             <Eye class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Detail</span>
@@ -341,11 +337,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               <Pencil class="w-4 h-4 mr-2" />
                               Edit Data
                             </Button> -->
-<<<<<<< HEAD
                             <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
-=======
-                            <Button size="sm" class="bg-yellow-500 hover:bg-blue-700 text-white"
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
                               @click.stop="goToShowPage(user.id)">
                               <Eye class="w-4 h-4 mr-1" />
                               Lihat Detail Lengkap
@@ -442,12 +434,4 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 .table-row-hover {
   transition: background-color 0.2s ease;
 }
-<<<<<<< HEAD
 </style>
-=======
-<<<<<<< HEAD
-</style>
-=======
-</style>
->>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c

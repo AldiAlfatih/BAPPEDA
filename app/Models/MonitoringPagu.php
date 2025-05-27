@@ -4,17 +4,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class MonitoringTarget extends Model
+class MonitoringPagu extends Model
 {
     use HasFactory;
 
-    protected $table = 'monitoring_target';
+    protected $table = 'monitoring_pagu';
 
     protected $fillable = [
         'monitoring_anggaran_id',
         'periode_id',
-        'kinerja_fisik',
-        'keuangan',
+        'kategori',
+        'dana',
     ];
 
     public function monitoringAnggaran()

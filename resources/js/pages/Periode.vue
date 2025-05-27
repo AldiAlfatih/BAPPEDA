@@ -166,6 +166,9 @@ function generatePeriode() {
 
     form.post('/periode/generate', {
       preserveScroll: true,
+      onSuccess: () => {
+        window.location.reload()
+      },
       onFinish: () => {
         isGenerating.value = false
       },

@@ -1,9 +1,8 @@
 <?php
 
 namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Monitoring extends Model
 {
@@ -12,38 +11,16 @@ class Monitoring extends Model
     protected $table = 'monitoring';
 
     protected $fillable = [
-        'skpd_id',
-        'sumber_dana',
+        'skpd_tugas_id',
         'periode_id',
         'tahun',
         'deskripsi',
-<<<<<<< HEAD
-        'pagu_pokok',
-        'pagu_parsial',
-        'pagu_perubahan',
-=======
-<<<<<<< HEAD
-        'pagu_pokok',
-        'pagu_parsial',
-        'pagu_perubahan',
-=======
-        'pagu_anggaran',
-        'pagu_pokok',
-        'pagu_parsial',
-        'pagu_perubahan',
-        'is_finalized',
->>>>>>> 2bf3b947d4508d4887650bd21bb12834090c1114
->>>>>>> 87f1bdf8678f48b801ea4328a66eef15bc59578c
+        'nama_pptk',
     ];
 
-    public function targets()
+    public function skpdTugas()
     {
-        return $this->hasMany(MonitoringTarget::class);
-    }
-    
-    public function skpd()
-    {
-        return $this->belongsTo(Skpd::class);
+        return $this->belongsTo(SkpdTugas::class);
     }
 
     public function periode()
@@ -51,13 +28,8 @@ class Monitoring extends Model
         return $this->belongsTo(Periode::class);
     }
 
-    public function targets()
+    public function monitoringAnggaran()
     {
-        return $this->hasMany(MonitoringTarget::class);
-    }
-
-    public function realisasi()
-    {
-        return $this->hasMany(MonitoringRealisasi::class);
+        return $this->hasMany(MonitoringAnggaran::class);
     }
 }

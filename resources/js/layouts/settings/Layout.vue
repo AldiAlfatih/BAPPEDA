@@ -19,20 +19,18 @@ if (role === 'admin' || role === 'operator') {
     sidebarNavItems = [
         { title: 'Profile', href: '/settings/profile' },
         { title: 'Password', href: '/settings/password' },
-        { title: 'Appearance', href: '/settings/appearance' },
     ];
 } else if (role === 'perangkat_daerah') {
     sidebarNavItems = [
         { title: 'Profil SKPD', href: '/settings/profiledetail' },
         { title: 'Password', href: '/settings/password' },
-        { title: 'Appearance', href: '/settings/appearance' },
     ];
 }
 </script>
 
 <template>
     <div class="px-4 py-6">
-        <Heading title="Settings" description="Manage your profile and account settings" />
+        <Heading title="Pengaturan" description="Manage your profile and account settings" />
 
         <div class="flex flex-col space-y-8 md:space-y-0 lg:flex-row lg:space-x-12 lg:space-y-0">
             <aside class="w-full max-w-xl lg:w-48">

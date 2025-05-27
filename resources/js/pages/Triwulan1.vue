@@ -55,7 +55,7 @@ const loadingCreate = ref(false);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Monitoring', href: '/Monitoring' },
+  { title: 'Monitoring Triwulan 1', href: '/Monitoring' },
 ];
 
 // Filter dan Sorting
@@ -168,7 +168,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 </script>
 
 <template>
-  <Head title="Monitoring" />
+  <Head title="Monitoring Triwulan 1" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex flex-col gap-6 p-6">
@@ -281,7 +281,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button> -->
-                          <Button size="sm" class="bg-yellow-500 hover:bg-yellow-700 text-white"
+                          <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
                             @click.stop="goToShowPage(user.id)">
                             <Eye class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Detail</span>
@@ -337,7 +337,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               <Pencil class="w-4 h-4 mr-2" />
                               Edit Data
                             </Button> -->
-                            <Button size="sm" class="bg-yellow-500 hover:bg-blue-700 text-white"
+                            <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
                               @click.stop="goToShowPage(user.id)">
                               <Eye class="w-4 h-4 mr-1" />
                               Lihat Detail Lengkap
@@ -434,4 +434,5 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 .table-row-hover {
   transition: background-color 0.2s ease;
 }
+
 </style>

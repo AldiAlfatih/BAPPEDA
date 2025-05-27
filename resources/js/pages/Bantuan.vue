@@ -111,46 +111,57 @@ const updateStatusToDiproses = (bantuanId: number) => {
   <AppLayout :breadcrumbs="breadcrumbs">
 
       <!-- Filter Kolom -->
-      <div class="mb-2 flex justify-start">
-        <button @click="toggleColumnFilter" class="px-4 ml-3 mt-2 border border-gray-300 rounded-md text-gray-600">Filter</button>
-        <div
-          v-if="columnFilterOpen"
-          ref="filterRef"
-          class="absolute bg-white border border-gray-300 rounded-md shadow-lg mt-2 font-serif text-gray-600"
-        >
-          <label class="block px-4 py-2 text-gray-600">
-            <input type="checkbox" v-model="columns.judul" /> Judul
-          </label>
-          <label class="block px-4 py-2 text-gray-600">
-            <input type="checkbox" v-model="columns.tanggal_dibuat" /> Tanggal Dibuat
-          </label>
-          <label class="block px-4 py-2 text-gray-600">
-            <input type="checkbox" v-model="columns.status" /> Status
-          </label>
-          <label class="block px-4 py-2 text-gray-600">
-            <input type="checkbox" v-model="columns.aksi" /> Aksi
-          </label>
+      <div class="flex justify-between items-start mt-4">
+        <!-- Kolom Pencarian (Kiri) -->
+        <div class="flex-1 mr-2 ml-4">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari berdasarkan Judul..."
+            class="border border-gray-300 px-2 py-1 rounded-md w-[250px]"
+          />
+        </div>
+
+        <!-- Filter Kolom (Kanan) -->
+        <div class="relative mr-4">
+          <button
+            @click="toggleColumnFilter"
+            class="px-4 ml-3 border border-gray-300 rounded-md text-gray-600"
+          >
+            Filter
+          </button>
+
+          <div
+            v-if="columnFilterOpen"
+            ref="filterRef"
+            class="absolute right-0 bg-white border border-gray-300 rounded-md shadow-lg mt-2 font-serif text-gray-600 z-10"
+          >
+            <label class="block px-4 py-2">
+              <input type="checkbox" v-model="columns.judul" /> Judul
+            </label>
+            <label class="block px-4 py-2">
+              <input type="checkbox" v-model="columns.tanggal_dibuat" /> Tanggal Dibuat
+            </label>
+            <label class="block px-4 py-2">
+              <input type="checkbox" v-model="columns.status" /> Status
+            </label>
+            <label class="block px-4 py-2">
+              <input type="checkbox" v-model="columns.aksi" /> Aksi
+            </label>
+          </div>
         </div>
       </div>
 
-      <div class="flex flex-col gap-2 p-1">
+
+      <div class="flex flex-col gap-2 p-1 ">
         <!-- Flex container untuk search dan add button -->
-        <div class="flex justify-between items-center mb-2 ml-2">
-          <!-- Kolom Pencarian -->
-          <div class="flex-1 mr-2 ">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Cari berdasarkan Judul..."
-              class="w-xs  border border-gray-300 px-2 py-1 rounded-md"
-            />
-          </div>
+        <div class="flex justify-end items-center mb-2 ml-2">
 
           <!-- Tombol Tambah -->
           <Link
             v-if="isPD"
             :href="route('bantuan.create')"
-            class="flex items-center gap-2 h-full px-2 py-1 bg-green-800 text-base text-white rounded-md hover:bg-green-700"
+            class="flex items-center gap-2 h-full px-2 py-1 bg-blue-600 text-base text-white rounded-md hover:bg-blue-700"
           >
             <Plus class="w-4 h-4" />
             Tambah
@@ -163,7 +174,7 @@ const updateStatusToDiproses = (bantuanId: number) => {
             <thead class="bg-gray-100">
               <tr>
                 <th v-if="columns.no" class="px-4 py-2 text-center text-sm font-semibold text-gray-600">No</th>
-                <th v-if="columns.judul" class="px-4 py-2 text-center text-sm font-semibold text-gray-600 w-[50%]">Judul</th>
+                <th v-if="columns.judul" class="px-4 py-2 text-start text-sm font-semibold text-gray-600 w-[50%]">Judul</th>
                 <th v-if="columns.tanggal_dibuat" class="px-4 py-2 text-center text-sm font-semibold text-gray-600">Tanggal Dibuat</th>
                 <th v-if="columns.status" class="px-4 py-2 text-center text-sm font-semibold text-gray-600">Status</th>
                 <th v-if="columns.aksi" class="px-4 py-2 text-center text-sm font-semibold text-gray-600">Aksi</th>

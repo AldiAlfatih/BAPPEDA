@@ -5,12 +5,30 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Inertia\Inertia;
+use App\Models\Skpd;
 use App\Models\SkpdTugas;
 use App\Models\KodeNomenklatur;
 class Triwulan3Controller extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+
+        if ($user->hasRole('perangkat_daerah')) {
+            return redirect()->route('triwulan3.show', $user->id);
+        }
+
+        if ($user->hasRole('operator')) {
+            $skpdUserIds = Skpd::where('nama_operator', $user->name)->pluck('user_id');
+            $users = User::whereIn('id', $skpdUserIds)
+                ->role('perangkat_daerah')
+                ->with('skpd')
+                ->paginate(1000);
+
+            return Inertia::render('Triwulan3', [
+                'users' => $users,
+            ]);
+        }
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
         return Inertia::render('Triwulan3', [
             'users' => $users,
@@ -155,3 +173,4 @@ class Triwulan3Controller extends Controller
         ]);
     }
 }
+

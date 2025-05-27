@@ -13,14 +13,14 @@ use App\Models\MonitoringTarget;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class MonitoringController extends Controller
+class ManajemenAnggaranController extends Controller
 {
     public function index()
     {
         $user = auth()->user();
 
         if ($user->hasRole('perangkat_daerah')) {
-            return redirect()->route('monitoring.show', $user->id);
+            return redirect()->route('ManajemenAnggaran.show', $user->id);
         }
 
         if ($user->hasRole('operator')) {
@@ -30,14 +30,14 @@ class MonitoringController extends Controller
                 ->with('skpd')
                 ->paginate(1000);
 
-            return Inertia::render('Monitoring', [
+            return Inertia::render('ManajemenAnggaran', [
                 'users' => $users,
             ]);
         }
 
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
 
-        return Inertia::render('Monitoring', [
+        return Inertia::render('ManajemenAnggaran', [
             'users' => $users,
         ]);
     }
@@ -140,7 +140,7 @@ class MonitoringController extends Controller
             ->with('kodeNomenklatur')
             ->get();
 
-        return Inertia::render('Monitoring/Show', [
+        return Inertia::render('MonitoringAnggaran/Sumberdana', [
             'user' => $user,
             'skpdTugas' => $skpdTugas,
             'urusanList' => $urusanList,

@@ -42,15 +42,25 @@ const mainNavItems: NavItem[] = [
 
 
     {
+        title: 'Perangkat Daerah',
+        href: '/perangkatdaerah',
+        guard: ['perangkat_daerah'],
+        icon: Users,
+    },
+
+    {
         title: 'Monitoring',
         href: '/monitoring',
         icon: Monitor,
-        guard: ['admin', 'perangkat_daerah'],
         children: [
         {
             title: 'Manajemen Periode',
             href: '/periode',
-            guard: ['admin']
+            guard: ['admin'],
+        },
+        {
+            title: 'Monitoring Anggaran',
+            href: '/manajemenanggaran',
         },
         {
             title: 'Rencana Awal',

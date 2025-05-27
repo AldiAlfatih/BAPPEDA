@@ -4,13 +4,13 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import {
-  Plus,
-  Pencil,
-  Eye,
-  Search,
-  ChevronLeft,
-  ChevronRight,
+import { 
+  Plus, 
+  Pencil, 
+  Eye, 
+  Search, 
+  ChevronLeft, 
+  ChevronRight, 
   ArrowUpDown,
   FileText,
   Info,
@@ -55,45 +55,45 @@ const loadingCreate = ref(false);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Monitoring', href: '/Monitoring' },
+  { title: 'Manajemen Anggaran', href: '/manajemenanggaran' },
 ];
 
 // Filter dan Sorting
 const filteredData = computed(() => {
   let data = [...props.users.data];
-
+  
   // Filter berdasarkan pencarian
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    data = data.filter(item =>
-      (item.name || '').toLowerCase().includes(query) ||
+    data = data.filter(item => 
+      (item.name || '').toLowerCase().includes(query) || 
       (item.skpd?.nama_dinas || '').toLowerCase().includes(query) ||
       (item.skpd?.nama_operator || '').toLowerCase().includes(query) ||
       (item.skpd?.no_dpa || '').toLowerCase().includes(query) ||
       (item.skpd?.kode_organisasi || '').toLowerCase().includes(query)
     );
   }
-
+  
   // Sorting
   data.sort((a, b) => {
     let aVal = getFieldValue(a, sortField.value);
     let bVal = getFieldValue(b, sortField.value);
-
+    
     // Handle null values
     if (aVal === null || aVal === undefined) aVal = '';
     if (bVal === null || bVal === undefined) bVal = '';
-
+    
     // String comparison
     if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return sortDirection.value === 'asc'
-        ? aVal.localeCompare(bVal)
+      return sortDirection.value === 'asc' 
+        ? aVal.localeCompare(bVal) 
         : bVal.localeCompare(aVal);
     }
-
+    
     // Number comparison
     return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal;
   });
-
+  
   return data;
 });
 
@@ -144,7 +144,7 @@ function toggleSort(field: string) {
 // }
 
 function goToShowPage(id: number) {
-  router.visit(route('triwulan4.show', { id }));
+  router.visit(route('manajemenanggaran.show', { id }));
 }
 
 function toggleDetail(id: number) {
@@ -175,11 +175,11 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       <!-- Header dengan judul dan action -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Perangkat Daerah</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Monitoring Perangkat Daerah</p>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Manajemen Anggaran Perangkat Daerah</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Manajemen Anggaran Perangkat Daerah</p>
         </div>
-        <!-- <Button
-          class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105"
+        <!-- <Button 
+          class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" 
           @click="goToCreatePage"
           :disabled="loadingCreate"
         >
@@ -193,9 +193,9 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div class="relative w-full sm:w-96">
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            v-model="searchQuery"
-            placeholder="Cari nama dinas, penanggung jawab, kode..."
+          <Input 
+            v-model="searchQuery" 
+            placeholder="Cari nama dinas, penanggung jawab, kode..." 
             class="pl-10 pr-4 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
             @input="handleSearchChange"
           />
@@ -222,21 +222,21 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                   <TableHead class="cursor-pointer group" @click="toggleSort('nama_dinas')">
                     <div class="flex items-center gap-1 text-gray-600">
                       Nama Dinas
-                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
                         :class="{'opacity-100': sortField === 'nama_dinas'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nama_operator')">
                     <div class="flex items-center gap-1 text-gray-600">
                       Nama Penanggung Jawab
-                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
                         :class="{'opacity-100': sortField === 'nama_operator'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('name')">
                     <div class="flex items-center gap-1 text-gray-600">
                       Nama Kepala Daerah
-                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
                         :class="{'opacity-100': sortField === 'name'}" />
                     </div>
                   </TableHead>
@@ -276,12 +276,12 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                       <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
-                          <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
+                          <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
                             @click.stop="goToEditPage(user.id)">
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button> -->
-                          <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
+                          <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white" 
                             @click.stop="goToShowPage(user.id)">
                             <Eye class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Detail</span>
@@ -289,7 +289,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         </div>
                       </TableCell>
                     </TableRow>
-
+                    
                     <!-- Detail ekspansi -->
                     <TableRow v-if="showDetailId === user.id" class="bg-blue-50/50 dark:bg-blue-900/10">
                       <TableCell colspan="7" class="animate-fadeIn">
@@ -332,12 +332,12 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             </div>
                           </div>
                           <div class="pt-3 flex justify-end gap-2">
-                            <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
+                            <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
                               @click.stop="goToEditPage(user.id)">
                               <Pencil class="w-4 h-4 mr-2" />
                               Edit Data
                             </Button> -->
-                            <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
+                            <Button size="sm" class="bg-orange-500 hover:bg-blue-700 text-white" 
                               @click.stop="goToShowPage(user.id)">
                               <Eye class="w-4 h-4 mr-1" />
                               Lihat Detail Lengkap
@@ -365,14 +365,14 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex justify-between items-center">
         <div class="text-sm text-gray-500">
-          Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai
-          {{ Math.min(currentPage * itemsPerPage, filteredData.length) }}
+          Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai 
+          {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 
           dari {{ filteredData.length }} data
         </div>
         <div class="flex gap-2 items-center">
-          <Button
-            variant="outline"
-            size="sm"
+          <Button 
+            variant="outline" 
+            size="sm" 
             @click="currentPage = Math.max(1, currentPage - 1)"
             :disabled="currentPage === 1"
             class="flex items-center gap-1"
@@ -380,10 +380,10 @@ function truncateText(text: string | null | undefined, length: number = 30): str
             <ChevronLeft class="w-4 h-4" />
             <span class="hidden sm:inline">Sebelumnya</span>
           </Button>
-
+          
           <div class="hidden sm:flex gap-1">
-            <Button
-              v-for="page in totalPages"
+            <Button 
+              v-for="page in totalPages" 
               :key="page"
               :variant="page === currentPage ? 'default' : 'outline'"
               size="sm"
@@ -393,14 +393,14 @@ function truncateText(text: string | null | undefined, length: number = 30): str
               {{ page }}
             </Button>
           </div>
-
+          
           <div class="sm:hidden">
             <span class="text-sm">{{ currentPage }} / {{ totalPages }}</span>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
             @click="currentPage = Math.min(totalPages, currentPage + 1)"
             :disabled="currentPage === totalPages"
             class="flex items-center gap-1"

@@ -70,7 +70,7 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
-  { title: 'Monitoring', href: '/triwulan1' },
+  { title: 'Monitoring Triwulan 1', href: '/triwulan1' },
     { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: '/triwulan1/show' },
   { title: 'Rencana Awal PD', href: '/triwulan1/detail' },
 ]);

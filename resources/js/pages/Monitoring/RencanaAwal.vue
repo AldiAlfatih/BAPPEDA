@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
-// import axios from 'axios';
 
 interface Target {
     kinerjaFisik: string;
     keuangan: string;
 }
 
+<<<<<<< HEAD
 interface ProgramData {
     kode: string;
     program: string;
@@ -29,15 +29,36 @@ interface ProgramData {
             keuangan: number;
         }>;
     };
+=======
+interface Program {
+    id: number;
+    kode_nomenklatur: {
+        id: number;
+        nomor_kode: string;
+        nomenklatur: string;
+        details: Array<{
+            id_urusan: number;
+            id_bidang_urusan: number;
+            id_program: number;
+            id_kegiatan: number;
+        }>;
+    };
+    pokok?: string;
+    parsial?: string;
+    perubahan?: string;
+    sumberDana?: string;
+    targets?: Target[];
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 }
-
 interface User {
     id: number;
     name: string;
     nama_skpd: string;
+    skpd_id?: number;
 }
 
 const props = defineProps<{
+<<<<<<< HEAD
     user?: User;
     programTugas?: any[];
     kegiatanTugas?: any[];
@@ -47,9 +68,55 @@ const props = defineProps<{
     flash?: {
         success?: string;
         error?: string;
+=======
+  user?: User;
+  tugas: {
+    id: number;
+    kode_nomenklatur: { 
+      nomor_kode: string; 
+      nomenklatur: string;
+      details: Array<{
+        id_urusan: number;
+        id_bidang_urusan: number;
+        id_program: number;
+        id_kegiatan: number;
+      }>[];
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
     };
+    skpd: {
+      nama_dinas: string;
+      kode_organisasi?: string;
+      no_dpa?: string;
+      skpd_kepala: Array<{
+        user: {
+          user_detail: {
+            nama: string;
+          };
+        };
+      }>[];
+    };
+    rencana_awal?: {
+      indikator: string;
+      target: string;
+    } | null;
+  };
+  programTugas: Array<any>;
+  kegiatanTugas: Array<any>;
+  subkegiatanTugas: Array<any>;
+  kepalaSkpd?: string;
+  urusan: number[]; 
+  bidangUrusan: number[];
+  monitoring: {
+    sumber_dana: string;
+    pagu_pokok: number;
+    pagu_parsial: number;
+    pagu_perubahan: number;
+    targets: Array<any>;
+    realisasi: Array<any>;
+  };
 }>();
 
+<<<<<<< HEAD
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: 'Monitoring', href: '/monitoring' },
     { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/monitoring/${props.user?.id}` },
@@ -64,6 +131,17 @@ const headerData = ref([
     { label: 'NO.DPA SKPD', value: 'DPA/A.1/5.01.5.05.0.00.25.0000/001.2024' },
     { label: 'NAMA KEPALA SKPD', value: props.kepalaSkpd || 'ZULKARNAEN, ST., M.Si' },
 ]);
+=======
+// Fixed breadcrumbs with proper navigation
+const breadcrumbs = computed(() => [
+  { title: 'Monitoring', href: '/monitoring' },
+  { 
+    title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, 
+    href: `/monitoring/${props.user?.id}` // Use proper route with user ID
+  },
+  { title: 'Rencana Awal PD', href: '#' }, // Current page, no link
+]) as unknown as BreadcrumbItem[];
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 
 // Add new refs for editing functionality
 const isEditing = ref(false);
@@ -81,6 +159,7 @@ const editedData = ref({
     ]
 });
 
+<<<<<<< HEAD
 // Add new ref for finalization state
 const isFinalized = ref(Boolean(props.isFinalized));
 
@@ -123,11 +202,14 @@ watch(showFlash, (newValue) => {
     }
 });
 
+=======
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 // Methods for handling edit functionality
 const startEditing = (row: any) => {
     isEditing.value = true;
     editingRow.value = row;
     editedData.value = {
+<<<<<<< HEAD
         pokok: row.monitoring?.pagu_pokok?.toString() || row.pokok?.toString() || '',
         parsial: row.monitoring?.pagu_parsial?.toString() || row.parsial?.toString() || '',
         perubahan: row.monitoring?.pagu_perubahan?.toString() || row.perubahan?.toString() || '',
@@ -149,6 +231,17 @@ const startEditing = (row: any) => {
                 kinerjaFisik: row.monitoring?.targets?.[3]?.kinerja_fisik?.toString() || row.targets?.[3]?.kinerjaFisik?.toString() || '',
                 keuangan: row.monitoring?.targets?.[3]?.keuangan?.toString() || row.targets?.[3]?.keuangan?.toString() || ''
             }
+=======
+        pokok: row.pokok || '',
+        parsial: row.parsial || '',
+        perubahan: row.perubahan || '',
+        sumberDana: row.sumberDana || '',
+        targets: [
+            { kinerjaFisik: row.targets?.[0]?.kinerjaFisik || '', keuangan: row.targets?.[0]?.keuangan || '' },
+            { kinerjaFisik: row.targets?.[1]?.kinerjaFisik || '', keuangan: row.targets?.[1]?.keuangan || '' },
+            { kinerjaFisik: row.targets?.[2]?.kinerjaFisik || '', keuangan: row.targets?.[2]?.keuangan || '' },
+            { kinerjaFisik: row.targets?.[3]?.kinerjaFisik || '', keuangan: row.targets?.[3]?.keuangan || '' },
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
         ]
     };
 };
@@ -156,6 +249,7 @@ const startEditing = (row: any) => {
 const saveChanges = () => {
     console.log('saveChanges dipanggil');
     if (editingRow.value) {
+<<<<<<< HEAD
         const currentSkpdId = props.user?.id;
 
         if (!currentSkpdId) {
@@ -258,13 +352,50 @@ const saveChanges = () => {
                 showFlash.value = true;
             },
         });
+=======
+        // Update the data in the appropriate array based on the type
+        if (props.programTugas?.some(p => p.id === editingRow.value.id)) {
+            const index = props.programTugas.findIndex(p => p.id === editingRow.value.id);
+            if (index !== -1) {
+                props.programTugas[index] = {
+                    ...props.programTugas[index],
+                    ...editedData.value
+                };
+            }
+        } else if (props.kegiatanTugas?.some(k => k.id === editingRow.value.id)) {
+            const index = props.kegiatanTugas.findIndex(k => k.id === editingRow.value.id);
+            if (index !== -1) {
+                props.kegiatanTugas[index] = {
+                    ...props.kegiatanTugas[index],
+                    ...editedData.value
+                };
+            }
+        } else if (props.subkegiatanTugas?.some(sk => sk.id === editingRow.value.id)) {
+            const index = props.subkegiatanTugas.findIndex(sk => sk.id === editingRow.value.id);
+            if (index !== -1) {
+                props.subkegiatanTugas[index] = {
+                    ...props.subkegiatanTugas[index],
+                    ...editedData.value
+                };
+            }
+        }
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
     }
+    isEditing.value = false;
+    editingRow.value = null;
 };
 
 const updateAllData = () => {
-    // Debug: Log the data we're about to send
+    // Use skpd_id for saving data, but user id for navigation
+    const currentSkpdId = props.user?.skpd_id || props.user?.id;
+
+    if (!currentSkpdId) {
+        alert('SKPD ID tidak ditemukan. Silakan refresh halaman dan coba lagi.');
+        return;
+    }
+
     console.log('Sending data:', {
-        skpd_id: props.user?.id,
+        skpd_id: currentSkpdId,
         sumber_dana: editedData.value.sumberDana,
         periode_id: null,
         tahun: new Date().getFullYear(),
@@ -272,12 +403,16 @@ const updateAllData = () => {
         pagu_pokok: parseInt(editedData.value.pokok.replace(/[^0-9]/g, '')) || 0,
         pagu_parsial: parseInt(editedData.value.parsial.replace(/[^0-9]/g, '')) || 0,
         pagu_perubahan: parseInt(editedData.value.perubahan.replace(/[^0-9]/g, '')) || 0,
+        pokok: editedData.value.pokok || '0',
+        parsial: editedData.value.parsial || '0',
+        perubahan: editedData.value.perubahan || '0',
         targets: editedData.value.targets.map(target => ({
             kinerja_fisik: parseFloat(target.kinerjaFisik) || 0,
             keuangan: parseInt(target.keuangan.replace(/[^0-9]/g, '')) || 0
         }))
     });
 
+<<<<<<< HEAD
     // Get skpd_id from props.user
     const currentSkpdId = props.user?.id;
 
@@ -287,6 +422,9 @@ const updateAllData = () => {
     }
 
     router.post('/rencanaawal/saveMonitoringData', {
+=======
+    router.post('/monitoring/save-monitoring-data', {
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
         skpd_id: currentSkpdId,
         sumber_dana: editedData.value.sumberDana || '-',
         periode_id: null,
@@ -295,6 +433,9 @@ const updateAllData = () => {
         pagu_pokok: parseInt(editedData.value.pokok.replace(/[^0-9]/g, '')) || 0,
         pagu_parsial: parseInt(editedData.value.parsial.replace(/[^0-9]/g, '')) || 0,
         pagu_perubahan: parseInt(editedData.value.perubahan.replace(/[^0-9]/g, '')) || 0,
+        pokok: editedData.value.pokok || '0',
+        parsial: editedData.value.parsial || '0',
+        perubahan: editedData.value.perubahan || '0',
         targets: editedData.value.targets.map(target => ({
             kinerja_fisik: parseFloat(target.kinerjaFisik) || 0,
             keuangan: parseInt(target.keuangan.replace(/[^0-9]/g, '')) || 0
@@ -312,6 +453,7 @@ const updateAllData = () => {
         }
     });
 };
+<<<<<<< HEAD
 
 // Add function to finalize single row
 const finalizeRow = (row: any) => {
@@ -367,41 +509,56 @@ const goToMonitoringDetail = () => {
 function goToCreate() {
   router.visit('/rencanaawal/create');
 }
+=======
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 </script>
 
 <template>
     <Head title="Rencana kinerja" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <!-- Flash Message -->
-        <div v-if="showFlash"
-             :class="[
-                 'fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50',
-                 flashType === 'success' ? 'bg-green-500' : 'bg-red-500',
-                 'text-white'
-             ]">
-            {{ flashMessage }}
-        </div>
-
-        <div class="flex h-full flex-1 w-5xl overflow-x-hidden flex-col gap-4 p-4 bg-gray-100 dark:bg-gray-800">
+ <div class="flex h-full flex-1 flex-col gap-4 p-4 bg-gray-100 dark:bg-gray-800">
             <!-- Header section -->
-            <div class="bg-white dark:bg-gray-700 rounded-xl shadow">
-                <h2 class="p-2 text-xl font-semibold bg-emerald-600 text-white rounded-t-xl">
-                    Rencana Kinerja
-                </h2>
+            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center mb-6">
+                    <div class="rounded-full bg-blue-100 p-3 mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-600">Rencana Kinerja</h2>
+                </div>
 
-                <!-- Top table -->
-                <div class="overflow-hidden">
-                    <table class="w-full border-collapse">
-                        <tbody>
-                            <tr v-for="(item, index) in headerData" :key="index" class="border border-gray-200 dark:border-gray-600">
-                                <td class="p-3 border-r border-gray-200 dark:border-gray-600 font-medium w-1/3">{{ item.label }}</td>
-                                <td class="p-3 font-medium">{{ item.value }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">KODE/URUSAN PEMERINTAHAN:</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.nama_dinas || 'Tidak tersedia' }}</p>
+                    </div>
+
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.kode_organisasi || 'Tidak tersedia' }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ kepalaSkpd ?? tugas.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}</p>
+                    </div>
                 </div>
             </div>
+
 
             <!-- Program table with targets -->
             <div class="bg-white dark:bg-gray-700 rounded-t-xl shadow overflow-x-auto">
@@ -446,122 +603,110 @@ function goToCreate() {
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ program.kode_nomenklatur.nomor_kode }}</td>
                                 <td class="p-3 border sticky left-0 z-10 bg-white w-[100px]">{{ program.kode_nomenklatur.nomenklatur }}</td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.pokok"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.pokok" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.pagu_pokok?.toLocaleString('id-ID') || program.pokok || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.parsial"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.parsial" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.pagu_parsial?.toLocaleString('id-ID') || program.parsial || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.perubahan"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.perubahan" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || program.perubahan || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.sumberDana"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.sumberDana" 
+                                           type="text" 
                                            class="w-full text-center bg-transparent">
                                     <span v-else>{{ program.monitoring?.sumber_dana || program.sumberDana || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 1 -->
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[0].kinerjaFisik"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[0].kinerjaFisik" 
+                                           type="text" 
                                            class="w-full text-center bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[0]?.kinerja_fisik || program.targets?.[0]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[0].keuangan"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[0].keuangan" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || program.targets?.[0]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 2 -->
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[1].kinerjaFisik"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[1].kinerjaFisik" 
+                                           type="text" 
                                            class="w-full text-center bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[1]?.kinerja_fisik || program.targets?.[1]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[1].keuangan"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[1].keuangan" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || program.targets?.[1]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 3 -->
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[2].kinerjaFisik"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[2].kinerjaFisik" 
+                                           type="text" 
                                            class="w-full text-center bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[2]?.kinerja_fisik || program.targets?.[2]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[2].keuangan"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[2].keuangan" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || program.targets?.[2]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 4 -->
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[3].kinerjaFisik"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[3].kinerjaFisik" 
+                                           type="text" 
                                            class="w-full text-center bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[3]?.kinerja_fisik || program.targets?.[3]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                    <input v-if="isEditing && editingRow?.id === program.id"
-                                           v-model="editedData.targets[3].keuangan"
-                                           type="text"
+                                    <input v-if="isEditing && editingRow?.id === program.id" 
+                                           v-model="editedData.targets[3].keuangan" 
+                                           type="text" 
                                            class="w-full text-right bg-transparent">
                                     <span v-else>{{ program.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || program.targets?.[3]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Action column -->
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                    <div class="flex gap-2 justify-center">
-                                        <button v-if="!isFinalized && !finalizedRows.has(program.id) && (!isEditing || editingRow?.id !== program.id)"
-                                                @click="startEditing(program)"
-                                                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                            Isi
-                                        </button>
-                                        <button v-if="!isFinalized && !finalizedRows.has(program.id) && (!isEditing || editingRow?.id !== program.id)"
-                                                @click="finalizeRow(program)"
-                                                class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                                            Selesai
-                                        </button>
-                                        <button v-if="!isFinalized && !finalizedRows.has(program.id) && isEditing && editingRow?.id === program.id"
-                                                @click="saveChanges"
-                                                class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
-                                            Simpan
-                                        </button>
-                                        <button v-if="!isFinalized && finalizedRows.has(program.id)"
-                                                disabled
-                                                class="px-3 py-1 bg-gray-400 text-white rounded cursor-not-allowed">
-                                            Selesai
-                                        </button>
-                                    </div>
+                                    <button v-if="!isEditing || editingRow?.id !== program.id"
+                                            @click="startEditing(program)"
+                                            class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                        Isi
+                                    </button>
+                                    <button v-else
+                                            @click="saveChanges"
+                                            class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                        Simpan
+                                    </button>
                                 </td>
                             </tr>
 
@@ -571,122 +716,110 @@ function goToCreate() {
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ kegiatan.kode_nomenklatur.nomor_kode }}</td>
                                     <td class="p-3 border sticky left-0 z-10 bg-white w-[100px]">{{ kegiatan.kode_nomenklatur.nomenklatur }}</td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.pokok"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.pokok" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.pagu_pokok?.toLocaleString('id-ID') || kegiatan.pokok || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.parsial"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.parsial" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.pagu_parsial?.toLocaleString('id-ID') || kegiatan.parsial || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.perubahan"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.perubahan" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || kegiatan.perubahan || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.sumberDana"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.sumberDana" 
+                                               type="text" 
                                                class="w-full text-center bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.sumber_dana || kegiatan.sumberDana || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 1 -->
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[0].kinerjaFisik"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[0].kinerjaFisik" 
+                                               type="text" 
                                                class="w-full text-center bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[0]?.kinerja_fisik || kegiatan.targets?.[0]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[0].keuangan"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[0].keuangan" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[0]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 2 -->
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[1].kinerjaFisik"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[1].kinerjaFisik" 
+                                               type="text" 
                                                class="w-full text-center bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[1]?.kinerja_fisik || kegiatan.targets?.[1]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[1].keuangan"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[1].keuangan" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[1]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 3 -->
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[2].kinerjaFisik"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[2].kinerjaFisik" 
+                                               type="text" 
                                                class="w-full text-center bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[2]?.kinerja_fisik || kegiatan.targets?.[2]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[2].keuangan"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[2].keuangan" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[2]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 4 -->
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[3].kinerjaFisik"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[3].kinerjaFisik" 
+                                               type="text" 
                                                class="w-full text-center bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[3]?.kinerja_fisik || kegiatan.targets?.[3]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                        <input v-if="isEditing && editingRow?.id === kegiatan.id"
-                                               v-model="editedData.targets[3].keuangan"
-                                               type="text"
+                                        <input v-if="isEditing && editingRow?.id === kegiatan.id" 
+                                               v-model="editedData.targets[3].keuangan" 
+                                               type="text" 
                                                class="w-full text-right bg-transparent">
                                         <span v-else>{{ kegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[3]?.keuangan || '-' }}</span>
                                     </td>
 
-                                    <!-- Action column for kegiatan -->
+                                    <!-- Action column -->
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                        <div class="flex gap-2 justify-center">
-                                            <button v-if="!isFinalized && !finalizedRows.has(kegiatan.id) && (!isEditing || editingRow?.id !== kegiatan.id)"
-                                                    @click="startEditing(kegiatan)"
-                                                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                                Isi
-                                            </button>
-                                            <button v-if="!isFinalized && !finalizedRows.has(kegiatan.id) && (!isEditing || editingRow?.id !== kegiatan.id)"
-                                                    @click="finalizeRow(kegiatan)"
-                                                    class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                                                Selesai
-                                            </button>
-                                            <button v-if="!isFinalized && !finalizedRows.has(kegiatan.id) && isEditing && editingRow?.id === kegiatan.id"
-                                                    @click="saveChanges"
-                                                    class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
-                                                Simpan
-                                            </button>
-                                            <button v-if="!isFinalized && finalizedRows.has(kegiatan.id)"
-                                                    disabled
-                                                    class="px-3 py-1 bg-gray-400 text-white rounded cursor-not-allowed">
-                                                Selesai
-                                            </button>
-                                        </div>
+                                        <button v-if="!isEditing || editingRow?.id !== kegiatan.id"
+                                                @click="startEditing(kegiatan)"
+                                                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                            Isi
+                                        </button>
+                                        <button v-else
+                                                @click="saveChanges"
+                                                class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                            Simpan
+                                        </button>
                                     </td>
                                 </tr>
 
@@ -696,100 +829,101 @@ function goToCreate() {
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">{{ subKegiatan.kode_nomenklatur.nomor_kode }}</td>
                                         <td class="p-3 border sticky left-0 z-10 bg-white w-[100px]">{{ subKegiatan.kode_nomenklatur.nomenklatur }}</td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.pokok"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.pokok" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.pagu_pokok?.toLocaleString('id-ID') || subKegiatan.pokok || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.parsial"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.parsial" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.pagu_parsial?.toLocaleString('id-ID') || subKegiatan.parsial || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.perubahan"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.perubahan" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || subKegiatan.perubahan || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.sumberDana"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.sumberDana" 
+                                                   type="text" 
                                                    class="w-full text-center bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.sumber_dana || subKegiatan.sumberDana || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 1 -->
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[0].kinerjaFisik"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[0].kinerjaFisik" 
+                                                   type="text" 
                                                    class="w-full text-center bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[0]?.kinerja_fisik || subKegiatan.targets?.[0]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[0].keuangan"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[0].keuangan" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[0]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 2 -->
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[1].kinerjaFisik"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[1].kinerjaFisik" 
+                                                   type="text" 
                                                    class="w-full text-center bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[1]?.kinerja_fisik || subKegiatan.targets?.[1]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[1].keuangan"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[1].keuangan" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[1]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 3 -->
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[2].kinerjaFisik"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[2].kinerjaFisik" 
+                                                   type="text" 
                                                    class="w-full text-center bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[2]?.kinerja_fisik || subKegiatan.targets?.[2]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[2].keuangan"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[2].keuangan" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[2]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 4 -->
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[3].kinerjaFisik"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[3].kinerjaFisik" 
+                                                   type="text" 
                                                    class="w-full text-center bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[3]?.kinerja_fisik || subKegiatan.targets?.[3]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
-                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id"
-                                                   v-model="editedData.targets[3].keuangan"
-                                                   type="text"
+                                            <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
+                                                   v-model="editedData.targets[3].keuangan" 
+                                                   type="text" 
                                                    class="w-full text-right bg-transparent">
                                             <span v-else>{{ subKegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[3]?.keuangan || '-' }}</span>
                                         </td>
 
-                                        <!-- Action column for subkegiatan -->
+                                        <!-- Action column -->
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+<<<<<<< HEAD
                                             <div class="flex gap-2 justify-center">
                                                 <button
                                                     type="button"
@@ -815,6 +949,18 @@ function goToCreate() {
                                                     Selesai
                                                 </button>
                                             </div>
+=======
+                                            <button v-if="!isEditing || editingRow?.id !== subKegiatan.id"
+                                                    @click="startEditing(subKegiatan)"
+                                                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                                Isi
+                                            </button>
+                                            <button v-else
+                                                    @click="saveChanges"
+                                                    class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                                Simpan
+                                            </button>
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
                                         </td>
                                     </tr>
                                 </template>
@@ -823,18 +969,11 @@ function goToCreate() {
                     </tbody>
                 </table>
 
-                <!-- Modify the finalize button at the bottom -->
+                <!-- Update button at the bottom -->
                 <div class="p-4 flex justify-end">
-                    <button v-if="!isFinalized"
-                            @click="finalizeData"
-                            :disabled="!isAllRowsFinalized"
-                            :class="[
-                                'px-4 py-2 rounded',
-                                isAllRowsFinalized
-                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                    : 'bg-gray-400 text-white cursor-not-allowed'
-                            ]">
-                        Selesaikan
+                    <button @click="updateAllData"
+                            class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
+                        Update
                     </button>
                 </div>
             </div>

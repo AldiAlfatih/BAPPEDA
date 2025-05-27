@@ -195,6 +195,7 @@ class PeriodeController extends Controller
         }
 
         return redirect()->back()->with('status', "{$jumlahDitambahkan} periode berhasil dibuat untuk tahun $tahunIni.");
+        
     }
 
 

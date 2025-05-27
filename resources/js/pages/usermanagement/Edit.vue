@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,6 @@ const isSubmitting = ref(false);
 const showPassword = ref(false);
 
 const form = useForm({
-  _method: 'PATCH',
   name: props.user.name || '',
   email: props.user.email || '',
   password: '',
@@ -57,9 +56,10 @@ const form = useForm({
 function submit() {
   isSubmitting.value = true;
 
-  form.post(`/usermanagement/${props.user.id}`, {
+  // Use PUT method for update
+  form.put(`/usermanagement/${props.user.id}`, {
     onSuccess: () => {
-      window.location.href = '/usermanagement';
+      router.visit('/usermanagement');
     },
     onError: () => {
       isSubmitting.value = false;
@@ -71,12 +71,12 @@ function submit() {
 }
 
 function goBack() {
-  window.history.back();
+  router.visit('/usermanagement');
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'User Management', href: '/usermanagement' },
-  { title: 'Edit User', href: '/usermanagement/edit' },
+  { title: 'Edit User', href: `/usermanagement/${props.user.id}/edit` },
 ];
 
 </script>
@@ -108,8 +108,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
 
                 <div>
-                  <Label for="email">Email <span class="text-red-500">*</span></Label>
-                  <Input id="email" type="email" v-model="form.email" class="mt-1" />
+                  <Label for="email">Email</Label>
+                  <Input id="email" type="email" v-model="form.email" class="mt-1" required />
                   <p v-if="form.errors.email" class="text-sm text-red-500 mt-1">{{ form.errors.email }}</p>
                 </div>
 
@@ -175,6 +175,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     :type="showPassword ? 'text' : 'password'"
                     v-model="form.password"
                     class="mt-1"
+                    placeholder="Kosongkan jika tidak ingin mengubah"
                   />
                   <p v-if="form.errors.password" class="text-sm text-red-500 mt-1">{{ form.errors.password }}</p>
                 </div>
@@ -186,7 +187,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                     :type="showPassword ? 'text' : 'password'"
                     v-model="form.password_confirmation"
                     class="mt-1"
+                    placeholder="Kosongkan jika tidak ingin mengubah"
                   />
+                  <p v-if="form.errors.password_confirmation" class="text-sm text-red-500 mt-1">{{ form.errors.password_confirmation }}</p>
                 </div>
               </div>
               <div class="mt-2">
@@ -196,23 +199,30 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </label>
               </div>
             </div>
-
-            <CardFooter class="flex justify-end gap-3">
-                <button
-                type="button"
-                class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                @click="$inertia.visit('/usermanagement')"
-              >
-                Kembali
-              </button>
-              <Button type="submit" :disabled="isSubmitting" class="flex items-center gap-1">
-                <Save class="w-4 h-4" />
-                <span v-if="isSubmitting">Menyimpan...</span>
-                <span v-else>Simpan Perubahan</span>
-              </Button>
-            </CardFooter>
           </form>
         </CardContent>
+
+        <CardFooter class="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            @click="goBack"
+            :disabled="isSubmitting"
+          >
+            <ArrowLeft class="w-4 h-4 mr-1" />
+            Kembali
+          </Button>
+          <Button 
+            type="submit" 
+            @click="submit"
+            :disabled="isSubmitting" 
+            class="flex items-center gap-1"
+          >
+            <Save class="w-4 h-4" />
+            <span v-if="isSubmitting">Menyimpan...</span>
+            <span v-else>Simpan Perubahan</span>
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   </AppLayout>

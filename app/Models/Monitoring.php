@@ -1,9 +1,8 @@
 <?php
 
 namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Monitoring extends Model
 {
@@ -13,25 +12,20 @@ class Monitoring extends Model
 
     protected $fillable = [
         'skpd_id',
-        'tugas_id',
         'sumber_dana',
         'periode_id',
         'tahun',
         'deskripsi',
+        'pagu_anggaran',
         'pagu_pokok',
         'pagu_parsial',
         'pagu_perubahan',
         'is_finalized',
     ];
 
-    public function targets()
+    public function skpdTugas()
     {
-        return $this->hasMany(MonitoringTarget::class);
-    }
-    
-    public function skpd()
-    {
-        return $this->belongsTo(Skpd::class);
+        return $this->belongsTo(SkpdTugas::class);
     }
 
     public function tugas()
@@ -44,13 +38,8 @@ class Monitoring extends Model
         return $this->belongsTo(Periode::class);
     }
 
-    public function target()
+    public function monitoringAnggaran()
     {
-        return $this->hasMany(MonitoringTarget::class);
-    }
-
-    public function realisasi()
-    {
-        return $this->hasMany(MonitoringRealisasi::class);
+        return $this->hasMany(MonitoringAnggaran::class);
     }
 }

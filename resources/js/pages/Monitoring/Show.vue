@@ -45,7 +45,7 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Monitoring', href: '/Monitoring' },
+    { title: 'Monitoring', href: '/monitoring' },
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
@@ -150,7 +150,7 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Perangkat Daerah</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
 
@@ -190,11 +190,11 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                                 <td class="border px-4 py-2 w-32">
                                     <div class="flex justify-center">
                                         <button
-                                            class="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-700 text-white text-sm font-medium px-3 py-1 rounded"
+                                            class="flex items-center gap-1 bg-orange-500 hover:bg-orange-700 text-white text-sm font-medium px-3 py-1 rounded"
                                             @click="ShowTugas(tugas.id)"
                                         >
                                             <Eye class="w-4 h-4 mr-1" />
-                                            Show
+                                            Detail
                                         </button>
                                     </div>
                                 </td>

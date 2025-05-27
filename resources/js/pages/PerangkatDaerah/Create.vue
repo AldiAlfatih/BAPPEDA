@@ -94,7 +94,7 @@ watch(() => route().current(), (newRoute) => {
                     <option v-for="user in props.users" :key="user.id" :value="user.id">{{ user.name }}</option>
                   </select>
                   <p v-if="form.errors.user_id" class="text-sm text-red-600">{{ form.errors.user_id }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Nama yang dipilih akan otomatis menjadi nama SKPD</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Nama yang dipilih akan otomatis menjadi nama Perangkat Daerah</p>
                 </div>
 
                 <!-- Nama Operator -->

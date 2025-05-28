@@ -11,16 +11,26 @@ class Monitoring extends Model
     protected $table = 'monitoring';
 
     protected $fillable = [
-        'skpd_tugas_id',
+        'skpd_id',
+        'sumber_dana',
         'periode_id',
         'tahun',
         'deskripsi',
-        'nama_pptk',
+        'pagu_anggaran',
+        'pagu_pokok',
+        'pagu_parsial',
+        'pagu_perubahan',
+        'is_finalized',
     ];
 
     public function skpdTugas()
     {
         return $this->belongsTo(SkpdTugas::class);
+    }
+
+    public function tugas()
+    {
+        return $this->belongsTo(SkpdTugas::class, 'tugas_id');
     }
 
     public function periode()

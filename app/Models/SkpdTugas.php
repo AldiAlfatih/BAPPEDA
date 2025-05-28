@@ -17,6 +17,7 @@ class SkpdTugas extends Model
         'user_id',
         'kode_nomenklatur_id',
         'is_aktif',
+        'is_finalized'
     ];
 
     protected $dates = ['deleted_at'];
@@ -34,5 +35,10 @@ class SkpdTugas extends Model
     public function kodeNomenklatur()
     {
         return $this->belongsTo(KodeNomenklatur::class);
+    }
+
+    public function monitoring()
+    {
+        return $this->hasOne(Monitoring::class, 'tugas_id');
     }
 }

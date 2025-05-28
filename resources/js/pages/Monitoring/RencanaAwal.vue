@@ -10,6 +10,26 @@ interface Target {
     keuangan: string;
 }
 
+<<<<<<< HEAD
+interface ProgramData {
+    kode: string;
+    program: string;
+    pokok: string;
+    parsial: string;
+    perubahan: string;
+    sumberDana: string;
+    targets: Target[];
+    monitoring?: {
+        pagu_pokok: number;
+        pagu_parsial: number;
+        pagu_perubahan: number;
+        sumber_dana: string;
+        targets: Array<{
+            kinerja_fisik: number;
+            keuangan: number;
+        }>;
+    };
+=======
 interface Program {
     id: number;
     kode_nomenklatur: {
@@ -28,6 +48,7 @@ interface Program {
     perubahan?: string;
     sumberDana?: string;
     targets?: Target[];
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 }
 interface User {
     id: number;
@@ -38,6 +59,17 @@ interface User {
 }
 
 const props = defineProps<{
+<<<<<<< HEAD
+    user?: User;
+    programTugas?: any[];
+    kegiatanTugas?: any[];
+    subkegiatanTugas?: any[];
+    kepalaSkpd?: string;
+    isFinalized?: boolean | number;
+    flash?: {
+        success?: string;
+        error?: string;
+=======
   user?: User;
   tugas: {
     id: number;
@@ -50,6 +82,7 @@ const props = defineProps<{
         id_program: number;
         id_kegiatan: number;
       }>[];
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
     };
     skpd: {
       nama_dinas: string;
@@ -84,6 +117,22 @@ const props = defineProps<{
   };
 }>();
 
+<<<<<<< HEAD
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+    { title: 'Monitoring', href: '/monitoring' },
+    { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/monitoring/${props.user?.id}` },
+    { title: 'Rencana Awal PD', href: '/rencanaawal' },
+]);
+
+// Sample data for the top table
+const headerData = ref([
+    { label: 'KODE/URUSAN PEMERINTAHAN', value: '5 UNSUR PENUNJANG PEMERINTAHAN ANGGARAN APBD' },
+    { label: 'NAMA SKPD', value: props.user?.nama_skpd || 'DINAS PENDIDIDKAN' },
+    { label: 'KODE ORGANISASI', value: '5.01.5.05.0.00.25.0000' },
+    { label: 'NO.DPA SKPD', value: 'DPA/A.1/5.01.5.05.0.00.25.0000/001.2024' },
+    { label: 'NAMA KEPALA SKPD', value: props.kepalaSkpd || 'ZULKARNAEN, ST., M.Si' },
+]);
+=======
 // Fixed breadcrumbs with proper navigation
 const breadcrumbs = computed(() => [
   { title: 'Monitoring', href: '/monitoring' },
@@ -93,6 +142,7 @@ const breadcrumbs = computed(() => [
   },
   { title: 'Rencana Awal PD', href: '#' }, // Current page, no link
 ]) as unknown as BreadcrumbItem[];
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 
 // Add new refs for editing functionality
 const isEditing = ref(false);
@@ -110,11 +160,79 @@ const editedData = ref({
     ]
 });
 
+<<<<<<< HEAD
+// Add new ref for finalization state
+const isFinalized = ref(Boolean(props.isFinalized));
+
+// Add new refs for tracking finalized rows
+const finalizedRows = ref(new Set());
+
+// Add function to check if all rows are finalized
+const isAllRowsFinalized = computed(() => {
+    const allRows = [
+        ...(props.programTugas || []),
+        ...(props.kegiatanTugas || []),
+        ...(props.subkegiatanTugas || [])
+    ];
+    return allRows.length > 0 && allRows.every(row => finalizedRows.value.has(row.id));
+});
+
+// Add flash message handling
+const showFlash = ref(false);
+const flashMessage = ref('');
+const flashType = ref('');
+
+watch(() => props.flash, (newFlash) => {
+    if (newFlash?.success) {
+        flashMessage.value = newFlash.success;
+        flashType.value = 'success';
+        showFlash.value = true;
+    } else if (newFlash?.error) {
+        flashMessage.value = newFlash.error;
+        flashType.value = 'error';
+        showFlash.value = true;
+    }
+}, { immediate: true });
+
+// Auto hide flash message after 3 seconds
+watch(showFlash, (newValue) => {
+    if (newValue) {
+        setTimeout(() => {
+            showFlash.value = false;
+        }, 3000);
+    }
+});
+
+=======
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 // Methods for handling edit functionality
 const startEditing = (row: any) => {
     isEditing.value = true;
     editingRow.value = row;
     editedData.value = {
+<<<<<<< HEAD
+        pokok: row.monitoring?.pagu_pokok?.toString() || row.pokok?.toString() || '',
+        parsial: row.monitoring?.pagu_parsial?.toString() || row.parsial?.toString() || '',
+        perubahan: row.monitoring?.pagu_perubahan?.toString() || row.perubahan?.toString() || '',
+        sumberDana: row.monitoring?.sumber_dana || row.sumberDana || '',
+        targets: [
+            {
+                kinerjaFisik: row.monitoring?.targets?.[0]?.kinerja_fisik?.toString() || row.targets?.[0]?.kinerjaFisik?.toString() || '',
+                keuangan: row.monitoring?.targets?.[0]?.keuangan?.toString() || row.targets?.[0]?.keuangan?.toString() || ''
+            },
+            {
+                kinerjaFisik: row.monitoring?.targets?.[1]?.kinerja_fisik?.toString() || row.targets?.[1]?.kinerjaFisik?.toString() || '',
+                keuangan: row.monitoring?.targets?.[1]?.keuangan?.toString() || row.targets?.[1]?.keuangan?.toString() || ''
+            },
+            {
+                kinerjaFisik: row.monitoring?.targets?.[2]?.kinerja_fisik?.toString() || row.targets?.[2]?.kinerjaFisik?.toString() || '',
+                keuangan: row.monitoring?.targets?.[2]?.keuangan?.toString() || row.targets?.[2]?.keuangan?.toString() || ''
+            },
+            {
+                kinerjaFisik: row.monitoring?.targets?.[3]?.kinerja_fisik?.toString() || row.targets?.[3]?.kinerjaFisik?.toString() || '',
+                keuangan: row.monitoring?.targets?.[3]?.keuangan?.toString() || row.targets?.[3]?.keuangan?.toString() || ''
+            }
+=======
         pokok: row.pokok || '',
         parsial: row.parsial || '',
         perubahan: row.perubahan || '',
@@ -124,12 +242,118 @@ const startEditing = (row: any) => {
             { kinerjaFisik: row.targets?.[1]?.kinerjaFisik || '', keuangan: row.targets?.[1]?.keuangan || '' },
             { kinerjaFisik: row.targets?.[2]?.kinerjaFisik || '', keuangan: row.targets?.[2]?.keuangan || '' },
             { kinerjaFisik: row.targets?.[3]?.kinerjaFisik || '', keuangan: row.targets?.[3]?.keuangan || '' },
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
         ]
     };
 };
 
 const saveChanges = () => {
+    console.log('saveChanges dipanggil');
     if (editingRow.value) {
+<<<<<<< HEAD
+        const currentSkpdId = props.user?.id;
+
+        if (!currentSkpdId) {
+            flashMessage.value = 'SKPD ID tidak ditemukan. Silakan refresh halaman dan coba lagi.';
+            flashType.value = 'error';
+            showFlash.value = true;
+            return;
+        }
+
+        // Create data object with existing data
+        const dataToSend: any = {
+            skpd_id: currentSkpdId,
+            periode_id: null,
+            tahun: new Date().getFullYear(),
+            deskripsi: 'Rencana Awal',
+            tugas_id: editingRow.value.id,
+            // Always include sumber_dana
+            sumber_dana: editedData.value.sumberDana || '-'
+        };
+
+        // Add all fields that have values
+        if (editedData.value.pokok) {
+            dataToSend.pagu_pokok = parseInt(editedData.value.pokok.replace(/[^0-9]/g, '')) || 0;
+        }
+
+        if (editedData.value.parsial) {
+            dataToSend.pagu_parsial = parseInt(editedData.value.parsial.replace(/[^0-9]/g, '')) || 0;
+        }
+
+        if (editedData.value.perubahan) {
+            dataToSend.pagu_perubahan = parseInt(editedData.value.perubahan.replace(/[^0-9]/g, '')) || 0;
+        }
+
+        // Process all targets
+        const targets = editedData.value.targets.map((target) => {
+            return {
+                kinerja_fisik: parseFloat(target.kinerjaFisik) || 0,
+                keuangan: parseInt(target.keuangan.replace(/[^0-9]/g, '')) || 0
+            };
+        });
+
+        dataToSend.targets = targets;
+
+        // Log data yang akan dikirim
+        console.log('Data yang akan dikirim:', dataToSend);
+
+        router.post('/rencanaawal/saveMonitoringData', dataToSend, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: (response) => {
+                console.log('Response sukses:', response);
+                // Update data lokal dengan data yang baru saja disimpan
+                if (editingRow.value) {
+                    // Update monitoring data
+                    if (!editingRow.value.monitoring) {
+                        editingRow.value.monitoring = {};
+                    }
+
+                    // Update each field individually
+                    if (dataToSend.pagu_pokok !== undefined) {
+                        editingRow.value.monitoring.pagu_pokok = dataToSend.pagu_pokok;
+                    }
+                    if (dataToSend.pagu_parsial !== undefined) {
+                        editingRow.value.monitoring.pagu_parsial = dataToSend.pagu_parsial;
+                    }
+                    if (dataToSend.pagu_perubahan !== undefined) {
+                        editingRow.value.monitoring.pagu_perubahan = dataToSend.pagu_perubahan;
+                    }
+                    if (dataToSend.sumber_dana !== undefined) {
+                        editingRow.value.monitoring.sumber_dana = dataToSend.sumber_dana;
+                    }
+                    if (dataToSend.targets !== undefined) {
+                        editingRow.value.monitoring.targets = dataToSend.targets;
+                    }
+                }
+
+                isEditing.value = false;
+                editingRow.value = null;
+                editedData.value = {
+                    pokok: '',
+                    parsial: '',
+                    perubahan: '',
+                    sumberDana: '',
+                    targets: [
+                        { kinerjaFisik: '', keuangan: '' },
+                        { kinerjaFisik: '', keuangan: '' },
+                        { kinerjaFisik: '', keuangan: '' },
+                        { kinerjaFisik: '', keuangan: '' },
+                    ]
+                };
+
+                flashMessage.value = 'Data berhasil disimpan';
+                flashType.value = 'success';
+                showFlash.value = true;
+            },
+            onError: (errors) => {
+                console.log('Error response:', errors);
+                flashMessage.value = 'Terjadi kesalahan saat menyimpan data';
+                flashType.value = 'error';
+                showFlash.value = true;
+            },
+        });
+=======
         // Update the data in the appropriate array based on the type
         if (props.programTugas?.some(p => p.id === editingRow.value.id)) {
             const index = props.programTugas.findIndex(p => p.id === editingRow.value.id);
@@ -156,6 +380,7 @@ const saveChanges = () => {
                 };
             }
         }
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
     }
     isEditing.value = false;
     editingRow.value = null;
@@ -188,7 +413,19 @@ const updateAllData = () => {
         }))
     });
 
+<<<<<<< HEAD
+    // Get skpd_id from props.user
+    const currentSkpdId = props.user?.id;
+
+    if (!currentSkpdId) {
+        alert('SKPD ID tidak ditemukan. Silakan refresh halaman dan coba lagi.');
+        return;
+    }
+
+    router.post('/rencanaawal/saveMonitoringData', {
+=======
     router.post('/monitoring/save-monitoring-data', {
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
         skpd_id: currentSkpdId,
         sumber_dana: editedData.value.sumberDana || '-',
         periode_id: null,
@@ -203,7 +440,8 @@ const updateAllData = () => {
         targets: editedData.value.targets.map(target => ({
             kinerja_fisik: parseFloat(target.kinerjaFisik) || 0,
             keuangan: parseInt(target.keuangan.replace(/[^0-9]/g, '')) || 0
-        }))
+        })),
+        tugas_id: editingRow.value.id
     }, {
         onSuccess: () => {
             alert('Data berhasil disimpan');
@@ -216,6 +454,64 @@ const updateAllData = () => {
         }
     });
 };
+<<<<<<< HEAD
+
+// Add function to finalize single row
+const finalizeRow = (row: any) => {
+    if (!props.user?.id) {
+        flashMessage.value = 'SKPD ID tidak ditemukan. Silakan refresh halaman dan coba lagi.';
+        flashType.value = 'error';
+        showFlash.value = true;
+        return;
+    }
+
+    router.post('/rencanaawal/finalizerow', {
+        skpd_id: props.user.id,
+        tahun: new Date().getFullYear(),
+        tugas_id: row.id
+    }, {
+        onSuccess: () => {
+            finalizedRows.value.add(row.id);
+        }
+    });
+};
+
+// Modify finalizeData function
+const finalizeData = () => {
+    if (!props.user?.id) {
+        flashMessage.value = 'SKPD ID tidak ditemukan. Silakan refresh halaman dan coba lagi.';
+        flashType.value = 'error';
+        showFlash.value = true;
+        return;
+    }
+
+    if (!isAllRowsFinalized.value) {
+        flashMessage.value = 'Semua baris harus difinalisasi terlebih dahulu';
+        flashType.value = 'error';
+        showFlash.value = true;
+        return;
+    }
+
+    router.post('/rencanaawal/finalize', {
+        skpd_id: props.user.id,
+        tahun: new Date().getFullYear()
+    }, {
+        onSuccess: () => {
+            isFinalized.value = true;
+        }
+    });
+};
+
+// Add function to handle navigation
+const goToMonitoringDetail = () => {
+    router.visit(`/monitoring/${props.user?.id}`);
+};
+
+function goToCreate() {
+  router.visit('/rencanaawal/create');
+}
+=======
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
 </script>
 
 <template>
@@ -313,28 +609,28 @@ const updateAllData = () => {
                                            v-model="editedData.pokok" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.pokok || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.pagu_pokok?.toLocaleString('id-ID') || program.pokok || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.parsial" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.parsial || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.pagu_parsial?.toLocaleString('id-ID') || program.parsial || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.perubahan" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.perubahan || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || program.perubahan || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.sumberDana" 
                                            type="text" 
                                            class="w-full text-center bg-transparent">
-                                    <span v-else>{{ program.sumberDana || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.sumber_dana || program.sumberDana || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 1 -->
@@ -343,14 +639,14 @@ const updateAllData = () => {
                                            v-model="editedData.targets[0].kinerjaFisik" 
                                            type="text" 
                                            class="w-full text-center bg-transparent">
-                                    <span v-else>{{ program.targets?.[0]?.kinerjaFisik || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[0]?.kinerja_fisik || program.targets?.[0]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.targets[0].keuangan" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.targets?.[0]?.keuangan || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || program.targets?.[0]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 2 -->
@@ -359,14 +655,14 @@ const updateAllData = () => {
                                            v-model="editedData.targets[1].kinerjaFisik" 
                                            type="text" 
                                            class="w-full text-center bg-transparent">
-                                    <span v-else>{{ program.targets?.[1]?.kinerjaFisik || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[1]?.kinerja_fisik || program.targets?.[1]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.targets[1].keuangan" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.targets?.[1]?.keuangan || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || program.targets?.[1]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 3 -->
@@ -375,14 +671,14 @@ const updateAllData = () => {
                                            v-model="editedData.targets[2].kinerjaFisik" 
                                            type="text" 
                                            class="w-full text-center bg-transparent">
-                                    <span v-else>{{ program.targets?.[2]?.kinerjaFisik || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[2]?.kinerja_fisik || program.targets?.[2]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.targets[2].keuangan" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.targets?.[2]?.keuangan || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || program.targets?.[2]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Triwulan 4 -->
@@ -391,14 +687,14 @@ const updateAllData = () => {
                                            v-model="editedData.targets[3].kinerjaFisik" 
                                            type="text" 
                                            class="w-full text-center bg-transparent">
-                                    <span v-else>{{ program.targets?.[3]?.kinerjaFisik || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[3]?.kinerja_fisik || program.targets?.[3]?.kinerjaFisik || '-' }}</span>
                                 </td>
                                 <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                     <input v-if="isEditing && editingRow?.id === program.id" 
                                            v-model="editedData.targets[3].keuangan" 
                                            type="text" 
                                            class="w-full text-right bg-transparent">
-                                    <span v-else>{{ program.targets?.[3]?.keuangan || '-' }}</span>
+                                    <span v-else>{{ program.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || program.targets?.[3]?.keuangan || '-' }}</span>
                                 </td>
 
                                 <!-- Action column -->
@@ -426,28 +722,28 @@ const updateAllData = () => {
                                                v-model="editedData.pokok" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.pokok || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.pagu_pokok?.toLocaleString('id-ID') || kegiatan.pokok || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.parsial" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.parsial || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.pagu_parsial?.toLocaleString('id-ID') || kegiatan.parsial || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.perubahan" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.perubahan || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || kegiatan.perubahan || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.sumberDana" 
                                                type="text" 
                                                class="w-full text-center bg-transparent">
-                                        <span v-else>{{ kegiatan.sumberDana || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.sumber_dana || kegiatan.sumberDana || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 1 -->
@@ -456,14 +752,14 @@ const updateAllData = () => {
                                                v-model="editedData.targets[0].kinerjaFisik" 
                                                type="text" 
                                                class="w-full text-center bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[0]?.kinerjaFisik || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[0]?.kinerja_fisik || kegiatan.targets?.[0]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.targets[0].keuangan" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[0]?.keuangan || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[0]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 2 -->
@@ -472,14 +768,14 @@ const updateAllData = () => {
                                                v-model="editedData.targets[1].kinerjaFisik" 
                                                type="text" 
                                                class="w-full text-center bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[1]?.kinerjaFisik || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[1]?.kinerja_fisik || kegiatan.targets?.[1]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.targets[1].keuangan" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[1]?.keuangan || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[1]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 3 -->
@@ -488,14 +784,14 @@ const updateAllData = () => {
                                                v-model="editedData.targets[2].kinerjaFisik" 
                                                type="text" 
                                                class="w-full text-center bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[2]?.kinerjaFisik || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[2]?.kinerja_fisik || kegiatan.targets?.[2]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.targets[2].keuangan" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[2]?.keuangan || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[2]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Triwulan 4 -->
@@ -504,14 +800,14 @@ const updateAllData = () => {
                                                v-model="editedData.targets[3].kinerjaFisik" 
                                                type="text" 
                                                class="w-full text-center bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[3]?.kinerjaFisik || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[3]?.kinerja_fisik || kegiatan.targets?.[3]?.kinerjaFisik || '-' }}</span>
                                     </td>
                                     <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                         <input v-if="isEditing && editingRow?.id === kegiatan.id" 
                                                v-model="editedData.targets[3].keuangan" 
                                                type="text" 
                                                class="w-full text-right bg-transparent">
-                                        <span v-else>{{ kegiatan.targets?.[3]?.keuangan || '-' }}</span>
+                                        <span v-else>{{ kegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[3]?.keuangan || '-' }}</span>
                                     </td>
 
                                     <!-- Action column -->
@@ -539,28 +835,28 @@ const updateAllData = () => {
                                                    v-model="editedData.pokok" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.pokok || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.pagu_pokok?.toLocaleString('id-ID') || subKegiatan.pokok || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.parsial" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.parsial || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.pagu_parsial?.toLocaleString('id-ID') || subKegiatan.parsial || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.perubahan" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.perubahan || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || subKegiatan.perubahan || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.sumberDana" 
                                                    type="text" 
                                                    class="w-full text-center bg-transparent">
-                                            <span v-else>{{ subKegiatan.sumberDana || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.sumber_dana || subKegiatan.sumberDana || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 1 -->
@@ -569,14 +865,14 @@ const updateAllData = () => {
                                                    v-model="editedData.targets[0].kinerjaFisik" 
                                                    type="text" 
                                                    class="w-full text-center bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[0]?.kinerjaFisik || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[0]?.kinerja_fisik || subKegiatan.targets?.[0]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.targets[0].keuangan" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[0]?.keuangan || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[0]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 2 -->
@@ -585,14 +881,14 @@ const updateAllData = () => {
                                                    v-model="editedData.targets[1].kinerjaFisik" 
                                                    type="text" 
                                                    class="w-full text-center bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[1]?.kinerjaFisik || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[1]?.kinerja_fisik || subKegiatan.targets?.[1]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.targets[1].keuangan" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[1]?.keuangan || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[1]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 3 -->
@@ -601,14 +897,14 @@ const updateAllData = () => {
                                                    v-model="editedData.targets[2].kinerjaFisik" 
                                                    type="text" 
                                                    class="w-full text-center bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[2]?.kinerjaFisik || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[2]?.kinerja_fisik || subKegiatan.targets?.[2]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.targets[2].keuangan" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[2]?.keuangan || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[2]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Triwulan 4 -->
@@ -617,18 +913,45 @@ const updateAllData = () => {
                                                    v-model="editedData.targets[3].kinerjaFisik" 
                                                    type="text" 
                                                    class="w-full text-center bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[3]?.kinerjaFisik || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[3]?.kinerja_fisik || subKegiatan.targets?.[3]?.kinerjaFisik || '-' }}</span>
                                         </td>
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-right">
                                             <input v-if="isEditing && editingRow?.id === subKegiatan.id" 
                                                    v-model="editedData.targets[3].keuangan" 
                                                    type="text" 
                                                    class="w-full text-right bg-transparent">
-                                            <span v-else>{{ subKegiatan.targets?.[3]?.keuangan || '-' }}</span>
+                                            <span v-else>{{ subKegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || subKegiatan.targets?.[3]?.keuangan || '-' }}</span>
                                         </td>
 
                                         <!-- Action column -->
                                         <td class="p-3 border border-gray-200 dark:border-gray-600 text-center">
+<<<<<<< HEAD
+                                            <div class="flex gap-2 justify-center">
+                                                <button
+                                                    type="button"
+                                                    v-if="!isFinalized && !finalizedRows.has(subKegiatan.id) && (!isEditing || editingRow?.id !== subKegiatan.id)"
+                                                    @click="startEditing(subKegiatan)"
+                                                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                >
+                                                    Isi
+                                                </button>
+                                                <button v-if="!isFinalized && !finalizedRows.has(subKegiatan.id) && (!isEditing || editingRow?.id !== subKegiatan.id)"
+                                                        @click="finalizeRow(subKegiatan)"
+                                                        class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                                    Selesai
+                                                </button>
+                                                <button v-if="!isFinalized && !finalizedRows.has(subKegiatan.id) && isEditing && editingRow?.id === subKegiatan.id"
+                                                        @click="saveChanges"
+                                                        class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                                    Simpan
+                                                </button>
+                                                <button v-if="!isFinalized && finalizedRows.has(subKegiatan.id)"
+                                                        disabled
+                                                        class="px-3 py-1 bg-gray-400 text-white rounded cursor-not-allowed">
+                                                    Selesai
+                                                </button>
+                                            </div>
+=======
                                             <button v-if="!isEditing || editingRow?.id !== subKegiatan.id"
                                                     @click="startEditing(subKegiatan)"
                                                     class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
@@ -639,6 +962,7 @@ const updateAllData = () => {
                                                     class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
                                                 Simpan
                                             </button>
+>>>>>>> 0d81258e0b0dd418166b211761c2b182deea4e06
                                         </td>
                                     </tr>
                                 </template>

@@ -14,6 +14,7 @@ class RencanaAwalController extends Controller
 {
     public function show($id)
     {
+        // Ambil tugas SKPD berdasarkan ID
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',
             'skpd.skpdKepala.user.userDetail',
@@ -22,31 +23,20 @@ class RencanaAwalController extends Controller
             }
         ])->findOrFail($id);
 
+        // Ambil program, kegiatan, dan subkegiatan terkait dengan tugas SKPD
         $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
             ->where('is_aktif', 1)
-            ->with('kodeNomenklatur.details')
+            ->with(['kodeNomenklatur.details', 'monitoring.targets'])
             ->get();
 
-        $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
+        // Ambil data monitoring untuk SKPD ini
+        $monitoring = Monitoring::where('skpd_id', $tugas->skpd_id)
+            ->where('deskripsi', 'Rencana Awal')
+            ->where('tahun', date('Y'))
+            ->with('targets')
+            ->first();
 
-        $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-            return $item->kodeNomenklatur->jenis_nomenklatur == 2
-                && $item->kodeNomenklatur->details->first()
-                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-        })->values();
-
-        $kegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-            return $item->kodeNomenklatur->jenis_nomenklatur == 3
-                && $item->kodeNomenklatur->details->first()
-                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-        })->values();
-
-        $subkegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-            return $item->kodeNomenklatur->jenis_nomenklatur == 4
-                && $item->kodeNomenklatur->details->first()
-                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-        })->values();
-
+        // Ambil kepala SKPD
         $kepalaSkpd = '-';
         $kepala = $tugas->skpd->skpdKepala->first();
         if ($kepala) {
@@ -57,28 +47,59 @@ class RencanaAwalController extends Controller
             }
         }
 
-        // Ambil status finalisasi dari monitoring untuk tugas ini
-        $monitoring = Monitoring::where('skpd_id', $tugas->skpd_id)
-            ->where('deskripsi', 'Rencana Awal')
-            ->where('tahun', date('Y'))
-            ->first();
+        // Filter program, kegiatan, dan subkegiatan
+        $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
 
-        $isFinalized = false;
-        if ($monitoring) {
-            $isFinalized = $monitoring->is_finalized;
-        }
+        $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 2
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->map(function($item) use ($monitoring) {
+            if ($monitoring) {
+                $item->monitoring = $monitoring;
+            }
+            return $item;
+        })->values();
 
+        $kegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 3
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->map(function($item) use ($monitoring) {
+            if ($monitoring) {
+                $item->monitoring = $monitoring;
+            }
+            return $item;
+        })->values();
+
+        $subkegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 4
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->map(function($item) use ($monitoring) {
+            if ($monitoring) {
+                $item->monitoring = $monitoring;
+            }
+            return $item;
+        })->values();
+
+
+        // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
-            'isFinalized' => $isFinalized,
+            'isFinalized' => $monitoring ? $monitoring->is_finalized : false,
             'user' => [
                 'id' => $tugas->skpd_id,
                 'nama_skpd' => $tugas->skpd->nama_skpd
-            ]
+            ],
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
         ]);
     }
 
@@ -110,26 +131,21 @@ class RencanaAwalController extends Controller
         try {
             DB::beginTransaction();
 
-            // Update data pada tugas SKPD dengan ID yang diberikan
-            $skpdTugas = SkpdTugas::find($validated['tugas_id']);
-            if ($skpdTugas) {
-                $skpdTugas->update([
-                    'pokok' => $validated['pagu_pokok'],
-                    'parsial' => $validated['pagu_parsial'],
-                    'perubahan' => $validated['pagu_perubahan'],
-                    'sumber_dana' => $validated['sumber_dana'],
-                ]);
-            }
+            // Get the tugas to determine its type (program, kegiatan, or subkegiatan)
+            $tugas = SkpdTugas::with('kodeNomenklatur')->findOrFail($validated['tugas_id']);
+            $jenisNomenklatur = $tugas->kodeNomenklatur->jenis_nomenklatur;
 
             // Cari atau buat monitoring untuk SKPD ini
             $monitoring = Monitoring::where('skpd_id', $validated['skpd_id'])
                 ->where('deskripsi', $validated['deskripsi'])
                 ->where('tahun', $validated['tahun'])
+                ->where('tugas_id', $validated['tugas_id'])
                 ->first();
 
             if (!$monitoring) {
                 $monitoring = Monitoring::create([
                     'skpd_id' => $validated['skpd_id'],
+                    'tugas_id' => $validated['tugas_id'],
                     'sumber_dana' => $validated['sumber_dana'],
                     'periode_id' => $validated['periode_id'],
                     'tahun' => $validated['tahun'],
@@ -156,7 +172,8 @@ class RencanaAwalController extends Controller
 
             // Simpan target baru
             foreach ($validated['targets'] as $index => $target) {
-                $monitoring->targets()->create([
+                MonitoringTarget::create([
+                    'monitoring_id' => $monitoring->id,
                     'periode_id' => ($index + 1),
                     'kinerja_fisik' => $target['kinerja_fisik'],
                     'keuangan' => $target['keuangan']
@@ -165,71 +182,16 @@ class RencanaAwalController extends Controller
 
             DB::commit();
 
-            // Get updated data
-            $tugas = SkpdTugas::with([
-                'kodeNomenklatur',
-                'skpd.skpdKepala.user.userDetail',
-                'skpd.skpdKepala' => function($query) {
-                    $query->where('is_aktif', 1);
-                }
-            ])->find($validated['tugas_id']);
-
-            $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
-                ->where('is_aktif', 1)
-                ->with('kodeNomenklatur.details')
-                ->get();
-
-            $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
-
-            $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-                return $item->kodeNomenklatur->jenis_nomenklatur == 2
-                    && $item->kodeNomenklatur->details->first()
-                    && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-            })->values();
-
-            $kegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-                return $item->kodeNomenklatur->jenis_nomenklatur == 3
-                    && $item->kodeNomenklatur->details->first()
-                    && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-            })->values();
-
-            $subkegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-                return $item->kodeNomenklatur->jenis_nomenklatur == 4
-                    && $item->kodeNomenklatur->details->first()
-                    && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-            })->values();
-
-            $kepalaSkpd = '-';
-            $kepala = $tugas->skpd->skpdKepala->first();
-            if ($kepala) {
-                if ($kepala->user && $kepala->user->userDetail && $kepala->user->userDetail->nama) {
-                    $kepalaSkpd = $kepala->user->userDetail->nama;
-                } elseif ($kepala->user && $kepala->user->name) {
-                    $kepalaSkpd = $kepala->user->name;
-                }
-            }
-
-            return Inertia::render('Monitoring/RencanaAwal', [
-                'tugas' => $tugas,
-                'programTugas' => $programTugas,
-                'kegiatanTugas' => $kegiatanTugas,
-                'subkegiatanTugas' => $subkegiatanTugas,
-                'kepalaSkpd' => $kepalaSkpd,
-                'isFinalized' => $monitoring->is_finalized,
-                'user' => [
-                    'id' => $tugas->skpd_id,
-                    'nama_skpd' => $tugas->skpd->nama_skpd
-                ],
-                'flash' => [
-                    'success' => 'Data monitoring berhasil disimpan'
-                ]
-            ]);
+            // Redirect ke halaman show dengan pesan sukses
+            return redirect()->route('rencana-awal.show', ['id' => $validated['tugas_id']])
+                ->with('success', 'Data monitoring berhasil disimpan');
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal menyimpan data: ' . $e->getMessage());
         }
     }
+
 
     public function finalizeMonitoring(Request $request)
     {

@@ -35,7 +35,9 @@ class ManajemenAnggaranController extends Controller
             ]);
         }
 
-        $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
+        $users = User::role('perangkat_daerah')
+        ->with(['skpd', 'userDetail'])
+        ->paginate(1000);
 
         return Inertia::render('ManajemenAnggaran', [
             'users' => $users,
@@ -71,7 +73,7 @@ class ManajemenAnggaranController extends Controller
 
     public function show(string $id)
     {
-        $user = User::with('skpd')->findOrFail($id);
+        $user = User::with(['skpd', 'userDetail'])->findOrFail($id);
 
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 

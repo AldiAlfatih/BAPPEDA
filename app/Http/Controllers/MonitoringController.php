@@ -35,7 +35,10 @@ class MonitoringController extends Controller
             ]);
         }
 
-        $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
+        $users = User::role('perangkat_daerah')
+        ->with(['skpd', 'userDetail'])
+        ->paginate(1000);
+
 
         return Inertia::render('Monitoring', [
             'users' => $users,
@@ -71,7 +74,7 @@ class MonitoringController extends Controller
 
     public function show(string $id)
     {
-        $user = User::with('skpd')->findOrFail($id);
+        $user = User::with(['skpd', 'userDetail'])->findOrFail($id);
 
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
@@ -196,6 +199,7 @@ class MonitoringController extends Controller
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
             'user' => [
+                'nip' => $skpdUser?->userDetail?->nip ?? '-',
                 'id' => $skpdUser?->id ?? $tugas->skpd_id, // Use user ID instead of skpd_id
                 'nama_skpd' => $tugas->skpd->nama_skpd ?? $tugas->skpd->nama_dinas,
                 'skpd_id' => $tugas->skpd_id // Keep skpd_id for other purposes

@@ -34,6 +34,7 @@ interface User {
     name: string;
     nama_skpd: string;
     skpd_id?: number;
+    nip: string;
 }
 
 const props = defineProps<{
@@ -252,13 +253,14 @@ const updateAllData = () => {
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd?.no_dpa || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ kepalaSkpd ?? tugas.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}</p>
+                    </div>
+
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.nip || 'Tidak tersedia' }}</p>
                     </div>
                 </div>
             </div>

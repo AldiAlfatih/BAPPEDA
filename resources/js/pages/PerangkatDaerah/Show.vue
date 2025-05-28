@@ -567,7 +567,7 @@ button {
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA / NIP</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
                     </div>
 

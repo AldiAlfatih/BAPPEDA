@@ -8,12 +8,17 @@ import { Eye } from 'lucide-vue-next';
 
 const props = defineProps<{
     user: {
-        skpd: {
-            id: number;
-            nama_skpd: string;
+        id: number;
+        name: string;
+        user_detail?: {
+            nip?: string;
+        } | null;
+        skpd?: {
             nama_dinas: string;
+            nama_operator: string;
             no_dpa: string;
             kode_organisasi: string;
+            nama_skpd?: string; // jika ada
         } | null;
     };
     urusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number }[];
@@ -49,6 +54,19 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
+function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
+  if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
+    return user.user_detail.nip;
+  }
+
+  if (typeof user.nip === 'string' && user.nip.trim() !== '') {
+    return user.nip;
+  }
+
+  return '-';
+}
+
+
 const showFlash = ref({
     success: false,
     error: false,
@@ -68,6 +86,10 @@ onMounted(() => {
         showFlash.value.info = true;
         setTimeout(() => (showFlash.value.info = false), 5000);
     }
+});
+
+onMounted(() => {
+  console.log('USER DETAIL', props.user.user_detail);
 });
 
 const jenisNomenklaturOptions = [
@@ -160,14 +182,16 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
                     </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ getUserNip(user) || 'Tidak tersedia' }}</p>
+                    </div>
+
+
                 </div>
             </div>
 

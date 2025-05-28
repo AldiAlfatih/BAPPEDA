@@ -187,17 +187,82 @@ const stepStates = computed(() => {
   // Fallback
   return ['inactive', 'inactive', 'inactive'];
 });
-
-
 </script>
 
+<style scoped>
+.marquee-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+  padding: 0.5rem;
+}
+
+.marquee-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #faf7d5cc;
+  background-color: #fefce8cc;
+  height: 2.5rem;
+  width: 100%;
+  max-width: 1240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Efek melayang */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: box-shadow 0.3s ease;
+
+  /* optional: hover effect */
+  cursor: pointer;
+}
+.marquee-box:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+}
 
 
+.marquee-text {
+  white-space: nowrap;
+  display: inline-block;
+  animation: marquee 15s linear infinite;
+  font-size: 2rem;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+</style>
 
 <template>
   <Head title="Dashboard" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
+    <div class="marquee-wrapper">
+      <div class="marquee-box">
+        <!-- <div
+          v-if="periodeBelumSelesai.length"
+          class="marquee-text text-yellow-800 font-semibold"
+        >
+          📢 Periode Monitoring Sedang Berlangsung: {{ formatTanggal(periodeBelumSelesai[0]) }}
+        </div>
+        <div
+          v-else
+          class="marquee-text text-gray-500 italic"
+        >
+          📢 Tidak ada periode monitoring yang sedang berlangsung.
+        </div> -->
+        <div class="marquee-text text-orange-800 font-black">
+          "Setiap langkah kecil hari ini adalah pijakan kuat menuju kesuksesan besar di masa depan. Ayo mulai dengan penuh semangat!"
+        </div>
+      </div>
+    </div>
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
       <!-- Grid untuk Selamat Datang dan Progres Monitoring -->
       <div class="grid auto-rows-min gap-4 md:grid-cols-3">
@@ -206,7 +271,7 @@ const stepStates = computed(() => {
           <div class="w-full rounded-t-xl bg-emerald-100 py-2 text-sm font-medium text-emerald-900">
             Selamat datang di e-Monev
           </div>
-          <div class="flex flex-col items-center p-4">
+          <div class="flex flex-col items-center p-7">
             <div class="mb-4 mt-2 flex h-20 w-20 items-center justify-center rounded-full bg-gray-300">
               <svg class="h-10 w-10 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />

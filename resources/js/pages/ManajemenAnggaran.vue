@@ -34,6 +34,11 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
+      // NIP sekarang ada di user_detail
+      user_detail?: {
+        nip?: string;
+        // tambahan field lain dari user_detail jika ada
+      } | null;
       skpd: {
         nama_dinas: string;
         nama_operator: string;
@@ -57,6 +62,11 @@ const loadingCreate = ref(false);
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Manajemen Anggaran', href: '/manajemenanggaran' },
 ];
+
+// Helper function to get NIP from user_detail
+function getUserNip(user: any): string {
+  return user.user_detail?.nip || user.nip || '';
+}
 
 // Filter dan Sorting
 const filteredData = computed(() => {
@@ -195,7 +205,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input 
             v-model="searchQuery" 
-            placeholder="Cari nama dinas, penanggung jawab, kode..." 
+            placeholder="Cari nama dinas, penanggung jawab, NIP, kode..." 
             class="pl-10 pr-4 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
             @input="handleSearchChange"
           />
@@ -240,8 +250,8 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         :class="{'opacity-100': sortField === 'name'}" />
                     </div>
                   </TableHead>
-                  <TableHead class="hidden md:table-cell text-gray-600">No DPA</TableHead>
-                  <TableHead class="hidden md:table-cell text-gray-600">Kode Organisasi</TableHead>
+                  <TableHead class="hidden lg:table-cell text-gray-600">No DPA</TableHead>
+                  <TableHead class="hidden lg:table-cell text-gray-600">Kode Organisasi</TableHead>
                   <TableHead class="text-gray-600">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -272,8 +282,8 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                       </TableCell>
                       <TableCell class="text-gray-500">{{ user.skpd?.nama_operator || '-' }}</TableCell>
                       <TableCell class="text-gray-500">{{ user.name || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
+                      <TableCell class="hidden lg:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
+                      <TableCell class="hidden lg:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
                           <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
@@ -292,19 +302,10 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                     
                     <!-- Detail ekspansi -->
                     <TableRow v-if="showDetailId === user.id" class="bg-blue-50/50 dark:bg-blue-900/10">
-                      <TableCell colspan="7" class="animate-fadeIn">
+                      <TableCell :colspan="7" class="animate-fadeIn">
                         <div class="p-4 space-y-3">
                           <h3 class="text-lg font-semibold text-gray-600">Detail Perangkat Daerah</h3>
                           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="flex items-center gap-3">
-                              <div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
-                                <Building2 class="h-12 w-12 text-blue-600" />
-                              </div>
-                              <div>
-                                <p class="text-sm text-gray-600">ID Perangkat Daerah:</p>
-                                <p class="font-mono text-lg text-gray-400">{{ user.id }}</p>
-                              </div>
-                            </div>
                             <div class="flex items-center gap-3">
                               <div class="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
                                 <User class="h-12 w-12 text-green-600" />
@@ -321,6 +322,10 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <div>
                               <p class="text-sm text-gray-600">Nama Penanggung Jawab:</p>
                               <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_operator || '-' }}</p>
+                            </div>
+                            <div>
+                              <p class="text-sm text-gray-600">NIP:</p>
+                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ getUserNip(user) || '-' }}</p>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">No DPA:</p>
@@ -349,7 +354,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                   </template>
                 </template>
                 <TableRow v-else>
-                  <TableCell colspan="7" class="text-center py-10">
+                  <TableCell :colspan="7" class="text-center py-10">
                     <div class="flex flex-col items-center justify-center gap-2">
                       <p class="text-gray-500 text-lg">Tidak ada data yang ditemukan</p>
                       <p class="text-gray-400 text-sm" v-if="searchQuery">Coba ubah kriteria pencarian</p>

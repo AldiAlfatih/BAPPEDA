@@ -12,6 +12,8 @@ use App\Models\Skpd;
 use App\Models\MonitoringTarget;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use App\Models\MonitoringAnggaran;
 
 class MonitoringController extends Controller
 {
@@ -192,12 +194,73 @@ class MonitoringController extends Controller
         // Get the user associated with this SKPD for proper navigation
         $skpdUser = User::where('id', $tugas->skpd->user_id)->first();
 
+        // Fetch bidang urusan data
+        $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan');
+            }])
+            ->get();
+
+        // Fetch anggaran data for each subkegiatan
+        $dataAnggaranTerakhir = [];
+        $subkegiatanIds = $subkegiatanTugas->pluck('id')->toArray();
+        
+        // Loop through each subkegiatan to get its anggaran data
+        foreach ($subkegiatanTugas as $subKegiatan) {
+            // Find the latest monitoring for this subkegiatan
+            $monitoring = Monitoring::where('skpd_tugas_id', $subKegiatan->id)
+                ->latest()
+                ->first();
+            
+            if ($monitoring) {
+                // Get all monitoring_anggaran for this monitoring
+                $monitoringAnggaran = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                    ->with(['sumberAnggaran', 'pagu' => function($query) {
+                        $query->where('kategori', 1); // Kategori 1 = pokok
+                    }])
+                    ->get();
+                
+                $sumberAnggaranData = [
+                    'sumber_anggaran' => [
+                        'dak' => false,
+                        'dak_peruntukan' => false,
+                        'dak_fisik' => false,
+                        'dak_non_fisik' => false,
+                        'blud' => false
+                    ],
+                    'values' => [
+                        'dak' => 0,
+                        'dak_peruntukan' => 0,
+                        'dak_fisik' => 0,
+                        'dak_non_fisik' => 0,
+                        'blud' => 0
+                    ]
+                ];
+                
+                // Process each anggaran to get the sumber and values
+                foreach ($monitoringAnggaran as $anggaran) {
+                    if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
+                        $key = strtolower(str_replace(' ', '_', $anggaran->sumberAnggaran->nama));
+                        if (isset($sumberAnggaranData['sumber_anggaran'][$key])) {
+                            $sumberAnggaranData['sumber_anggaran'][$key] = true;
+                            $sumberAnggaranData['values'][$key] = $anggaran->pagu->first()->dana ?? 0;
+                        }
+                    }
+                }
+                
+                // Store the data for this subkegiatan
+                $dataAnggaranTerakhir[$subKegiatan->id] = $sumberAnggaranData;
+            }
+        }
+
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
+            'bidangUrusanList' => $bidangUrusanList,
+            'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'user' => [
                 'nip' => $skpdUser?->userDetail?->nip ?? '-',
                 'id' => $skpdUser?->id ?? $tugas->skpd_id, // Use user ID instead of skpd_id

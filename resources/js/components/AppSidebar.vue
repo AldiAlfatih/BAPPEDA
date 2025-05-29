@@ -59,7 +59,7 @@ const mainNavItems: NavItem[] = [
             guard: ['admin'],
         },
         {
-            title: 'Monitoring Anggaran',
+            title: 'Manajemen Anggaran',
             href: '/manajemenanggaran',
         },
         {

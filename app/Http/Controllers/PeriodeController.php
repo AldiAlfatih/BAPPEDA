@@ -265,5 +265,22 @@ class PeriodeController extends Controller
         }
     }
 
+    /**
+     * Mendapatkan periode yang sedang aktif (status = 1)
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPeriodeAktif()
+    {
+        try {
+            $periode = Periode::with('tahap')
+                ->where('status', 1)
+                ->get();
 
+            return response()->json($periode);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengambil data periode aktif: ' . $e->getMessage());
+            return response()->json(['message' => 'Gagal mengambil data periode aktif.'], 500);
+        }
+    }
 }

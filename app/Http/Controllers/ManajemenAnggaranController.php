@@ -145,6 +145,74 @@ class ManajemenAnggaranController extends Controller
             ->with('kodeNomenklatur')
             ->get();
 
+        // Dapatkan periode aktif (status 1 = aktif/buka) yang tahapnya adalah "Rencana"
+        $periodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->whereHas('tahap', function($query) {
+                $query->where('tahap', 'Rencana');
+            })
+            ->get();
+
+        // Dapatkan semua periode aktif untuk informasi tambahan
+        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->get();
+
+        // Dapatkan tahun dari periode aktif
+        $tahunAktif = null;
+        if ($semuaPeriodeAktif->isNotEmpty()) {
+            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
+        }
+        
+        // Ambil data sumber dana terakhir untuk setiap SKPD tugas
+        $dataAnggaranTerakhir = [];
+        
+        foreach ($skpdTugas as $tugas) {
+            if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Hanya ambil sub kegiatan
+                // Cari monitoring yang terkait dengan SKPD tugas
+                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->latest()
+                    ->first();
+                    
+                if ($monitoring) {
+                    // Ambil data anggaran untuk monitoring ini
+                    $sumberAnggaranData = [];
+                    
+                    $monitoringAnggaran = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                        ->with(['sumberAnggaran', 'pagu' => function($query) {
+                            $query->where('kategori', 1); // Kategori 1 = pokok
+                        }])
+                        ->get();
+                    
+                    foreach ($monitoringAnggaran as $anggaran) {
+                        if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
+                            $nama = $anggaran->sumberAnggaran->nama;
+                            $dana = $anggaran->pagu->first()->dana ?? 0;
+                            $sumberAnggaranData[$nama] = $dana;
+                        }
+                    }
+                    
+                    // Simpan data per SKPD tugas
+                    $dataAnggaranTerakhir[$tugas->id] = [
+                        'sumber_anggaran' => [
+                            'dak' => isset($sumberAnggaranData['dak']),
+                            'dak_peruntukan' => isset($sumberAnggaranData['dak_peruntukan']),
+                            'dak_fisik' => isset($sumberAnggaranData['dak_fisik']),
+                            'dak_non_fisik' => isset($sumberAnggaranData['dak_non_fisik']),
+                            'blud' => isset($sumberAnggaranData['blud']),
+                        ],
+                        'values' => [
+                            'dak' => $sumberAnggaranData['dak'] ?? 0,
+                            'dak_peruntukan' => $sumberAnggaranData['dak_peruntukan'] ?? 0,
+                            'dak_fisik' => $sumberAnggaranData['dak_fisik'] ?? 0,
+                            'dak_non_fisik' => $sumberAnggaranData['dak_non_fisik'] ?? 0,
+                            'blud' => $sumberAnggaranData['blud'] ?? 0,
+                        ]
+                    ];
+                }
+            }
+        }
+
         return Inertia::render('MonitoringAnggaran/Sumberdana', [
             'user' => $user,
             'skpdTugas' => $skpdTugas,
@@ -153,6 +221,10 @@ class ManajemenAnggaranController extends Controller
             'programList' => $programList,
             'kegiatanList' => $kegiatanList,
             'subkegiatanList' => $subkegiatanList,
+            'periodeAktif' => $periodeAktif,
+            'tahunAktif' => $tahunAktif,
+            'semuaPeriodeAktif' => $semuaPeriodeAktif,
+            'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
         ]);
     }
 
@@ -295,6 +367,17 @@ class ManajemenAnggaranController extends Controller
     
     public function saveSumberDana(Request $request)
     {
+        // Cek apakah ada periode yang aktif (status 1 = buka) dengan tahap "Rencana"
+        $aktivPeriode = Periode::where('status', 1)
+            ->whereHas('tahap', function($query) {
+                $query->where('tahap', 'Rencana');
+            })
+            ->first();
+        
+        if (!$aktivPeriode) {
+            return back()->withErrors(['message' => 'Periode Rencana belum dibuka. Sumber dana hanya dapat diisi pada periode Rencana.']);
+        }
+
         $validated = $request->validate([
             'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
             'sumber_anggaran' => 'required|array',
@@ -333,16 +416,8 @@ class ManajemenAnggaranController extends Controller
                 $monitoring->save();
             }
             
-            // Dapatkan periode aktif (status 1 = aktif/buka)
-            $periode = Periode::where('status', 1)->first();
-            if (!$periode) {
-                // Jika tidak ada periode aktif, ambil periode terbaru saja
-                $periode = Periode::latest()->first();
-                
-                if (!$periode) {
-                    throw new \Exception('Tidak ada periode tersedia saat ini');
-                }
-            }
+            // Gunakan periode aktif yang sudah ditemukan di atas
+            $periode = $aktivPeriode;
             
             // Simpan sumber anggaran yang dipilih
             foreach ($validated['sumber_anggaran'] as $key => $value) {

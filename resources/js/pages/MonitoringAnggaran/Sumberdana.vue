@@ -8,6 +8,7 @@ interface AnggaranItem {
   id: number
   kode: string
   jenis_nomenklatur: string
+  kategori: string // 'pokok' | 'parsial' | 'perubahan'
   sumber_anggaran: {
     dak: boolean
     dak_peruntukan: boolean
@@ -15,20 +16,17 @@ interface AnggaranItem {
     dak_non_fisik: boolean
     blud: boolean
   }
-  dak: number
-  dak_peruntukan: number
-  dak_fisik: number
-  dak_non_fisik: number
-  blud: number
+  values: {
+    dak: number
+    dak_peruntukan: number
+    dak_fisik: number
+    dak_non_fisik: number
+    blud: number
+  }
 }
 
 const props = defineProps<{
     user: {
-        id: number;
-        name: string;
-        user_detail?: {
-        nip?: string;
-        } | null;
         skpd: {
             id: number;
             nama_skpd: string;
@@ -51,24 +49,6 @@ const props = defineProps<{
     programList?: Array<any>;
     kegiatanList?: Array<any>;
     subkegiatanList?: Array<any>;
-    periodeStatus: boolean; // Status periode aktif/tidak
-    periodeName: string; // Nama periode
-    monitoringData?: Record<number, {
-        sumber_anggaran: {
-            dak: boolean;
-            dak_peruntukan: boolean;
-            dak_fisik: boolean;
-            dak_non_fisik: boolean;
-            blud: boolean;
-        };
-        nilai: {
-            dak: number;
-            dak_peruntukan: number;
-            dak_fisik: number;
-            dak_non_fisik: number;
-            blud: number;
-        };
-    }>;
 }>();
 
 // Create a reactive array for anggaran items
@@ -78,38 +58,30 @@ const anggaranItems = ref<AnggaranItem[]>([]);
 onMounted(() => {
   if (props.skpdTugas?.length) {
     // Filter only sub-kegiatan items (jenis_nomenklatur = 4)
-    const subKegiatanTasks = props.skpdTugas.filter(task =>
+    const subKegiatanTasks = props.skpdTugas.filter(task => 
       task.kode_nomenklatur.jenis_nomenklatur === 4
     );
-
-    anggaranItems.value = subKegiatanTasks.map(task => {
-      // Cek apakah ada data monitoring untuk task ini
-      const savedData = props.monitoringData?.[task.id];
-      
-      return {
-        id: task.id,
-        kode: task.kode_nomenklatur.nomor_kode,
-        jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
-        sumber_anggaran: savedData ? {
-          dak: savedData.sumber_anggaran.dak,
-          dak_peruntukan: savedData.sumber_anggaran.dak_peruntukan,
-          dak_fisik: savedData.sumber_anggaran.dak_fisik,
-          dak_non_fisik: savedData.sumber_anggaran.dak_non_fisik,
-          blud: savedData.sumber_anggaran.blud,
-        } : {
-          dak: false,
-          dak_peruntukan: false,
-          dak_fisik: false,
-          dak_non_fisik: false,
-          blud: false,
-        },
-        dak: savedData ? savedData.nilai.dak : 0,
-        dak_peruntukan: savedData ? savedData.nilai.dak_peruntukan : 0,
-        dak_fisik: savedData ? savedData.nilai.dak_fisik : 0,
-        dak_non_fisik: savedData ? savedData.nilai.dak_non_fisik : 0,
-        blud: savedData ? savedData.nilai.blud : 0,
-      };
-    });
+    
+    anggaranItems.value = subKegiatanTasks.map(task => ({
+      id: task.id,
+      kode: task.kode_nomenklatur.nomor_kode,
+      jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
+      kategori: 'pokok', // Default to 'pokok' category
+      sumber_anggaran: {
+        dak: false,
+        dak_peruntukan: false,
+        dak_fisik: false,
+        dak_non_fisik: false,
+        blud: false,
+      },
+      values: {
+        dak: 0,
+        dak_peruntukan: 0,
+        dak_fisik: 0,
+        dak_non_fisik: 0,
+        blud: 0,
+      }
+    }));
   }
 });
 
@@ -120,21 +92,10 @@ const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('id-ID').format(value)
 }
 
-function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
-  if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
-    return user.user_detail.nip;
-  }
-
-  if (typeof user.nip === 'string' && user.nip.trim() !== '') {
-    return user.nip;
-  }
-
-  return '-';
-}
-
-const editItem = (item: AnggaranItem) => {
-  // jika perlu fungsi edit
-}
+// Commented out unused function
+// const editItem = (item: AnggaranItem) => {
+//   // jika perlu fungsi edit
+// };
 
 
 
@@ -149,16 +110,16 @@ const handleSumberAnggaranChange = (item: AnggaranItem, key: SumberAnggaranKey, 
   const target = event.target as HTMLInputElement;
   if (target) {
     const checked = target.checked;
-
+    
     // If trying to check a third source
     if (checked && countSelectedSources(item.sumber_anggaran) >= 2) {
       target.checked = false;
       alert('Maksimal hanya 2 sumber anggaran yang dapat dipilih per sub kegiatan!');
       return;
     }
-
+    
     item.sumber_anggaran[key] = checked;
-
+    
     // Reset the corresponding value if unchecked
     if (!checked) {
       item[key] = 0;
@@ -167,64 +128,57 @@ const handleSumberAnggaranChange = (item: AnggaranItem, key: SumberAnggaranKey, 
 };
 
 const calculateTotal = (item: AnggaranItem): number => {
-  return (
-    item.dak +
-    item.dak_peruntukan +
-    item.dak_fisik +
-    item.dak_non_fisik +
-    item.blud
-  );
+  return Object.entries(item.sumber_anggaran)
+    .filter(([_, isSelected]) => isSelected)
+    .reduce((sum, [key]) => sum + (item.values[key as keyof AnggaranItem['values']] || 0), 0);
 };
 
-const handleInputChange = (item: AnggaranItem, field: keyof AnggaranItem, event: Event) => {
+const handleInputChange = (item: AnggaranItem, field: keyof AnggaranItem['values'], event: Event) => {
   const target = event.target;
   if (!(target instanceof HTMLInputElement)) return;
-
+  
   const value = parseInt(target.value) || 0;
-  if (field in item) {
-    const numericField = field as keyof Pick<AnggaranItem, 'dak' | 'dak_peruntukan' | 'dak_fisik' | 'dak_non_fisik' | 'blud'>;
-    item[numericField] = value;
+  if (field in item.values) {
+    item.values[field] = value;
   }
 };
 
 const saveItem = (item: AnggaranItem) => {
-  // Check if period is active
-  if (!props.periodeStatus) {
-    alert('Tidak dapat menyimpan data. Periode tidak aktif.');
-    return;
-  }
-
   // Validate that at least one funding source is selected
   const selectedCount = countSelectedSources(item.sumber_anggaran);
-
+  
   if (selectedCount === 0) {
     alert('Pilih minimal satu sumber anggaran terlebih dahulu!');
     return;
   }
-
+  
   if (selectedCount > 2) {
     alert('Maksimal hanya 2 sumber anggaran yang dapat dipilih per sub kegiatan!');
     return;
   }
 
-  const total = calculateTotal(item);
+  // Validate that all selected sources have values > 0
+  const hasInvalidAmounts = Object.entries(item.sumber_anggaran)
+    .filter(([_, isSelected]) => isSelected)
+    .some(([key]) => item.values[key as keyof AnggaranItem['values']] <= 0);
+
+  if (hasInvalidAmounts) {
+    alert('Mohon isi jumlah anggaran untuk sumber dana yang dipilih!');
+    return;
+  }
 
   // Siapkan data untuk disimpan ke database
   const dataToSave = {
     skpd_tugas_id: item.id,
+    kategori: item.kategori,
     sumber_anggaran: item.sumber_anggaran,
-    values: {
-      dak: item.dak,
-      dak_peruntukan: item.dak_peruntukan,
-      dak_fisik: item.dak_fisik,
-      dak_non_fisik: item.dak_non_fisik,
-      blud: item.blud
-    }
+    values: item.values
   };
 
   // Gunakan Inertia router untuk mengirim data ke server
   router.post('/monitoring-anggaran-save', dataToSave, {
     onSuccess: () => {
+      const total = calculateTotal(item);
       alert(`Data untuk kode ${item.kode} dengan total Rp ${formatCurrency(total)} berhasil disimpan!`);
     },
     onError: (errors) => {
@@ -239,7 +193,6 @@ const saveItem = (item: AnggaranItem) => {
 <template>
   <Head title="Manajemen Anggaran" />
 
-<<<<<<< HEAD
   <AppLayout>
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -252,18 +205,7 @@ const saveItem = (item: AnggaranItem) => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <div>
-                  <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
-                  <div class="mt-1 flex items-center">
-                    <span class="text-sm font-medium">Status Periode:</span>
-                    <span v-if="periodeStatus" class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Periode Aktif - {{ periodeName }}
-                    </span>
-                    <span v-else class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Periode Tidak Aktif
-                    </span>
-                  </div>
-                </div>
+                <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -271,45 +213,21 @@ const saveItem = (item: AnggaranItem) => {
                   <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
                   <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
                 </div>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <h3 class="text-sm font-medium text-gray-500 mb-2">Kategori Anggaran</h3>
+                  <select 
+                    v-model="item.kategori"
+                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  >
+                    <option value="pokok">Pokok</option>
+                    <option value="parsial">Parsial</option>
+                    <option value="perubahan">Perubahan</option>
+                  </select>
+                </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                   <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
                   <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
-=======
-  <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-          <div class="flex flex-col gap-6 p-6 bg-gray-50">
-            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
-                <div class="flex items-center mb-6">
-                    <div class="rounded-full bg-blue-100 p-3 mr-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ getUserNip(user) || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
-                    </div>
->>>>>>> 0d9f3d1704cb4199325cffd9dce68c86a743b8a1
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
@@ -321,7 +239,7 @@ const saveItem = (item: AnggaranItem) => {
                       <th class="border border-gray-400 px-4 py-2">Kode</th>
                       <th class="border border-gray-400 px-4 py-2">Sub Kegiatan</th>
                       <th class="border border-gray-400 px-4 py-2">Sumber Anggaran</th>
-                      <th class="border border-gray-400 px-4 py-2">DAU</th>
+                      <th class="border border-gray-400 px-4 py-2">DAK</th>
                       <th class="border border-gray-400 px-4 py-2">DAK Peruntukan</th>
                       <th class="border border-gray-400 px-4 py-2">DAK Fisik</th>
                       <th class="border border-gray-400 px-4 py-2">DAK Non Fisik</th>
@@ -336,139 +254,106 @@ const saveItem = (item: AnggaranItem) => {
                       <td class="border border-gray-400 px-4 py-2">
                         <div class="flex flex-col space-y-2">
                           <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
+                            <input 
+                              type="checkbox" 
                               :checked="item.sumber_anggaran.dak"
                               @change="(e) => handleSumberAnggaranChange(item, 'dak', e)"
                               class="form-checkbox h-4 w-4 text-blue-600"
-                              :disabled="!periodeStatus"
                             >
-                            <span class="ml-2">DAU</span>
+                            <span class="ml-2">DAK</span>
                           </label>
                           <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
+                            <input 
+                              type="checkbox" 
                               :checked="item.sumber_anggaran.dak_peruntukan"
                               @change="(e) => handleSumberAnggaranChange(item, 'dak_peruntukan', e)"
                               class="form-checkbox h-4 w-4 text-blue-600"
-                              :disabled="!periodeStatus"
                             >
                             <span class="ml-2">DAK Peruntukan</span>
                           </label>
                           <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
+                            <input 
+                              type="checkbox" 
                               :checked="item.sumber_anggaran.dak_fisik"
                               @change="(e) => handleSumberAnggaranChange(item, 'dak_fisik', e)"
                               class="form-checkbox h-4 w-4 text-blue-600"
-                              :disabled="!periodeStatus"
                             >
                             <span class="ml-2">DAK Fisik</span>
                           </label>
                           <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
+                            <input 
+                              type="checkbox" 
                               :checked="item.sumber_anggaran.dak_non_fisik"
                               @change="(e) => handleSumberAnggaranChange(item, 'dak_non_fisik', e)"
                               class="form-checkbox h-4 w-4 text-blue-600"
-                              :disabled="!periodeStatus"
                             >
                             <span class="ml-2">DAK Non Fisik</span>
                           </label>
                           <label class="inline-flex items-center">
-                            <input
-                              type="checkbox"
+                            <input 
+                              type="checkbox" 
                               :checked="item.sumber_anggaran.blud"
                               @change="(e) => handleSumberAnggaranChange(item, 'blud', e)"
                               class="form-checkbox h-4 w-4 text-blue-600"
-                              :disabled="!periodeStatus"
                             >
                             <span class="ml-2">BLUD</span>
                           </label>
                         </div>
-<<<<<<< HEAD
                       </td>
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.dak"
+                          :value="item.values.dak"
                           @input="(e) => handleInputChange(item, 'dak', e)"
-                          :disabled="!periodeStatus || !item.sumber_anggaran.dak"
+                          :disabled="!item.sumber_anggaran.dak"
                           min="0"
-                          :class="[
-                            'w-20 h-10 border rounded-md px-2 py-1 text-right focus:ring-1',
-                            item.sumber_anggaran.dak 
-                              ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500' 
-                              : 'border-gray-200 bg-gray-50 text-gray-500'
-                          ]"
+                          class="w-20 h-10 border border-gray-300 rounded-md px-2 py-1 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.dak_peruntukan"
+                          :value="item.values.dak_peruntukan"
                           @input="(e) => handleInputChange(item, 'dak_peruntukan', e)"
-                          :disabled="!periodeStatus || !item.sumber_anggaran.dak_peruntukan"
+                          :disabled="!item.sumber_anggaran.dak_peruntukan"
                           min="0"
-                          :class="[
-                            'w-20 h-10 border rounded-md px-2 py-1 text-right focus:ring-1',
-                            item.sumber_anggaran.dak_peruntukan 
-                              ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500' 
-                              : 'border-gray-200 bg-gray-50 text-gray-500'
-                          ]"
+                          class="w-20 h-10 border border-gray-300 rounded-md px-2 py-1 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.dak_fisik"
+                          :value="item.values.dak_fisik"
                           @input="(e) => handleInputChange(item, 'dak_fisik', e)"
-                          :disabled="!periodeStatus || !item.sumber_anggaran.dak_fisik"
+                          :disabled="!item.sumber_anggaran.dak_fisik"
                           min="0"
-                          :class="[
-                            'w-20 h-10 border rounded-md px-2 py-1 text-right focus:ring-1',
-                            item.sumber_anggaran.dak_fisik 
-                              ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500' 
-                              : 'border-gray-200 bg-gray-50 text-gray-500'
-                          ]"
+                          class="w-20 h-10 border border-gray-300 rounded-md px-2 py-1 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.dak_non_fisik"
+                          :value="item.values.dak_non_fisik"
                           @input="(e) => handleInputChange(item, 'dak_non_fisik', e)"
-                          :disabled="!periodeStatus || !item.sumber_anggaran.dak_non_fisik"
+                          :disabled="!item.sumber_anggaran.dak_non_fisik"
                           min="0"
-                          :class="[
-                            'w-20 h-10 border rounded-md px-2 py-1 text-right focus:ring-1',
-                            item.sumber_anggaran.dak_non_fisik 
-                              ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500' 
-                              : 'border-gray-200 bg-gray-50 text-gray-500'
-                          ]"
+                          class="w-20 h-10 border border-gray-300 rounded-md px-2 py-1 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.blud"
+                          :value="item.values.blud"
                           @input="(e) => handleInputChange(item, 'blud', e)"
-                          :disabled="!periodeStatus || !item.sumber_anggaran.blud"
+                          :disabled="!item.sumber_anggaran.blud"
                           min="0"
-                          :class="[
-                            'w-20 h-10 border rounded-md px-2 py-1 text-right focus:ring-1',
-                            item.sumber_anggaran.blud 
-                              ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500' 
-                              : 'border-gray-200 bg-gray-50 text-gray-500'
-                          ]"
+                          class="w-20 h-10 border border-gray-300 rounded-md px-2 py-1 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <button
                           @click="saveItem(item)"
                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                          :disabled="!periodeStatus"
-                          :class="{ 'opacity-50 cursor-not-allowed': !periodeStatus }"
                         >
                           Simpan
                         </button>
@@ -478,115 +363,10 @@ const saveItem = (item: AnggaranItem) => {
                 </table>
                 </div>
               </div>
-=======
-                        <h3 class="text-xl font-bold text-gray-800">Manajemen Anggaran</h3>
-                    </div>
-                </div>
-                <div class="max-w-xxl mx-auto overflow-x-auto rounded-lg border border-gray-200">
-                <table class="min-w-[1500px] table-auto border-collapse border border-gray-400">
-                    <thead>
-                    <tr class="bg-gray-100 text-center">
-                        <th class="border border-gray-400 px-4 py-2 font-semibold">Kode</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[600px]">Jenis Nomenklatur</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[250px]">Sumber Anggaran</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[200px]">DAK</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[200px]">DAK Peruntukan</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[200px]">DAK Fisik</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[200px]">DAK Non Fisik</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[200px]">BLUD</th>
-                        <th class="border border-gray-400 px-4 py-2 font-semibold w-[100px]">Aksi</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr v-for="item in anggaranData" :key="item.id" class="hover:bg-gray-50">
-                        <td class="border border-gray-400 px-4 py-2">{{ item.kode }}</td>
-                        <td class="border border-gray-400 px-4 py-2">{{ item.jenis_nomenklatur }}</td>
-                        <td class="border border-gray-400 px-4 py-2">
-                        <div class="space-y-1">
-                            <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="item.sumber_anggaran.dak" class="rounded cursor-pointer" />
-                            <span class="text-sm">DAK</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="item.sumber_anggaran.dak_peruntukan" class="rounded cursor-pointer" />
-                            <span class="text-sm">DAK Peruntukan</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="item.sumber_anggaran.dak_fisik" class="rounded cursor-pointer" />
-                            <span class="text-sm">DAK Fisik</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="item.sumber_anggaran.dak_non_fisik" class="rounded cursor-pointer" />
-                            <span class="text-sm">DAK Non Fisik</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="item.sumber_anggaran.blud" class="rounded cursor-pointer" />
-                            <span class="text-sm">BLUD</span>
-                            </label>
-                        </div>
-                        </td>
-                        <td class="border border-gray-400 px-4 py-2 text-right">
-                        <input
-                            type="number"
-                            v-model.number="item.dak"
-                            :disabled="!item.sumber_anggaran.dak"
-                            min="0"
-                            class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-right"
-                        />
-                        </td>
-                        <td class="border border-gray-400 px-4 py-2 text-right">
-                        <input
-                            type="number"
-                            v-model.number="item.dak_peruntukan"
-                            :disabled="!item.sumber_anggaran.dak_peruntukan"
-                            min="0"
-                            class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-right"
-                        />
-                        </td>
-                        <td class="border border-gray-400 px-4 py-2 text-right">
-                        <input
-                            type="number"
-                            v-model.number="item.dak_fisik"
-                            :disabled="!item.sumber_anggaran.dak_fisik"
-                            min="0"
-                            class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-right"
-                        />
-                        </td>
-                        <td class="border border-gray-400 px-4 py-2 text-right">
-                        <input
-                            type="number"
-                            v-model.number="item.dak_non_fisik"
-                            :disabled="!item.sumber_anggaran.dak_non_fisik"
-                            min="0"
-                            class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-right"
-                        />
-                        </td>
-                        <td class="border border-gray-400 px-4 py-2 text-right">
-                        <input
-                            type="number"
-                            v-model.number="item.blud"
-                            :disabled="!item.sumber_anggaran.blud"
-                            min="0"
-                            class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-right"
-                        />
-                        </td>
-                        <td class="border border-gray-400 px-4 py-2 text-center">
-                        <button
-                            @click="saveItem(item)"
-                            class="bg-green-600 hover:bg-green-800 text-white px-3 py-1 rounded text-sm"
-                        >
-                            Simpan
-                        </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                </div>
-
->>>>>>> 0d9f3d1704cb4199325cffd9dce68c86a743b8a1
             </div>
           </div>
         </div>
-
+      </div>
+    </div>
   </AppLayout>
 </template>

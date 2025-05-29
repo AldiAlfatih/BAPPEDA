@@ -84,12 +84,48 @@ class RencanaAwalController extends Controller
         })->values();
 
 
+        // Ambil data sumber dana untuk setiap subkegiatan
+        $subkegiatanWithSumberDana = [];
+        
+        foreach ($subkegiatanTugas as $subkegiatan) {
+            $monitoring = Monitoring::where('tugas_id', $subkegiatan->id)
+                ->where('tahun', date('Y'))
+                ->where('deskripsi', 'Rencana Awal')
+                ->with(['monitoringAnggaran.sumberAnggaran', 'monitoringAnggaran.pagu' => function($query) {
+                    $query->where('kategori', 1); // Hanya ambil pagu dengan kategori 1 (pokok)
+                }])
+                ->first();
+            
+            if ($monitoring && $monitoring->monitoringAnggaran->isNotEmpty()) {
+                foreach ($monitoring->monitoringAnggaran as $anggaran) {
+                    $pagu = $anggaran->pagu->first();
+                    $subkegiatanWithSumberDana[] = [
+                        'id' => $subkegiatan->id,
+                        'kode_nomenklatur' => $subkegiatan->kodeNomenklatur,
+                        'sumber_anggaran' => $anggaran->sumberAnggaran->nama,
+                        'dana' => $pagu ? $pagu->dana : 0,
+                        'monitoring' => $monitoring
+                    ];
+                }
+            } else {
+                // Jika tidak ada sumber dana, tetap tampilkan subkegiatan dengan sumber dana kosong
+                $subkegiatanWithSumberDana[] = [
+                    'id' => $subkegiatan->id,
+                    'kode_nomenklatur' => $subkegiatan->kodeNomenklatur,
+                    'sumber_anggaran' => null,
+                    'dana' => 0,
+                    'monitoring' => $monitoring
+                ];
+            }
+        }
+
         // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
+            'subkegiatanWithSumberDana' => $subkegiatanWithSumberDana,
             'kepalaSkpd' => $kepalaSkpd,
             'isFinalized' => $monitoring ? $monitoring->is_finalized : false,
             'user' => [

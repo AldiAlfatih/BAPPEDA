@@ -25,11 +25,6 @@ interface User {
     id: number;
     name: string;
     nama_skpd: string;
-<<<<<<< HEAD
-=======
-    skpd_id?: number;
-    nip: string;
->>>>>>> 0d9f3d1704cb4199325cffd9dce68c86a743b8a1
 }
 
 const props = defineProps<{
@@ -315,7 +310,6 @@ function goToCreate() {
                     Rencana Kinerja
                 </h2>
 
-<<<<<<< HEAD
                 <!-- Top table -->
                 <div class="overflow-hidden">
                     <table class="w-full border-collapse">
@@ -326,36 +320,6 @@ function goToCreate() {
                             </tr>
                         </tbody>
                     </table>
-=======
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">KODE/URUSAN PEMERINTAHAN:</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.nama_dinas || 'Tidak tersedia' }}</p>
-                    </div>
-
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.kode_organisasi || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ kepalaSkpd ?? tugas.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}</p>
-                    </div>
-
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.nip || 'Tidak tersedia' }}</p>
-                    </div>
->>>>>>> 0d9f3d1704cb4199325cffd9dce68c86a743b8a1
                 </div>
             </div>
 
@@ -506,7 +470,7 @@ function goToCreate() {
                                         <button v-if="!isFinalized && !finalizedRows.has(program.id) && (!isEditing || editingRow?.id !== program.id)"
                                                 @click="finalizeRow(program)"
                                                 class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                                            
+                                            Selesai
                                         </button>
                                         <button v-if="!isFinalized && !finalizedRows.has(program.id) && isEditing && editingRow?.id === program.id"
                                                 @click="saveChanges"
@@ -516,7 +480,7 @@ function goToCreate() {
                                         <button v-if="!isFinalized && finalizedRows.has(program.id)"
                                                 disabled
                                                 class="px-3 py-1 bg-gray-400 text-white rounded cursor-not-allowed">
-                                            
+                                            Selesai
                                         </button>
                                     </div>
                                 </td>
@@ -631,7 +595,7 @@ function goToCreate() {
                                             <button v-if="!isFinalized && !finalizedRows.has(kegiatan.id) && (!isEditing || editingRow?.id !== kegiatan.id)"
                                                     @click="finalizeRow(kegiatan)"
                                                     class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                                                
+                                                Selesai
                                             </button>
                                             <button v-if="!isFinalized && !finalizedRows.has(kegiatan.id) && isEditing && editingRow?.id === kegiatan.id"
                                                     @click="saveChanges"
@@ -641,7 +605,7 @@ function goToCreate() {
                                             <button v-if="!isFinalized && finalizedRows.has(kegiatan.id)"
                                                     disabled
                                                     class="px-3 py-1 bg-gray-400 text-white rounded cursor-not-allowed">
-                                                
+                                                Selesai
                                             </button>
                                         </div>
                                     </td>
@@ -756,7 +720,7 @@ function goToCreate() {
                                                 <button v-if="!isFinalized && !finalizedRows.has(subKegiatan.id) && (!isEditing || editingRow?.id !== subKegiatan.id)"
                                                         @click="finalizeRow(subKegiatan)"
                                                         class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                                                    
+                                                    Selesai
                                                 </button>
                                                 <button v-if="!isFinalized && !finalizedRows.has(subKegiatan.id) && isEditing && editingRow?.id === subKegiatan.id"
                                                         @click="saveChanges"
@@ -766,7 +730,7 @@ function goToCreate() {
                                                 <button v-if="!isFinalized && finalizedRows.has(subKegiatan.id)"
                                                         disabled
                                                         class="px-3 py-1 bg-gray-400 text-white rounded cursor-not-allowed">
-                                                    
+                                                    Selesai
                                                 </button>
                                             </div>
                                         </td>
@@ -788,7 +752,7 @@ function goToCreate() {
                                     ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                                     : 'bg-gray-400 text-white cursor-not-allowed'
                             ]">
-                        kan
+                        Selesaikan
                     </button>
                 </div>
             </div>

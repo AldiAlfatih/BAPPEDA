@@ -292,11 +292,11 @@ class ManajemenAnggaranController extends Controller
             'realisasi' => $monitoring->realisasi,
         ]);
     }
+    
     public function saveSumberDana(Request $request)
     {
         $validated = $request->validate([
             'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
-            'kategori' => 'required|in:pokok,parsial,perubahan',
             'sumber_anggaran' => 'required|array',
             'sumber_anggaran.dak' => 'required|boolean',
             'sumber_anggaran.dak_peruntukan' => 'required|boolean',
@@ -304,20 +304,12 @@ class ManajemenAnggaranController extends Controller
             'sumber_anggaran.dak_non_fisik' => 'required|boolean',
             'sumber_anggaran.blud' => 'required|boolean',
             'values' => 'required|array',
-            'values.dak' => 'required|numeric|min:0',
-            'values.dak_peruntukan' => 'required|numeric|min:0',
-            'values.dak_fisik' => 'required|numeric|min:0',
-            'values.dak_non_fisik' => 'required|numeric|min:0',
-            'values.blud' => 'required|numeric|min:0',
+            'values.dak' => 'required|numeric',
+            'values.dak_peruntukan' => 'required|numeric',
+            'values.dak_fisik' => 'required|numeric',
+            'values.dak_non_fisik' => 'required|numeric',
+            'values.blud' => 'required|numeric',
         ]);
-        
-        // Map category to database value
-        $kategoriMap = [
-            'pokok' => 1,
-            'parsial' => 2,
-            'perubahan' => 3,
-        ];
-        $kategori = $kategoriMap[$validated['kategori']];
         
         // Menggunakan transaksi database untuk memastikan konsistensi data
         DB::beginTransaction();
@@ -378,16 +370,28 @@ class ManajemenAnggaranController extends Controller
                         'sumber_anggaran_id' => $sumberAnggaran->id
                     ]);
                     
-                    // Cek apakah monitoring_pagu sudah ada untuk kategori ini
-                    $monitoringPagu = MonitoringPagu::firstOrNew([
-                        'monitoring_anggaran_id' => $monitoringAnggaran->id,
-                        'periode_id' => $periode->id,
-                        'kategori' => $kategori
-                    ]);
+                    // Simpan pagu anggaran dengan kategori = 1 (pokok)
+                    // Kategori: 1 = pokok, 2 = parsial, 3 = perubahan
                     
-                    // Update nilai dana
-                    $monitoringPagu->dana = (int)$validated['values'][$key];
-                    $monitoringPagu->save();
+                    // Cek apakah monitoring_pagu sudah ada
+                    $monitoringPagu = MonitoringPagu::where('monitoring_anggaran_id', $monitoringAnggaran->id)
+                        ->where('periode_id', $periode->id)
+                        ->where('kategori', 1) // 1 = pokok
+                        ->first();
+                        
+                    if ($monitoringPagu) {
+                        // Update jika sudah ada
+                        $monitoringPagu->dana = (int)$validated['values'][$key];
+                        $monitoringPagu->save();
+                    } else {
+                        // Buat baru jika belum ada
+                        $monitoringPagu = new MonitoringPagu();
+                        $monitoringPagu->monitoring_anggaran_id = $monitoringAnggaran->id;
+                        $monitoringPagu->periode_id = $periode->id;
+                        $monitoringPagu->kategori = 1; // 1 = pokok
+                        $monitoringPagu->dana = (int)$validated['values'][$key];
+                        $monitoringPagu->save();
+                    }
                 }
             }
             

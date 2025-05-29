@@ -8,7 +8,6 @@ interface AnggaranItem {
   id: number
   kode: string
   jenis_nomenklatur: string
-  kategori: string // 'pokok' | 'parsial' | 'perubahan'
   sumber_anggaran: {
     dak: boolean
     dak_peruntukan: boolean
@@ -16,13 +15,11 @@ interface AnggaranItem {
     dak_non_fisik: boolean
     blud: boolean
   }
-  values: {
-    dak: number
-    dak_peruntukan: number
-    dak_fisik: number
-    dak_non_fisik: number
-    blud: number
-  }
+  dak: number
+  dak_peruntukan: number
+  dak_fisik: number
+  dak_non_fisik: number
+  blud: number
 }
 
 const props = defineProps<{
@@ -66,7 +63,6 @@ onMounted(() => {
       id: task.id,
       kode: task.kode_nomenklatur.nomor_kode,
       jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
-      kategori: 'pokok', // Default to 'pokok' category
       sumber_anggaran: {
         dak: false,
         dak_peruntukan: false,
@@ -74,13 +70,11 @@ onMounted(() => {
         dak_non_fisik: false,
         blud: false,
       },
-      values: {
-        dak: 0,
-        dak_peruntukan: 0,
-        dak_fisik: 0,
-        dak_non_fisik: 0,
-        blud: 0,
-      }
+      dak: 0,
+      dak_peruntukan: 0,
+      dak_fisik: 0,
+      dak_non_fisik: 0,
+      blud: 0,
     }));
   }
 });
@@ -92,10 +86,9 @@ const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('id-ID').format(value)
 }
 
-// Commented out unused function
-// const editItem = (item: AnggaranItem) => {
-//   // jika perlu fungsi edit
-// };
+const editItem = (item: AnggaranItem) => {
+  // jika perlu fungsi edit
+}
 
 
 
@@ -128,18 +121,23 @@ const handleSumberAnggaranChange = (item: AnggaranItem, key: SumberAnggaranKey, 
 };
 
 const calculateTotal = (item: AnggaranItem): number => {
-  return Object.entries(item.sumber_anggaran)
-    .filter(([_, isSelected]) => isSelected)
-    .reduce((sum, [key]) => sum + (item.values[key as keyof AnggaranItem['values']] || 0), 0);
+  return (
+    item.dak +
+    item.dak_peruntukan +
+    item.dak_fisik +
+    item.dak_non_fisik +
+    item.blud
+  );
 };
 
-const handleInputChange = (item: AnggaranItem, field: keyof AnggaranItem['values'], event: Event) => {
+const handleInputChange = (item: AnggaranItem, field: keyof AnggaranItem, event: Event) => {
   const target = event.target;
   if (!(target instanceof HTMLInputElement)) return;
   
   const value = parseInt(target.value) || 0;
-  if (field in item.values) {
-    item.values[field] = value;
+  if (field in item) {
+    const numericField = field as keyof Pick<AnggaranItem, 'dak' | 'dak_peruntukan' | 'dak_fisik' | 'dak_non_fisik' | 'blud'>;
+    item[numericField] = value;
   }
 };
 
@@ -157,28 +155,24 @@ const saveItem = (item: AnggaranItem) => {
     return;
   }
 
-  // Validate that all selected sources have values > 0
-  const hasInvalidAmounts = Object.entries(item.sumber_anggaran)
-    .filter(([_, isSelected]) => isSelected)
-    .some(([key]) => item.values[key as keyof AnggaranItem['values']] <= 0);
-
-  if (hasInvalidAmounts) {
-    alert('Mohon isi jumlah anggaran untuk sumber dana yang dipilih!');
-    return;
-  }
-
+  const total = calculateTotal(item);
+  
   // Siapkan data untuk disimpan ke database
   const dataToSave = {
     skpd_tugas_id: item.id,
-    kategori: item.kategori,
     sumber_anggaran: item.sumber_anggaran,
-    values: item.values
+    values: {
+      dak: item.dak,
+      dak_peruntukan: item.dak_peruntukan,
+      dak_fisik: item.dak_fisik,
+      dak_non_fisik: item.dak_non_fisik,
+      blud: item.blud
+    }
   };
 
   // Gunakan Inertia router untuk mengirim data ke server
   router.post('/monitoring-anggaran-save', dataToSave, {
     onSuccess: () => {
-      const total = calculateTotal(item);
       alert(`Data untuk kode ${item.kode} dengan total Rp ${formatCurrency(total)} berhasil disimpan!`);
     },
     onError: (errors) => {
@@ -212,17 +206,6 @@ const saveItem = (item: AnggaranItem) => {
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                   <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
                   <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <h3 class="text-sm font-medium text-gray-500 mb-2">Kategori Anggaran</h3>
-                  <select 
-                    v-model="item.kategori"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  >
-                    <option value="pokok">Pokok</option>
-                    <option value="parsial">Parsial</option>
-                    <option value="perubahan">Perubahan</option>
-                  </select>
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
@@ -303,7 +286,7 @@ const saveItem = (item: AnggaranItem) => {
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.values.dak"
+                          :value="item.dak"
                           @input="(e) => handleInputChange(item, 'dak', e)"
                           :disabled="!item.sumber_anggaran.dak"
                           min="0"
@@ -313,7 +296,7 @@ const saveItem = (item: AnggaranItem) => {
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.values.dak_peruntukan"
+                          :value="item.dak_peruntukan"
                           @input="(e) => handleInputChange(item, 'dak_peruntukan', e)"
                           :disabled="!item.sumber_anggaran.dak_peruntukan"
                           min="0"
@@ -323,7 +306,7 @@ const saveItem = (item: AnggaranItem) => {
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.values.dak_fisik"
+                          :value="item.dak_fisik"
                           @input="(e) => handleInputChange(item, 'dak_fisik', e)"
                           :disabled="!item.sumber_anggaran.dak_fisik"
                           min="0"
@@ -333,7 +316,7 @@ const saveItem = (item: AnggaranItem) => {
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.values.dak_non_fisik"
+                          :value="item.dak_non_fisik"
                           @input="(e) => handleInputChange(item, 'dak_non_fisik', e)"
                           :disabled="!item.sumber_anggaran.dak_non_fisik"
                           min="0"
@@ -343,7 +326,7 @@ const saveItem = (item: AnggaranItem) => {
                       <td class="border border-gray-400 px-4 py-2 text-center">
                         <input
                           type="number"
-                          :value="item.values.blud"
+                          :value="item.blud"
                           @input="(e) => handleInputChange(item, 'blud', e)"
                           :disabled="!item.sumber_anggaran.blud"
                           min="0"

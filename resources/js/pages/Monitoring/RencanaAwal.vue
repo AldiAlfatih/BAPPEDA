@@ -25,6 +25,11 @@ interface User {
     id: number;
     name: string;
     nama_skpd: string;
+<<<<<<< HEAD
+=======
+    skpd_id?: number;
+    nip: string;
+>>>>>>> 0d9f3d1704cb4199325cffd9dce68c86a743b8a1
 }
 
 const props = defineProps<{
@@ -310,6 +315,7 @@ function goToCreate() {
                     Rencana Kinerja
                 </h2>
 
+<<<<<<< HEAD
                 <!-- Top table -->
                 <div class="overflow-hidden">
                     <table class="w-full border-collapse">
@@ -320,6 +326,36 @@ function goToCreate() {
                             </tr>
                         </tbody>
                     </table>
+=======
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">KODE/URUSAN PEMERINTAHAN:</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.nama_dinas || 'Tidak tersedia' }}</p>
+                    </div>
+
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.kode_organisasi || 'Tidak tersedia' }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ kepalaSkpd ?? tugas.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}</p>
+                    </div>
+
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.nip || 'Tidak tersedia' }}</p>
+                    </div>
+>>>>>>> 0d9f3d1704cb4199325cffd9dce68c86a743b8a1
                 </div>
             </div>
 

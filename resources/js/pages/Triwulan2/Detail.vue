@@ -258,16 +258,15 @@ const updateAllData = () => {
                             <th rowspan="3" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center align-middle">kode</th>
                             <th rowspan="3" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center align-middle">PROGRAM/ KEGIATAN/ SUB KEGIATAN</th>
                             <th colspan="8" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">Triwulan 2</th>
+                            <th rowspan="3" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center align-middle">Keterangan</th>
+                            <th rowspan="3" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center align-middle">PPTK</th>
                         </tr>
                         <tr>
                             <th colspan="2" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">TARGET</th>
                             <th colspan="2" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">REALISASI</th>
-                            <th colspan="2" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">CAPAIAN PERTRIWULAN</th>
-                            <th colspan="2" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">CAPAIAN TAHUNAN</th>
+                            <th colspan="2" class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">TAHUNAN</th>
                         </tr>
                         <tr>
-                            <th class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">KINERJA FISIK (%)</th>
-                            <th class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">KEUANGAN (RP)</th>
                             <th class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">KINERJA FISIK (%)</th>
                             <th class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">KEUANGAN (RP)</th>
                             <th class="border border-gray-300 bg-gray-50 px-2 py-1 text-center">KINERJA FISIK (%)</th>

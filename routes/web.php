@@ -37,6 +37,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('panduan', PanduanController::class)->names('panduan');
     Route::resource('periode', PeriodeController::class)->names('periode');
     Route::resource('manajemenanggaran', ManajemenAnggaranController::class)->names('manajemenanggaran');
+    // Menambahkan rute khusus untuk menyimpan sumber dana
+    Route::post('/monitoring-anggaran-save', [ManajemenAnggaranController::class, 'saveSumberDana'])->name('monitoring-anggaran.save');
     
 
     Route::resource('triwulan1', Triwulan1Controller::class)->names('triwulan1');
@@ -73,6 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/monitoring/tugas/{id}', [MonitoringController::class, 'showTugas']);
     Route::get('/monitoring/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('rencanaawal');
     Route::post('/rencanaawal', [MonitoringController::class, 'saveMonitoringData'])->name('monitoring.save');
+    // Rute dipindahkan di atas bersama dengan resource controller untuk menghindari konflik
 
     Route::post('/rencanaawal/save-monitoring', [RencanaAwalController::class, 'saveMonitoringData'])->name('rencanaawal.save-monitoring');
     Route::post('/rencanaawal/finalize', [RencanaAwalController::class, 'finalizeMonitoring'])

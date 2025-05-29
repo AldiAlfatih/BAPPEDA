@@ -10,8 +10,13 @@ use App\Models\SkpdTugas;
 use App\Models\SkpdKepala;
 use App\Models\Skpd;
 use App\Models\MonitoringTarget;
+use App\Models\MonitoringAnggaran;
+use App\Models\MonitoringPagu;
+use App\Models\SumberAnggaran;
+use App\Models\Periode;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class ManajemenAnggaranController extends Controller
 {
@@ -72,6 +77,11 @@ class ManajemenAnggaranController extends Controller
     public function show(string $id)
     {
         $user = User::with('skpd')->findOrFail($id);
+
+        // Cek apakah ada periode yang aktif (status = 1 = buka)
+        $aktivPeriode = Periode::where('status', 1)->first();
+        $periodeStatus = $aktivPeriode ? true : false;
+        $periodeName = $aktivPeriode ? $aktivPeriode->tahap->tahap . ' ' . $aktivPeriode->tahun->tahun : 'Tidak ada periode aktif';
 
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
@@ -135,10 +145,71 @@ class ManajemenAnggaranController extends Controller
                 ];
             });
 
+        // Ambil data skpd_tugas
         $skpdTugas = SkpdTugas::where('skpd_id', $user->skpd->id)
             ->where('is_aktif', 1)
             ->with('kodeNomenklatur')
             ->get();
+            
+        // Ambil data monitoring dan sumber anggaran yang sudah tersimpan
+        $monitoringData = [];
+        
+        // Ambil semua monitoring untuk skpd ini
+        $monitorings = Monitoring::where('tahun', date('Y'))
+            ->whereIn('skpd_tugas_id', $skpdTugas->pluck('id'))
+            ->with(['monitoringAnggaran.sumberAnggaran', 'monitoringAnggaran.pagu'])
+            ->get();
+            
+        // Susun data untuk setiap skpd_tugas
+        foreach ($monitorings as $monitoring) {
+            $sumberAnggaranData = [
+                'dak' => false,
+                'dak_peruntukan' => false,
+                'dak_fisik' => false,
+                'dak_non_fisik' => false,
+                'blud' => false
+            ];
+            
+            $nilaiData = [
+                'dak' => 0,
+                'dak_peruntukan' => 0,
+                'dak_fisik' => 0,
+                'dak_non_fisik' => 0,
+                'blud' => 0
+            ];
+            
+            // Mapping nama sumber anggaran dari database ke key di frontend
+            $sumberAnggaranMap = [
+                'DAU' => 'dak',
+                'DAU Peruntukan' => 'dak_peruntukan',
+                'DAK Fisik' => 'dak_fisik',
+                'DAK Non Fisik' => 'dak_non_fisik',
+                'BLUD' => 'blud'
+            ];
+            
+            // Ambil data sumber anggaran dan pagu
+            foreach ($monitoring->monitoringAnggaran as $anggaran) {
+                $sumberNama = $anggaran->sumberAnggaran->nama;
+                
+                // Konversi nama sumber anggaran dari database ke key di frontend
+                $key = $sumberAnggaranMap[$sumberNama] ?? null;
+                
+                if ($key) {
+                    $sumberAnggaranData[$key] = true;
+                    
+                    // Ambil nilai pagu (kategori 1 = pokok)
+                    $pagu = $anggaran->pagu->where('kategori', 1)->first();
+                    if ($pagu) {
+                        $nilaiData[$key] = $pagu->dana;
+                    }
+                }
+            }
+            
+            $monitoringData[$monitoring->skpd_tugas_id] = [
+                'sumber_anggaran' => $sumberAnggaranData,
+                'nilai' => $nilaiData
+            ];
+        }
 
         return Inertia::render('MonitoringAnggaran/Sumberdana', [
             'user' => $user,
@@ -148,6 +219,9 @@ class ManajemenAnggaranController extends Controller
             'programList' => $programList,
             'kegiatanList' => $kegiatanList,
             'subkegiatanList' => $subkegiatanList,
+            'periodeStatus' => $periodeStatus,
+            'periodeName' => $periodeName,
+            'monitoringData' => $monitoringData,
         ]);
     }
 
@@ -286,5 +360,136 @@ class ManajemenAnggaranController extends Controller
             'targets' => $monitoring->targets,
             'realisasi' => $monitoring->realisasi,
         ]);
+    }
+    
+    public function saveSumberDana(Request $request)
+    {
+        // Cek terlebih dahulu apakah ada periode yang aktif
+        $aktivPeriode = Periode::where('status', 1)->first();
+        if (!$aktivPeriode) {
+            return back()->withErrors(['message' => 'Tidak dapat menyimpan data. Tidak ada periode yang aktif saat ini.']);
+        }
+        
+        $validated = $request->validate([
+            'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
+            'sumber_anggaran' => 'required|array',
+            'sumber_anggaran.dak' => 'required|boolean',
+            'sumber_anggaran.dak_peruntukan' => 'required|boolean',
+            'sumber_anggaran.dak_fisik' => 'required|boolean',
+            'sumber_anggaran.dak_non_fisik' => 'required|boolean',
+            'sumber_anggaran.blud' => 'required|boolean',
+            'values' => 'required|array',
+            'values.dak' => 'required|numeric',
+            'values.dak_peruntukan' => 'required|numeric',
+            'values.dak_fisik' => 'required|numeric',
+            'values.dak_non_fisik' => 'required|numeric',
+            'values.blud' => 'required|numeric',
+        ]);
+        
+        // Menggunakan transaksi database untuk memastikan konsistensi data
+        DB::beginTransaction();
+        
+        try {
+            // Cari atau buat monitoring baru
+            $skpdTugas = SkpdTugas::findOrFail($validated['skpd_tugas_id']);
+            
+            // Cek apakah monitoring sudah ada
+            $monitoring = Monitoring::where('skpd_tugas_id', $validated['skpd_tugas_id'])
+                ->where('tahun', date('Y'))
+                ->first();
+                
+            // Jika belum ada, buat baru
+            if (!$monitoring) {
+                $monitoring = new Monitoring();
+                $monitoring->skpd_tugas_id = $validated['skpd_tugas_id'];
+                $monitoring->tahun = date('Y');
+                $monitoring->deskripsi = null; // Biarkan deskripsi NULL, akan diisi nanti di triwulan
+                $monitoring->nama_pptk = '-';
+                $monitoring->save();
+            }
+            
+            // Dapatkan periode aktif (status 1 = aktif/buka)
+            $periode = Periode::where('status', 1)->first();
+            if (!$periode) {
+                // Jika tidak ada periode aktif, ambil periode terbaru saja
+                $periode = Periode::latest()->first();
+                
+                if (!$periode) {
+                    throw new \Exception('Tidak ada periode tersedia saat ini');
+                }
+            }
+            
+            // Simpan sumber anggaran yang dipilih
+            foreach ($validated['sumber_anggaran'] as $key => $value) {
+                if ($value) {
+                    // Gunakan mapping ID untuk sumber anggaran yang sudah ada
+                    $sumberAnggaranMap = [
+                        'dak' => 1,      // DAU di database
+                        'dak_peruntukan' => 5, // DAU Peruntukan di database
+                        'dak_fisik' => 2,  // DAK Fisik di database
+                        'dak_non_fisik' => 3, // DAK Non Fisik di database
+                        'blud' => 4      // BLUD di database
+                    ];
+                    
+                    // Dapatkan ID sumber anggaran dari mapping
+                    if (isset($sumberAnggaranMap[$key])) {
+                        $sumberAnggaranId = $sumberAnggaranMap[$key];
+                        
+                        // Ambil dari database jika ada
+                        $sumberAnggaran = DB::table('sumber_anggaran')->where('id', $sumberAnggaranId)->first();
+                        
+                        // Jika tidak ada, buat objek sederhana dengan ID yang benar
+                        if (!$sumberAnggaran) {
+                            $sumberAnggaran = (object)[
+                                'id' => $sumberAnggaranId,
+                                'nama' => ucfirst(str_replace('_', ' ', $key))
+                            ];
+                        }
+                    } else {
+                        // Fallback jika tidak ada dalam mapping (seharusnya tidak terjadi)
+                        throw new \Exception('Sumber anggaran tidak valid: ' . $key);
+                    }
+                    
+                    // Cari atau buat monitoring_anggaran
+                    $monitoringAnggaran = MonitoringAnggaran::firstOrCreate([
+                        'monitoring_id' => $monitoring->id,
+                        'sumber_anggaran_id' => $sumberAnggaran->id
+                    ]);
+                    
+                    // Simpan pagu anggaran dengan kategori = 1 (pokok)
+                    // Kategori: 1 = pokok, 2 = parsial, 3 = perubahan
+                    
+                    // Cek apakah monitoring_pagu sudah ada
+                    $monitoringPagu = MonitoringPagu::where('monitoring_anggaran_id', $monitoringAnggaran->id)
+                        ->where('periode_id', $periode->id)
+                        ->where('kategori', 1) // 1 = pokok
+                        ->first();
+                        
+                    if ($monitoringPagu) {
+                        // Update jika sudah ada
+                        $monitoringPagu->dana = (int)$validated['values'][$key];
+                        $monitoringPagu->save();
+                    } else {
+                        // Buat baru jika belum ada
+                        $monitoringPagu = new MonitoringPagu();
+                        $monitoringPagu->monitoring_anggaran_id = $monitoringAnggaran->id;
+                        $monitoringPagu->periode_id = $periode->id;
+                        $monitoringPagu->kategori = 1; // 1 = pokok
+                        $monitoringPagu->dana = (int)$validated['values'][$key];
+                        $monitoringPagu->save();
+                    }
+                }
+            }
+            
+            // Tidak perlu update total pagu karena kolom pagu_anggaran tidak ada di tabel monitoring
+            
+            DB::commit();
+            
+            return back()->with('success', 'Data sumber anggaran berhasil disimpan.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
     }
 }

@@ -29,7 +29,7 @@ class SkpdTugas extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
     public function kodeNomenklatur()
@@ -39,6 +39,6 @@ class SkpdTugas extends Model
 
     public function monitoring()
     {
-        return $this->hasOne(Monitoring::class, 'tugas_id');
+        return $this->hasOne(Monitoring::class, 'skpd_tugas_id');
     }
 }

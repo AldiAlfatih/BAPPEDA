@@ -247,6 +247,11 @@ class PeriodeController extends Controller
 
     }
 
+    /**
+     * Get periods that are not yet completed
+     * 
+     * @return \Inertia\Response
+     */
     public function getPeriodeBelumSelesai()
     {
         try {
@@ -257,18 +262,23 @@ class PeriodeController extends Controller
             // Debug: Menambahkan log untuk memeriksa apakah data ada
             \Log::info('Data Periode:', ['periode' => $periode]);
 
-            return response()->json($periode);
+            return Inertia::render('Periode/Active', [
+                'periode' => $periode
+            ]);
         } catch (\Exception $e) {
             // Log kesalahan jika terjadi error
             \Log::error('Gagal mengambil data periode: ' . $e->getMessage());
-            return response()->json(['message' => 'Gagal mengambil data periode.'], 500);
+            return Inertia::render('Periode/Active', [
+                'periode' => [],
+                'error' => 'Gagal mengambil data periode.'
+            ]);
         }
     }
 
     /**
-     * Mendapatkan periode yang sedang aktif (status = 1)
+     * Get active periods (status = 1)
      * 
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Inertia\Response
      */
     public function getPeriodeAktif()
     {
@@ -277,10 +287,40 @@ class PeriodeController extends Controller
                 ->where('status', 1)
                 ->get();
 
-            return response()->json($periode);
+            return Inertia::render('Periode/Active', [
+                'periode' => $periode
+            ]);
         } catch (\Exception $e) {
             \Log::error('Gagal mengambil data periode aktif: ' . $e->getMessage());
-            return response()->json(['message' => 'Gagal mengambil data periode aktif.'], 500);
+            return Inertia::render('Periode/Active', [
+                'periode' => [],
+                'error' => 'Gagal mengambil data periode aktif.'
+            ]);
+        }
+    }
+
+    /**
+     * Get all periods for the dropdown in RencanaAwal component
+     * 
+     * @return \Inertia\Response
+     */
+    public function getAllPeriodes()
+    {
+        try {
+            $periodes = Periode::with(['tahap', 'tahun'])
+                ->orderBy('tahun_id', 'desc')
+                ->orderBy('tahap_id', 'asc')
+                ->get();
+            
+            return Inertia::render('Periode/List', [
+                'periodes' => $periodes
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengambil semua periode: ' . $e->getMessage());
+            return Inertia::render('Periode/List', [
+                'periodes' => [],
+                'error' => 'Gagal mengambil data periode.'
+            ]);
         }
     }
 }

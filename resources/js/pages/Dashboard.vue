@@ -22,19 +22,8 @@ interface Periode {
 
 const periodeBelumSelesai = ref<Periode[]>([]);
 
-const fetchPeriodeBelumSelesai = async () => {
-  try {
-    const response = await axios.get('/periode-belum-selesai');
-    periodeBelumSelesai.value = response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      console.error('Error Response:', error.response.data);
-    } else if (axios.isAxiosError(error) && error.request) {
-      console.error('Error Request:', error.request);
-    } else {
-      console.error('Error Message:', (error as Error).message);
-    }
-  }
+const fetchPeriodeBelumSelesai = () => {
+  window.location.href = route('periode.belum-selesai');
 };
 
 onMounted(() => {

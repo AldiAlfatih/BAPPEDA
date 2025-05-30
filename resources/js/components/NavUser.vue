@@ -13,20 +13,27 @@ const { isMobile, state } = useSidebar();
 </script>
 
 <template>
-    <SidebarMenu>
+    <SidebarMenu class="px-2">
         <SidebarMenuItem>
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                        <UserInfo :user="user" />
-                        <ChevronsUpDown class="ml-auto size-4" />
+                    <SidebarMenuButton 
+                        size="lg" 
+                        class="data-[state=open]:bg-white/20 hover:bg-white/10 
+                               transition-all duration-300 group rounded-xl
+                               border border-white/10 backdrop-blur-sm
+                               hover:border-white/20 hover:shadow-lg"
+                    >
+                        <UserInfo :user="user" class="text-white" />
+                        <ChevronsUpDown class="ml-auto size-4 text-emerald-200 group-hover:text-white transition-colors duration-300" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
-                    class="w-(--reka-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                    class="w-(--reka-dropdown-menu-trigger-width) min-w-56 rounded-xl 
+                           bg-white/95 backdrop-blur-md border-white/20 shadow-xl"
                     :side="isMobile ? 'bottom' : state === 'collapsed' ? 'left' : 'bottom'"
                     align="end" 
-                    :side-offset="4"
+                    :side-offset="8"
                 >
                     <UserMenuContent :user="user" />
                 </DropdownMenuContent>

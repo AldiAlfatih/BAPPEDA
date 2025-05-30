@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
@@ -69,13 +69,13 @@ interface Props {
     bidangUrusan?: number[];
     bidangUrusanList?: any[];
     monitoring?: {
-      sumber_dana: string;
-      pagu_pokok: number;
-      pagu_parsial: number;
-      pagu_perubahan: number;
-      targets: Array<any>;
-      realisasi: Array<any>;
-    };
+    sumber_dana: string;
+    pagu_pokok: number;
+    pagu_parsial: number;
+    pagu_perubahan: number;
+    targets: Array<any>;
+    realisasi: Array<any>;
+  };
     tugas?: any;
     dataAnggaranTerakhir?: Record<number, {
       sumber_anggaran: {
@@ -93,15 +93,48 @@ interface Props {
         blud: number;
       };
     }>;
+    periodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
+    semuaPeriodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
+    tahunAktif?: { id: number; tahun: string } | null;
 }
 
 const props = defineProps<Props>();
+
+// Add reactive state for selected period
+const selectedPeriodeId = ref<number | null>(null);
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: 'Monitoring', href: '/monitoring' },
     { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/monitoring/${props.user?.id}` },
     { title: 'Rencana Awal PD', href: '/rencanaawal' },
 ]);
+
+// Initialize with the active period if available
+onMounted(() => {
+  if (props.periodeAktif && props.periodeAktif.length > 0) {
+    selectedPeriodeId.value = props.periodeAktif[0].id;
+  } else if (props.semuaPeriodeAktif && props.semuaPeriodeAktif.length > 0) {
+    selectedPeriodeId.value = props.semuaPeriodeAktif[0].id;
+  }
+});
+
+// Handler for period change
+const handlePeriodeChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  const newPeriodeId = target.value ? parseInt(target.value) : null;
+  
+  if (selectedPeriodeId.value !== newPeriodeId) {
+    selectedPeriodeId.value = newPeriodeId;
+    
+    // Reload data with the new period
+    if (props.user?.id) {
+      router.visit(`/monitoring/${props.user.id}?periode_id=${newPeriodeId || ''}`, {
+        preserveState: true,
+        only: ['dataAnggaranTerakhir']
+      });
+    }
+  }
+};
 
 // Sample data for the top table
 const headerData = ref([
@@ -140,7 +173,7 @@ const formattedSubKegiatanData = computed(() => {
     const parentBidangUrusan = props.bidangUrusanList?.find(bu => 
       bu.id === parentProgram.kode_nomenklatur.details[0]?.id_bidang_urusan
     );
-    
+
     // Get the funding data for this subkegiatan
     const fundingData = props.dataAnggaranTerakhir?.[subKegiatan.id];
     
@@ -172,7 +205,7 @@ const formattedSubKegiatanData = computed(() => {
             perubahan: 0
           });
         }
-      });
+        });
     }
   });
   
@@ -221,7 +254,7 @@ const calculateBidangUrusan = computed<Record<number, number>>(() => {
     if (parentBidangUrusanId) {
       if (!bidangUrusanSums[parentBidangUrusanId]) {
         bidangUrusanSums[parentBidangUrusanId] = 0;
-      }
+    }
       bidangUrusanSums[parentBidangUrusanId] += calculateProgram.value[program.kode_nomenklatur.id] || 0;
     }
   });
@@ -231,7 +264,7 @@ const calculateBidangUrusan = computed<Record<number, number>>(() => {
 
 // Function to handle navigation
 function goToMonitoringDetail() {
-  router.visit(`/monitoring/${props.user?.id}`);
+    router.visit(`/monitoring/${props.user?.id}`);
 }
 
 function goToCreate() {
@@ -253,6 +286,31 @@ function goToCreate() {
                         </svg>
                     </div>
                     <h2 class="text-2xl font-bold text-gray-600">Rencana Kinerja</h2>
+                    
+                    <!-- Add period selector -->
+                    <div class="ml-auto flex items-center">
+                        <label for="periode-selector" class="mr-2 text-gray-700 font-medium">Pilih Periode:</label>
+                        <select 
+                            id="periode-selector" 
+                            class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            @change="handlePeriodeChange"
+                            :value="selectedPeriodeId"
+                        >
+                            <option value="">Semua Periode</option>
+                            <option 
+                                v-for="periode in props.semuaPeriodeAktif" 
+                                :key="periode.id" 
+                                :value="periode.id"
+                                :selected="periode.id === selectedPeriodeId"
+                            >
+                                {{ periode.tahap.tahap }} - {{ periode.tahun.tahun }}
+                            </option>
+                        </select>
+                        
+                        <div class="ml-4 bg-blue-50 px-4 py-2 rounded-lg">
+                            <span class="font-semibold text-blue-700">Tahun Anggaran: {{ props.tahunAktif?.tahun || 'Belum ada' }}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -341,7 +399,7 @@ function goToCreate() {
                                 <td class="p-3 border border-gray-200 text-center">-</td>
                                 <td class="p-3 border border-gray-200 text-right">-</td>
                             </tr>
-                            
+
                             <!-- Display programs for this bidang urusan -->
                             <template v-for="program in props.programTugas?.filter(p => p.kode_nomenklatur.details[0]?.id_bidang_urusan === bidangUrusan.id)" :key="program.id">
                                 <tr class="border border-gray-200 bg-gray-50 font-medium">
@@ -360,7 +418,7 @@ function goToCreate() {
                                     <td class="p-3 border border-gray-200 text-center">{{ program.monitoring?.targets?.[3]?.kinerja_fisik || program.targets?.[3]?.kinerjaFisik || '-' }}</td>
                                     <td class="p-3 border border-gray-200 text-right">{{ program.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || program.targets?.[3]?.keuangan || '-' }}</td>
                                 </tr>
-                                
+
                                 <!-- Display kegiatan for this program -->
                                 <template v-for="kegiatan in props.kegiatanTugas?.filter(k => k.kode_nomenklatur.details[0]?.id_program === program.kode_nomenklatur.id)" :key="kegiatan.id">
                                     <tr class="border border-gray-200">

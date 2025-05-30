@@ -62,7 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/periode/{id}/status', [PeriodeController::class, 'updateStatus']);
     Route::post('/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');
     Route::post('/periode/lanjutkanKeTahunBerikutnya', [PeriodeController::class, 'lanjutkanKeTahunBerikutnya'])->name('periode.lanjutkanKeTahunBerikutnya');
-    Route::get('/periode-belum-selesai', [PeriodeController::class, 'getPeriodeBelumSelesai']);
+    Route::get('/periode-belum-selesai', [PeriodeController::class, 'getPeriodeBelumSelesai'])->name('periode.belum-selesai');
+    Route::get('/periode-list', [PeriodeController::class, 'getAllPeriodes'])->name('periode.list');
+    Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif'])->name('periode.aktif');
 
     // Special routes for chat functionality in Bantuan
     Route::get('/bantuan/{bantuan}/chat', [BantuanController::class, 'chatForm'])->name('bantuan.chat');

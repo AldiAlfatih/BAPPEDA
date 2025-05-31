@@ -133,7 +133,10 @@ class Triwulan1Controller extends Controller
             ->get();
 
         $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
-
+        $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+            $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+            $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+        )->values();
         $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
                 && $item->kodeNomenklatur->details->first()
@@ -162,6 +165,7 @@ class Triwulan1Controller extends Controller
 
         return Inertia::render('Triwulan1/Detail', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,

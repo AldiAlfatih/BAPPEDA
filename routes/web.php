@@ -83,6 +83,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rencanaawal/finalize', [RencanaAwalController::class, 'finalizeMonitoring'])
         ->name('rencanaawal.finalize');
     Route::post('/rencanaawal/finalize-row', [RencanaAwalController::class, 'finalizeRow'])->name('rencanaawal.finalize-row');
+    Route::delete('/rencana-awal/delete/{id}', [RencanaAwalController::class, 'delete'])->name('rencana-awal.delete');
+    
+    // Add a route for the save-monitoring-data endpoint used in the Vue component
+    Route::post('/rencana-awal/save-monitoring-data', [RencanaAwalController::class, 'saveMonitoringData'])->name('rencana-awal.save-monitoring-data');
 });
 
 require __DIR__.'/settings.php';

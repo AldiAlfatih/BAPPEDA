@@ -37,6 +37,23 @@ interface User {
     nip: string;
 }
 
+interface ItemWithKodeNomenklatur {
+  id: number;
+  kode_nomenklatur: {
+    id: number;
+    nomor_kode: string;
+    nomenklatur: string;
+    jenis_nomenklatur: number;
+    details?: any[];
+  };
+  monitoring?: {
+    targets?: Array<{
+      kinerja_fisik: number;
+      keuangan: number;
+    }>;
+  };
+}
+
 interface Props {
     user?: User;
     programTugas?: any[];
@@ -96,6 +113,7 @@ interface Props {
     periodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
     semuaPeriodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
     tahunAktif?: { id: number; tahun: string } | null;
+    bidangurusanTugas?: any[];
 }
 
 const props = defineProps<Props>();
@@ -117,6 +135,141 @@ onMounted(() => {
     selectedPeriodeId.value = props.semuaPeriodeAktif[0].id;
   }
 });
+
+// Modal and target editing states
+const showModal = ref(false);
+const currentItem = ref<ItemWithKodeNomenklatur | null>(null);
+const targetData = ref({
+  tw1: { kinerja_fisik: 0, keuangan: 0 },
+  tw2: { kinerja_fisik: 0, keuangan: 0 },
+  tw3: { kinerja_fisik: 0, keuangan: 0 },
+  tw4: { kinerja_fisik: 0, keuangan: 0 }
+});
+
+// Fill targets action
+const fillTargets = (item: ItemWithKodeNomenklatur) => {
+  currentItem.value = item;
+  // Populate target data from existing values if available
+  if (item.monitoring?.targets) {
+    targetData.value = {
+      tw1: { 
+        kinerja_fisik: item.monitoring.targets[0]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[0]?.keuangan || 0 
+      },
+      tw2: { 
+        kinerja_fisik: item.monitoring.targets[1]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[1]?.keuangan || 0 
+      },
+      tw3: { 
+        kinerja_fisik: item.monitoring.targets[2]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[2]?.keuangan || 0 
+      },
+      tw4: { 
+        kinerja_fisik: item.monitoring.targets[3]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[3]?.keuangan || 0 
+      }
+    };
+  } else {
+    // Reset to defaults if no data exists
+    targetData.value = {
+      tw1: { kinerja_fisik: 0, keuangan: 0 },
+      tw2: { kinerja_fisik: 0, keuangan: 0 },
+      tw3: { kinerja_fisik: 0, keuangan: 0 },
+      tw4: { kinerja_fisik: 0, keuangan: 0 }
+    };
+  }
+  showModal.value = true;
+};
+
+// Save targets action
+const saveTargets = (item: ItemWithKodeNomenklatur) => {
+  if (!currentItem.value || !showModal.value) {
+    fillTargets(item); // If not already in edit mode, open the modal first
+    return;
+  }
+  
+  // Prepare data for saving
+  const targets = [
+    { kinerja_fisik: targetData.value.tw1.kinerja_fisik, keuangan: targetData.value.tw1.keuangan },
+    { kinerja_fisik: targetData.value.tw2.kinerja_fisik, keuangan: targetData.value.tw2.keuangan },
+    { kinerja_fisik: targetData.value.tw3.kinerja_fisik, keuangan: targetData.value.tw3.keuangan },
+    { kinerja_fisik: targetData.value.tw4.kinerja_fisik, keuangan: targetData.value.tw4.keuangan }
+  ];
+  
+  // Determine what kind of item we are saving (bidang urusan, program, kegiatan, or subkegiatan)
+  const itemType = item.kode_nomenklatur.jenis_nomenklatur;
+  const route = getRouteBasedOnItemType(itemType);
+  
+  // Send to server
+  router.post(route, {
+    tugas_id: item.id,
+    skpd_id: props.user?.skpd_id || props.tugas?.skpd_id,
+    sumber_dana: 'APBD', // Default sumber dana
+    deskripsi: 'Rencana Awal',
+    tahun: props.tahunAktif?.tahun || new Date().getFullYear(),
+    periode_id: selectedPeriodeId.value,
+    pagu_pokok: calculateItemTotal(item), // Get appropriate total based on item type
+    pagu_parsial: 0,
+    pagu_perubahan: 0,
+    targets: targets
+  }, {
+    onSuccess: () => {
+      alert('Target berhasil disimpan');
+      showModal.value = false;
+      currentItem.value = null;
+    },
+    onError: (errors) => {
+      alert('Gagal menyimpan target: ' + Object.values(errors).join('\n'));
+    }
+  });
+};
+
+// Helper to calculate total for an item based on its type
+const calculateItemTotal = (item: ItemWithKodeNomenklatur) => {
+  const itemType = item.kode_nomenklatur.jenis_nomenklatur;
+  
+  if (itemType === 1) { // Bidang urusan
+    return calculateBidangUrusan.value[item.kode_nomenklatur.id] || 0;
+  } else if (itemType === 2) { // Program
+    return calculateProgram.value[item.kode_nomenklatur.id] || 0;
+  } else if (itemType === 3) { // Kegiatan
+    return calculateKegiatan.value[item.id] || 0;
+  } else if (itemType === 4) { // Subkegiatan
+    // For subkegiatan with specific sumber dana, return the specific amount
+    const fundingData = props.dataAnggaranTerakhir?.[item.id];
+    if (fundingData) {
+      return Object.values(fundingData.values).reduce((sum, val) => sum + val, 0);
+    }
+    return 0;
+  }
+  return 0;
+};
+
+// Helper to determine the API endpoint based on item type
+const getRouteBasedOnItemType = (itemType: number) => {
+  // Using the same endpoint for all types for simplicity
+  return '/rencana-awal/save-monitoring-data';
+};
+
+// Delete item action
+const deleteItem = (item: ItemWithKodeNomenklatur) => {
+  if (confirm(`Apakah Anda yakin ingin menghapus item ini?\n${item.kode_nomenklatur.nomenklatur}`)) {
+    router.delete(`/rencana-awal/delete/${item.id}`, {
+      onSuccess: () => {
+        alert('Item berhasil dihapus');
+      },
+      onError: (errors) => {
+        alert('Gagal menghapus item: ' + Object.values(errors).join('\n'));
+      }
+    });
+  }
+};
+
+// Close modal
+const closeModal = () => {
+  showModal.value = false;
+  currentItem.value = null;
+};
 
 // Handler for period change
 const handlePeriodeChange = (event: Event) => {
@@ -170,9 +323,11 @@ const formattedSubKegiatanData = computed(() => {
     if (!parentProgram) return;
     
     // Find the parent bidang urusan
-    const parentBidangUrusan = props.bidangUrusanList?.find(bu => 
-      bu.id === parentProgram.kode_nomenklatur.details[0]?.id_bidang_urusan
+    const parentBidangUrusan = props.bidangurusanTugas?.find(bu => 
+      bu.kode_nomenklatur.id === parentProgram.kode_nomenklatur.details[0]?.id_bidang_urusan
     );
+
+    if (!parentBidangUrusan) return;
 
     // Get the funding data for this subkegiatan
     const fundingData = props.dataAnggaranTerakhir?.[subKegiatan.id];
@@ -205,7 +360,7 @@ const formattedSubKegiatanData = computed(() => {
             perubahan: 0
           });
         }
-        });
+      });
     }
   });
   
@@ -252,10 +407,18 @@ const calculateBidangUrusan = computed<Record<number, number>>(() => {
   props.programTugas?.forEach(program => {
     const parentBidangUrusanId = program.kode_nomenklatur.details[0]?.id_bidang_urusan;
     if (parentBidangUrusanId) {
-      if (!bidangUrusanSums[parentBidangUrusanId]) {
-        bidangUrusanSums[parentBidangUrusanId] = 0;
-    }
-      bidangUrusanSums[parentBidangUrusanId] += calculateProgram.value[program.kode_nomenklatur.id] || 0;
+      // Find the bidang urusan with this ID
+      const bidangUrusan = props.bidangurusanTugas?.find(bu => 
+        bu.kode_nomenklatur.id === parentBidangUrusanId
+      );
+      
+      if (bidangUrusan) {
+        const bidangUrusanNomenklaturId = bidangUrusan.kode_nomenklatur.id;
+        if (!bidangUrusanSums[bidangUrusanNomenklaturId]) {
+          bidangUrusanSums[bidangUrusanNomenklaturId] = 0;
+        }
+        bidangUrusanSums[bidangUrusanNomenklaturId] += calculateProgram.value[program.kode_nomenklatur.id] || 0;
+      }
     }
   });
   
@@ -355,6 +518,7 @@ function goToCreate() {
                             <th colspan="3" class="border border-amber-300 px-2 py-1 bg-amber-100">PAGU ANGGARAN APBD</th>
                             <th rowspan="3" class="border border-amber-300 px-2 py-1 bg-amber-100">SUMBER DANA</th>
                             <th colspan="8" class="border border-amber-300 px-2 py-1 bg-[#fbe9db]">TARGET</th>
+                            <th rowspan="3" class="border border-amber-300 px-2 py-1 bg-blue-100">AKSI</th>
                         </tr>
                         <tr class="text-center bg-amber-100">
                             <th rowspan="2" class="border border-amber-300 px-2 py-1">POKOK (RP)</th>
@@ -381,12 +545,12 @@ function goToCreate() {
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Display bidang urusan -->
-                        <template v-for="bidangUrusan in props.bidangUrusanList" :key="bidangUrusan.id">
+                        <!-- Display bidang urusan from the selected urusan -->
+                        <template v-for="bidangUrusan in props.bidangurusanTugas" :key="bidangUrusan.id">
                             <tr class="bg-blue-100 font-semibold">
-                                <td class="p-3 border border-gray-200 text-center">{{ bidangUrusan.nomor_kode }}</td>
-                                <td class="p-3 border border-gray-200">{{ bidangUrusan.nomenklatur }}</td>
-                                <td class="p-3 border border-gray-200 text-right">{{ calculateBidangUrusan[bidangUrusan.id]?.toLocaleString('id-ID') || '0' }}</td>
+                                <td class="p-3 border border-gray-200 text-center">{{ bidangUrusan.kode_nomenklatur.nomor_kode }}</td>
+                                <td class="p-3 border border-gray-200">{{ bidangUrusan.kode_nomenklatur.nomenklatur }}</td>
+                                <td class="p-3 border border-gray-200 text-right">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.toLocaleString('id-ID') || '0' }}</td>
                                 <td class="p-3 border border-gray-200 text-right">0</td>
                                 <td class="p-3 border border-gray-200 text-right">0</td>
                                 <td class="p-3 border border-gray-200 text-center">-</td>
@@ -398,10 +562,23 @@ function goToCreate() {
                                 <td class="p-3 border border-gray-200 text-right">-</td>
                                 <td class="p-3 border border-gray-200 text-center">-</td>
                                 <td class="p-3 border border-gray-200 text-right">-</td>
+                                <td class="p-3 border border-gray-200 text-center">
+                                  <div class="flex flex-col space-y-1">
+                                    <button @click="fillTargets(bidangUrusan)" class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                                      Isi Target
+                                    </button>
+                                    <button @click="saveTargets(bidangUrusan)" class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                                      Simpan
+                                    </button>
+                                    <button @click="deleteItem(bidangUrusan)" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
+                                      Hapus
+                                    </button>
+                                  </div>
+                                </td>
                             </tr>
 
-                            <!-- Display programs for this bidang urusan -->
-                            <template v-for="program in props.programTugas?.filter(p => p.kode_nomenklatur.details[0]?.id_bidang_urusan === bidangUrusan.id)" :key="program.id">
+                            <!-- Display programs that belong to this bidang urusan -->
+                            <template v-for="program in props.programTugas?.filter(p => p.kode_nomenklatur.details[0]?.id_bidang_urusan === bidangUrusan.kode_nomenklatur.id)" :key="program.id">
                                 <tr class="border border-gray-200 bg-gray-50 font-medium">
                                     <td class="p-3 border border-gray-200 text-center">{{ program.kode_nomenklatur.nomor_kode }}</td>
                                     <td class="p-3 border border-gray-200 pl-6">{{ program.kode_nomenklatur.nomenklatur }}</td>
@@ -417,6 +594,19 @@ function goToCreate() {
                                     <td class="p-3 border border-gray-200 text-right">{{ program.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || program.targets?.[2]?.keuangan || '-' }}</td>
                                     <td class="p-3 border border-gray-200 text-center">{{ program.monitoring?.targets?.[3]?.kinerja_fisik || program.targets?.[3]?.kinerjaFisik || '-' }}</td>
                                     <td class="p-3 border border-gray-200 text-right">{{ program.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || program.targets?.[3]?.keuangan || '-' }}</td>
+                                    <td class="p-3 border border-gray-200 text-center">
+                                      <div class="flex flex-col space-y-1">
+                                        <button @click="fillTargets(program)" class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                                          Isi Target
+                                        </button>
+                                        <button @click="saveTargets(program)" class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                                          Simpan
+                                        </button>
+                                        <button @click="deleteItem(program)" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
+                                          Hapus
+                                        </button>
+                                      </div>
+                                    </td>
                                 </tr>
 
                                 <!-- Display kegiatan for this program -->
@@ -436,9 +626,22 @@ function goToCreate() {
                                         <td class="p-3 border border-gray-200 text-right">{{ kegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[2]?.keuangan || '-' }}</td>
                                         <td class="p-3 border border-gray-200 text-center">{{ kegiatan.monitoring?.targets?.[3]?.kinerja_fisik || kegiatan.targets?.[3]?.kinerjaFisik || '-' }}</td>
                                         <td class="p-3 border border-gray-200 text-right">{{ kegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[3]?.keuangan || '-' }}</td>
+                                        <td class="p-3 border border-gray-200 text-center">
+                                          <div class="flex flex-col space-y-1">
+                                            <button @click="fillTargets(kegiatan)" class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                                              Isi Target
+                                            </button>
+                                            <button @click="saveTargets(kegiatan)" class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                                              Simpan
+                                            </button>
+                                            <button @click="deleteItem(kegiatan)" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
+                                              Hapus
+                                            </button>
+                                          </div>
+                                        </td>
                                     </tr>
                                     
-                                    <!-- Display formatted subkegiatan data for this kegiatan -->
+                                    <!-- Display subkegiatan data for this kegiatan with funding details -->
                                     <template v-for="item in formattedSubKegiatanData.filter(sk => sk.kegiatan.id === kegiatan.id)" :key="item.id">
                                         <tr class="border border-gray-200 hover:bg-gray-50">
                                             <td class="p-3 border border-gray-200 text-center">{{ item.subKegiatan.kode_nomenklatur.nomor_kode }}</td>
@@ -455,6 +658,19 @@ function goToCreate() {
                                             <td class="p-3 border border-gray-200 text-right">{{ item.subKegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || item.subKegiatan.targets?.[2]?.keuangan || '-' }}</td>
                                             <td class="p-3 border border-gray-200 text-center">{{ item.subKegiatan.monitoring?.targets?.[3]?.kinerja_fisik || item.subKegiatan.targets?.[3]?.kinerjaFisik || '-' }}</td>
                                             <td class="p-3 border border-gray-200 text-right">{{ item.subKegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || item.subKegiatan.targets?.[3]?.keuangan || '-' }}</td>
+                                            <td class="p-3 border border-gray-200 text-center">
+                                              <div class="flex flex-col space-y-1">
+                                                <button @click="fillTargets(item.subKegiatan)" class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                                                  Isi Target
+                                                </button>
+                                                <button @click="saveTargets(item.subKegiatan)" class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                                                  Simpan
+                                                </button>
+                                                <button @click="deleteItem(item.subKegiatan)" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
+                                                  Hapus
+                                                </button>
+                                              </div>
+                                            </td>
                                         </tr>
                                     </template>
                                 </template>
@@ -465,6 +681,151 @@ function goToCreate() {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Modal for Target Editing -->
+    <teleport to="body">
+      <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-[800px] max-w-[90%] max-h-[90vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+              Edit Target: {{ currentItem?.kode_nomenklatur.nomenklatur }}
+            </h3>
+            <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="mb-4">
+            <p class="text-sm text-gray-600">Kode: {{ currentItem?.kode_nomenklatur.nomor_kode }}</p>
+            <p class="font-medium">{{ currentItem?.kode_nomenklatur.nomenklatur }}</p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Triwulan 1 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 1</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw1.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw1.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Triwulan 2 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 2</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw2.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw2.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Triwulan 3 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 3</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw3.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw3.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Triwulan 4 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 4</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw4.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw4.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3 mt-6">
+            <button 
+              @click="closeModal" 
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            >
+              Batal
+            </button>
+            <button 
+              @click="saveTargets(currentItem as ItemWithKodeNomenklatur)" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              :disabled="!currentItem"
+            >
+              Simpan Target
+            </button>
+          </div>
+        </div>
+      </div>
+    </teleport>
 </template>
 
 <style scoped>

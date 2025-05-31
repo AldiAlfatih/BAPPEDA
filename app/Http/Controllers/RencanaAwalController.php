@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Monitoring;
 use App\Models\MonitoringTarget;
+use App\Models\Periode;
 use Illuminate\Support\Facades\DB;
 
 class RencanaAwalController extends Controller
@@ -22,6 +23,25 @@ class RencanaAwalController extends Controller
                 $query->where('is_aktif', 1);
             }
         ])->findOrFail($id);
+
+        // Get active periods
+        $periodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->whereHas('tahap', function($query) {
+                $query->where('tahap', 'Rencana');
+            })
+            ->get();
+
+        // Get all periods for the dropdown
+        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->get();
+
+        // Get current year
+        $tahunAktif = null;
+        if ($semuaPeriodeAktif->isNotEmpty()) {
+            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
+        }
 
         // Ambil program, kegiatan, dan subkegiatan terkait dengan tugas SKPD
         $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
@@ -49,6 +69,11 @@ class RencanaAwalController extends Controller
 
         // Filter program, kegiatan, dan subkegiatan
         $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
+
+        $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+            $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+            $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+        )->values();
 
         $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
@@ -122,6 +147,7 @@ class RencanaAwalController extends Controller
         // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
@@ -136,6 +162,10 @@ class RencanaAwalController extends Controller
                 'success' => session('success'),
                 'error' => session('error'),
             ],
+            'bidangUrusanList' => $bidangurusanTugas,
+            'periodeAktif' => $periodeAktif,
+            'tahunAktif' => $tahunAktif,
+            'semuaPeriodeAktif' => $semuaPeriodeAktif,
         ]);
     }
 
@@ -267,6 +297,11 @@ class RencanaAwalController extends Controller
 
             $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
 
+            $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+                $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+                $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+            )->values();
+
             $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
                 return $item->kodeNomenklatur->jenis_nomenklatur == 2
                     && $item->kodeNomenklatur->details->first()
@@ -297,6 +332,7 @@ class RencanaAwalController extends Controller
 
             return Inertia::render('Monitoring/RencanaAwal', [
                 'tugas' => $tugas,
+                'bidangurusanTugas' => $bidangurusanTugas,
                 'programTugas' => $programTugas,
                 'kegiatanTugas' => $kegiatanTugas,
                 'subkegiatanTugas' => $subkegiatanTugas,
@@ -349,6 +385,11 @@ class RencanaAwalController extends Controller
 
             $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
 
+            $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+                $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+                $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+            )->values();
+
             $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
                 return $item->kodeNomenklatur->jenis_nomenklatur == 2
                     && $item->kodeNomenklatur->details->first()
@@ -385,6 +426,7 @@ class RencanaAwalController extends Controller
 
             return Inertia::render('Monitoring/RencanaAwal', [
                 'tugas' => $tugas,
+                'bidangurusanTugas' => $bidangurusanTugas,
                 'programTugas' => $programTugas,
                 'kegiatanTugas' => $kegiatanTugas,
                 'subkegiatanTugas' => $subkegiatanTugas,
@@ -401,6 +443,44 @@ class RencanaAwalController extends Controller
 
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal memfinalisasi baris: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a rencana awal monitoring item
+     * 
+     * @param int $id The ID of the item to delete (skpd_tugas_id)
+     * @return \Illuminate\Http\Response
+     */
+    public function delete($id)
+    {
+        try {
+            // Find monitoring records for this tugas
+            $monitoring = Monitoring::where('skpd_tugas_id', $id)
+                ->where('deskripsi', 'Rencana Awal')
+                ->first();
+                
+            if ($monitoring) {
+                // Delete related targets
+                $monitoring->targets()->delete();
+                
+                // Delete monitoring anggaran and related pagu records
+                foreach ($monitoring->monitoringAnggaran as $anggaran) {
+                    // Delete related pagu records
+                    $anggaran->pagu()->delete();
+                    // Delete the anggaran record
+                    $anggaran->delete();
+                }
+                
+                // Delete the monitoring record
+                $monitoring->delete();
+                
+                return response()->json(['success' => true, 'message' => 'Item berhasil dihapus']);
+            }
+            
+            return response()->json(['success' => false, 'message' => 'Item tidak ditemukan']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus item: ' . $e->getMessage()], 500);
         }
     }
 }

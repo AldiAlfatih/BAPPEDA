@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use App\Models\MonitoringAnggaran;
+use App\Models\Periode;
 
 class MonitoringController extends Controller
 {
@@ -173,6 +174,11 @@ class MonitoringController extends Controller
 
         $urusanId = $tugas->kodeNomenklatur->details->first()?->id_urusan;
 
+        $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+            $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+            $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+        )->values();
+
         $programTugas = $skpdTugas->filter(fn($item) => 
             $item->kodeNomenklatur->jenis_nomenklatur == 2 &&
             $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
@@ -194,12 +200,24 @@ class MonitoringController extends Controller
         // Get the user associated with this SKPD for proper navigation
         $skpdUser = User::where('id', $tugas->skpd->user_id)->first();
 
-        // Fetch bidang urusan data
-        $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
-            ->with(['details' => function($query) {
-                $query->select('id', 'id_nomenklatur', 'id_urusan');
-            }])
+        // Get active periods
+        $periodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->whereHas('tahap', function($query) {
+                $query->where('tahap', 'Rencana');
+            })
             ->get();
+
+        // Get all periods for the dropdown
+        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->get();
+
+        // Get current year
+        $tahunAktif = null;
+        if ($semuaPeriodeAktif->isNotEmpty()) {
+            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
+        }
 
         // Fetch anggaran data for each subkegiatan
         $dataAnggaranTerakhir = [];
@@ -255,18 +273,22 @@ class MonitoringController extends Controller
 
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
-            'bidangUrusanList' => $bidangUrusanList,
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'user' => [
                 'nip' => $skpdUser?->userDetail?->nip ?? '-',
                 'id' => $skpdUser?->id ?? $tugas->skpd_id, // Use user ID instead of skpd_id
                 'nama_skpd' => $tugas->skpd->nama_skpd ?? $tugas->skpd->nama_dinas,
                 'skpd_id' => $tugas->skpd_id // Keep skpd_id for other purposes
-            ]
+            ],
+            'bidangUrusanList' => $bidangurusanTugas,
+            'periodeAktif' => $periodeAktif,
+            'semuaPeriodeAktif' => $semuaPeriodeAktif,
+            'tahunAktif' => $tahunAktif
         ]);
     }
 

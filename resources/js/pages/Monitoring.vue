@@ -305,6 +305,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               <div>
                                 <p class="text-sm text-gray-600">Kepala Daerah:</p>
                                 <p class="font-medium text-lg text-gray-500">{{ user.name || '-' }}</p>
+                                <p class="text-sm font-mono text-gray-500">{{ getUserNip(user) || '-' }}</p>
                               </div>
                             </div>
                             <div>
@@ -314,10 +315,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <div>
                               <p class="text-sm text-gray-600">Nama Penanggung Jawab:</p>
                               <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_operator || '-' }}</p>
-                            </div>
-                            <div>
-                              <p class="text-sm text-gray-600">NIP:</p>
-                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ getUserNip(user) || '-' }}</p>
+                              <p class="text-sm font-mono text-gray-500">{{ user.skpd?.nip_operator || '-' }}</p>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Kode Organisasi:</p>

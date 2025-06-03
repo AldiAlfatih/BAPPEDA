@@ -15,7 +15,6 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use App\Models\MonitoringAnggaran;
 use App\Models\Periode;
-use App\Models\Periode;
 
 class MonitoringController extends Controller
 {
@@ -28,21 +27,55 @@ class MonitoringController extends Controller
         }
 
         if ($user->hasRole('operator')) {
+            $user->load('userDetail');
+
             $skpdUserIds = Skpd::where('nama_operator', $user->name)->pluck('user_id');
             $users = User::whereIn('id', $skpdUserIds)
                 ->role('perangkat_daerah')
-                ->with('skpd')
+                ->withwith(['skpd', 'userDetail'])
                 ->paginate(1000);
+
+            $users->getCollection()->transform(function($userData) use ($user) {
+                // Since the current user is the operator, use their NIP
+                if ($userData->skpd) {
+                    $userData->skpd->nip_operator = $user->userDetail->nip ?? null;
+                }
+                
+                return $userData;
+            });
 
             return Inertia::render('Monitoring', [
                 'users' => $users,
             ]);
         }
 
-        $users = User::role('perangkat_daerah')
-        ->with(['skpd', 'userDetail'])
-        ->paginate(1000);
-
+                $usersQuery = User::role('perangkat_daerah')
+            ->with(['skpd', 'userDetail']);
+        
+        $users = $usersQuery->paginate(1000);
+        
+        // Process each user to add operator NIP information
+        $users->getCollection()->transform(function($user) {
+            // Find the operator's user record to get their NIP
+            $operatorName = $user->skpd->nama_operator ?? null;
+            $operatorUser = null;
+            $operatorNip = null;
+            
+            if ($operatorName) {
+                $operatorUser = User::where('name', $operatorName)->first();
+                if ($operatorUser) {
+                    $operatorDetail = UserDetail::where('user_id', $operatorUser->id)->first();
+                    $operatorNip = $operatorDetail->nip ?? null;
+                }
+            }
+            
+            // Add the operator's NIP to the user's skpd data
+            if ($user->skpd) {
+                $user->skpd->nip_operator = $operatorNip;
+            }
+            
+            return $user;
+        });
 
         return Inertia::render('Monitoring', [
             'users' => $users,
@@ -80,6 +113,23 @@ class MonitoringController extends Controller
     {
         $user = User::with(['skpd', 'userDetail'])->findOrFail($id);
 
+        // Find the operator's user record to get their NIP
+        $operatorName = $user->skpd->nama_operator ?? null;
+        $operatorUser = null;
+        $operatorNip = null;
+
+        if ($operatorName) {
+            $operatorUser = User::where('name', $operatorName)->first();
+            if ($operatorUser) {
+                $operatorDetail = UserDetail::where('user_id', $operatorUser->id)->first();
+                $operatorNip = $operatorDetail->nip ?? null;
+            }
+        }
+
+        // Add the operator's NIP to the user's skpd data
+        if ($user->skpd) {
+            $user->skpd->nip_operator = $operatorNip;
+        }
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
         $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
@@ -158,6 +208,7 @@ class MonitoringController extends Controller
         ]);
     }
 
+
     public function showRencanaAwal($id, Request $request)
     {
         $tugas = SkpdTugas::with([
@@ -229,9 +280,6 @@ class MonitoringController extends Controller
 
         // Get all periods for the dropdown
         $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
-            ->where('status', 1)
-        // Get active periods
-        $periodeAktif = Periode::with(['tahap', 'tahun'])
             ->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->where('tahap', 'Rencana');

@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use App\Models\MonitoringAnggaran;
+use App\Models\Periode;
 
 class MonitoringController extends Controller
 {
@@ -156,7 +157,7 @@ class MonitoringController extends Controller
         ]);
     }
 
-    public function showRencanaAwal($id)
+    public function showRencanaAwal($id, Request $request)
     {
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',
@@ -173,6 +174,11 @@ class MonitoringController extends Controller
 
         $urusanId = $tugas->kodeNomenklatur->details->first()?->id_urusan;
 
+        $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+            $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+            $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+        )->values();
+
         $programTugas = $skpdTugas->filter(fn($item) => 
             $item->kodeNomenklatur->jenis_nomenklatur == 2 &&
             $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
@@ -188,86 +194,148 @@ class MonitoringController extends Controller
             $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
         )->values();
 
+        // Load monitoring data for each subkegiatan
+        foreach ($subkegiatanTugas as $subKegiatan) {
+            $monitoring = Monitoring::where('skpd_tugas_id', $subKegiatan->id)
+                ->where('tahun', date('Y'))
+                ->where('deskripsi', 'Rencana Awal')
+                ->with('targets')
+                ->first();
+            
+            if ($monitoring) {
+                $subKegiatan->monitoring = $monitoring;
+            }
+        }
+
         $kepala = $tugas->skpd->skpdKepala->first();
         $kepalaSkpd = $kepala?->user?->userDetail?->nama ?? $kepala?->user?->name ?? '-';
 
         // Get the user associated with this SKPD for proper navigation
         $skpdUser = User::where('id', $tugas->skpd->user_id)->first();
 
-        // Fetch bidang urusan data
-        $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
-            ->with(['details' => function($query) {
-                $query->select('id', 'id_nomenklatur', 'id_urusan');
-            }])
+        // Get active periods
+        $periodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->whereHas('tahap', function($query) {
+                $query->where('tahap', 'Rencana');
+            })
             ->get();
 
-        // Fetch anggaran data for each subkegiatan
+        // Get all periods for the dropdown
+        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->get();
+
+        // Get current year
+        $tahunAktif = null;
+        if ($semuaPeriodeAktif->isNotEmpty()) {
+            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
+        }
+
+        // Get funding data for each subkegiatan filtered by active period
         $dataAnggaranTerakhir = [];
-        $subkegiatanIds = $subkegiatanTugas->pluck('id')->toArray();
-        
-        // Loop through each subkegiatan to get its anggaran data
-        foreach ($subkegiatanTugas as $subKegiatan) {
-            // Find the latest monitoring for this subkegiatan
-            $monitoring = Monitoring::where('skpd_tugas_id', $subKegiatan->id)
+        $periodeId = null;
+
+        // Get period ID from request if specified
+        if ($request->has('periode_id') && $request->periode_id) {
+            $periodeId = $request->periode_id;
+        }
+        // Otherwise use Rencana period ID if active
+        elseif ($periodeAktif->isNotEmpty()) {
+            $periodeId = $periodeAktif->first()->id;
+        }
+
+        // Fetch anggaran data for each subkegiatan using the same approach as ManajemenAnggaranController
+        foreach ($subkegiatanTugas as $tugas) {
+            // Find monitoring related to this SKPD tugas
+            $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
                 ->latest()
                 ->first();
-            
+
             if ($monitoring) {
-                // Get all monitoring_anggaran for this monitoring
-                $monitoringAnggaran = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
-                    ->with(['sumberAnggaran', 'pagu' => function($query) {
-                        $query->where('kategori', 1); // Kategori 1 = pokok
-                    }])
-                    ->get();
-                
-                $sumberAnggaranData = [
-                    'sumber_anggaran' => [
-                        'dak' => false,
-                        'dak_peruntukan' => false,
-                        'dak_fisik' => false,
-                        'dak_non_fisik' => false,
-                        'blud' => false
-                    ],
-                    'values' => [
-                        'dak' => 0,
-                        'dak_peruntukan' => 0,
-                        'dak_fisik' => 0,
-                        'dak_non_fisik' => 0,
-                        'blud' => 0
-                    ]
-                ];
-                
-                // Process each anggaran to get the sumber and values
+                // Get funding data for this monitoring filtered by period
+                $sumberAnggaranData = [];
+
+                $monitoringAnggaranQuery = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                    ->with(['sumberAnggaran']);
+
+                if ($periodeId) {
+                    $monitoringAnggaranQuery->with(['pagu' => function($query) use ($periodeId) {
+                        $query->where('kategori', 1) // Category 1 = pokok
+                              ->where('periode_id', $periodeId); // Filter by period
+                    }]);
+                } else {
+                    $monitoringAnggaranQuery->with(['pagu' => function($query) {
+                        $query->where('kategori', 1); // Category 1 = pokok
+                    }]);
+                }
+
+                $monitoringAnggaran = $monitoringAnggaranQuery->get();
+
                 foreach ($monitoringAnggaran as $anggaran) {
                     if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
-                        $key = strtolower(str_replace(' ', '_', $anggaran->sumberAnggaran->nama));
-                        if (isset($sumberAnggaranData['sumber_anggaran'][$key])) {
-                            $sumberAnggaranData['sumber_anggaran'][$key] = true;
-                            $sumberAnggaranData['values'][$key] = $anggaran->pagu->first()->dana ?? 0;
+                        $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
+                        if ($key) {
+                            $sumberAnggaranData[$key] = $anggaran->pagu->first()->dana ?? 0;
                         }
                     }
                 }
-                
-                // Store the data for this subkegiatan
-                $dataAnggaranTerakhir[$subKegiatan->id] = $sumberAnggaranData;
+
+                // Save data per SKPD tugas using same structure as ManajemenAnggaranController
+                $dataAnggaranTerakhir[$tugas->id] = [
+                    'sumber_anggaran' => [
+                        'dak' => isset($sumberAnggaranData['dak']),
+                        'dak_peruntukan' => isset($sumberAnggaranData['dak_peruntukan']),
+                        'dak_fisik' => isset($sumberAnggaranData['dak_fisik']),
+                        'dak_non_fisik' => isset($sumberAnggaranData['dak_non_fisik']),
+                        'blud' => isset($sumberAnggaranData['blud']),
+                    ],
+                    'values' => [
+                        'dak' => $sumberAnggaranData['dak'] ?? 0,
+                        'dak_peruntukan' => $sumberAnggaranData['dak_peruntukan'] ?? 0,
+                        'dak_fisik' => $sumberAnggaranData['dak_fisik'] ?? 0,
+                        'dak_non_fisik' => $sumberAnggaranData['dak_non_fisik'] ?? 0,
+                        'blud' => $sumberAnggaranData['blud'] ?? 0,
+                    ]
+                ];
             }
         }
 
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
             'kepalaSkpd' => $kepalaSkpd,
-            'bidangUrusanList' => $bidangUrusanList,
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'user' => [
                 'nip' => $skpdUser?->userDetail?->nip ?? '-',
                 'id' => $skpdUser?->id ?? $tugas->skpd_id, // Use user ID instead of skpd_id
                 'nama_skpd' => $tugas->skpd->nama_skpd ?? $tugas->skpd->nama_dinas,
                 'skpd_id' => $tugas->skpd_id // Keep skpd_id for other purposes
-            ]
+            ],
+            'bidangUrusanList' => $bidangurusanTugas,
+            'periodeAktif' => $periodeAktif,
+            'semuaPeriodeAktif' => $semuaPeriodeAktif,
+            'tahunAktif' => $tahunAktif
         ]);
+    }
+
+    /**
+     * Kebalikan dari fungsi mapNamaSumberAnggaran untuk validasi penghapusan
+     */
+    private function reverseMapNamaSumberAnggaran(string $nama): ?string
+    {
+        $reverseMapping = [
+            'DAU' => 'dak',
+            'DAU Peruntukan' => 'dak_peruntukan',
+            'DAK Fisik' => 'dak_fisik',
+            'DAK Non Fisik' => 'dak_non_fisik',
+            'BLUD' => 'blud',
+        ];
+
+        return $reverseMapping[$nama] ?? null;
     }
 
     public function update(Request $request, $id)

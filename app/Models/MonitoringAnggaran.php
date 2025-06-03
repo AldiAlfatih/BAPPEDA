@@ -25,17 +25,23 @@ class MonitoringAnggaran extends Model
         return $this->belongsTo(Monitoring::class);
     }
 
+    public function monitoringPagu()
+    {
+        return $this->hasMany(MonitoringPagu::class);
+    }
+
+    // Add pagu relationship as an alias for monitoringPagu
     public function pagu()
     {
         return $this->hasMany(MonitoringPagu::class);
     }
 
-    public function realisasi()
+    public function monitoringRealisasi()
     {
         return $this->hasMany(MonitoringRealisasi::class);
     }
-
-    public function target()
+    // Alias untuk konsistensi
+    public function monitoringTarget()
     {
         return $this->hasMany(MonitoringTarget::class);
     }

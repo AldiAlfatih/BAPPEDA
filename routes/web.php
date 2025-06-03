@@ -43,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('triwulan1', Triwulan1Controller::class)->names('triwulan1');
     Route::get('triwulan1/Detail/{id}', [Triwulan1Controller::class, 'showDetail'])->name('triwulan1.showDetail');
+    Route::post('/triwulan1/save-realisasi', [Triwulan1Controller::class, 'saveRealisasi'])->name('triwulan1.save-realisasi');
     Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
     Route::get('triwulan2/Detail/{id}', [Triwulan2Controller::class, 'showDetail'])->name('triwulan2.showDetail');
     Route::resource('triwulan3', Triwulan3Controller::class)->names('triwulan3');
@@ -63,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');
     Route::post('/periode/lanjutkanKeTahunBerikutnya', [PeriodeController::class, 'lanjutkanKeTahunBerikutnya'])->name('periode.lanjutkanKeTahunBerikutnya');
     Route::get('/periode-belum-selesai', [PeriodeController::class, 'getPeriodeBelumSelesai'])->name('periode.belum-selesai');
+    Route::get('/periode-belum-selesai-data', [PeriodeController::class, 'getPeriodeBelumSelesaiData'])->name('periode.belum-selesai.data');
     Route::get('/periode-list', [PeriodeController::class, 'getAllPeriodes'])->name('periode.list');
     Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif'])->name('periode.aktif');
 
@@ -75,7 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/monitoring/user/{id}', [MonitoringController::class, 'showUserMonitoring']);
     Route::get('/monitoring/tugas/{id}', [MonitoringController::class, 'showTugas']);
-    Route::get('/monitoring/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('rencanaawal');
+    Route::get('/monitoring/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('monitoring.rencanaawal');
     Route::post('/rencanaawal', [MonitoringController::class, 'saveMonitoringData'])->name('monitoring.save');
     // Rute dipindahkan di atas bersama dengan resource controller untuk menghindari konflik
 
@@ -83,6 +85,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rencanaawal/finalize', [RencanaAwalController::class, 'finalizeMonitoring'])
         ->name('rencanaawal.finalize');
     Route::post('/rencanaawal/finalize-row', [RencanaAwalController::class, 'finalizeRow'])->name('rencanaawal.finalize-row');
+
+    // Tambahkan di dalam middleware auth, misalnya sebelum Route::resource lainnya
+// di routes/web.php
+Route::get('/triwulan1/{id}/monitoring-target', [Triwulan1Controller::class, 'showMonitoringTarget'])->name('triwulan1.monitoring-target');
+Route::get('/triwulan1/{id}/perbandingan/{periode?}', [Triwulan1Controller::class, 'showPerbandingan'])->name('triwulan1.perbandingan');
+
+
+
 });
 
 require __DIR__.'/settings.php';

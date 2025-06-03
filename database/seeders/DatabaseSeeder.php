@@ -24,8 +24,9 @@ class DatabaseSeeder extends Seeder
         $this->call(FiturSeeder::class);
         $this->call(RuleSeeder::class);
         $this->call(KodeNomenklaturSeeder::class);
-        $this->call(UserSeeder::class);
         $this->call(AnggaranSeeder::class);
+        $this->call(UserSeeder::class);
+        $this->call(MonitoringTargetSeeder::class);
         $this->call(PanduanSeeder::class);
 }
 }

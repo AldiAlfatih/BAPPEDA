@@ -38,7 +38,7 @@ class PeriodeController extends Controller
     {
         $periode = Periode::with(['tahun', 'tahap'])->findOrFail($id);
 
-        return Inertia::render('Periode/Show', [
+        return Inertia::render('periode/Show', [
             'periode' => $periode
         ]);
     }
@@ -262,13 +262,13 @@ class PeriodeController extends Controller
             // Debug: Menambahkan log untuk memeriksa apakah data ada
             \Log::info('Data Periode:', ['periode' => $periode]);
 
-            return Inertia::render('Periode/Active', [
+            return Inertia::render('periode/Active', [
                 'periode' => $periode
             ]);
         } catch (\Exception $e) {
             // Log kesalahan jika terjadi error
             \Log::error('Gagal mengambil data periode: ' . $e->getMessage());
-            return Inertia::render('Periode/Active', [
+            return Inertia::render('periode/Active', [
                 'periode' => [],
                 'error' => 'Gagal mengambil data periode.'
             ]);
@@ -287,12 +287,12 @@ class PeriodeController extends Controller
                 ->where('status', 1)
                 ->get();
 
-            return Inertia::render('Periode/Active', [
+            return Inertia::render('periode/Active', [
                 'periode' => $periode
             ]);
         } catch (\Exception $e) {
             \Log::error('Gagal mengambil data periode aktif: ' . $e->getMessage());
-            return Inertia::render('Periode/Active', [
+            return Inertia::render('periode/Active', [
                 'periode' => [],
                 'error' => 'Gagal mengambil data periode aktif.'
             ]);
@@ -312,15 +312,39 @@ class PeriodeController extends Controller
                 ->orderBy('tahap_id', 'asc')
                 ->get();
             
-            return Inertia::render('Periode/List', [
+            return Inertia::render('periode/List', [
                 'periodes' => $periodes
             ]);
         } catch (\Exception $e) {
             \Log::error('Gagal mengambil semua periode: ' . $e->getMessage());
-            return Inertia::render('Periode/List', [
+            return Inertia::render('periode/List', [
                 'periodes' => [],
                 'error' => 'Gagal mengambil data periode.'
             ]);
+        }
+    }
+
+    /**
+     * Get periods that are not yet completed, as JSON data
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPeriodeBelumSelesaiData()
+    {
+        try {
+            $periode = Periode::with('tahap')
+                ->whereNotIn('status', [0, 2])
+                ->get();
+
+            return response()->json([
+                'periode' => $periode
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengambil data periode: ' . $e->getMessage());
+            return response()->json([
+                'periode' => [],
+                'error' => 'Gagal mengambil data periode.'
+            ], 500);
         }
     }
 }

@@ -36,6 +36,10 @@ class SkpdTugas extends Model
     {
         return $this->belongsTo(KodeNomenklatur::class);
     }
+    public function monitoring()
+    {
+        return $this->hasMany(Monitoring::class);
+    }
 
     public function tugasMonitoring()
     {

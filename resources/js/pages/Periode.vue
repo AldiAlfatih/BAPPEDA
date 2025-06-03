@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
-import { Inertia } from '@inertiajs/inertia'
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Periode', href: '/periode' },

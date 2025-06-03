@@ -7,7 +7,6 @@ import { type Ref, ref, watch, onMounted, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Stepper, StepperDescription, StepperItem, StepperSeparator, StepperTitle, StepperTrigger } from '@/components/ui/stepper';
 import { Check, Circle, Dot } from 'lucide-vue-next';
-import axios from 'axios';
 
 interface Tahap {
   tahap?: string;
@@ -23,7 +22,14 @@ interface Periode {
 const periodeBelumSelesai = ref<Periode[]>([]);
 
 const fetchPeriodeBelumSelesai = () => {
-  window.location.href = route('periode.belum-selesai');
+  fetch(route('periode.belum-selesai.data'))
+    .then(response => response.json())
+    .then(data => {
+      periodeBelumSelesai.value = data.periode || [];
+    })
+    .catch(error => {
+      console.error('Error fetching periode data:', error);
+    });
 };
 
 onMounted(() => {
@@ -284,7 +290,7 @@ const stepStates = computed(() => {
             <StepperItem
               v-for="(step, index) in steps"
               :key="step.step"
-              v-slot="{ state }"
+              v-slot="{}"
               class="relative flex w-full flex-col items-center justify-center"
               :step="step.step"
               :data-state="stepStates[index]"
@@ -342,7 +348,7 @@ const stepStates = computed(() => {
                   {{ formatTanggal(periodeBelumSelesai[0]) }}
                 </p>
               </div>
-            </div>  
+            </div>
           </div>
 
           <div v-else class="mt-4 w-full rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-sm">

@@ -34,15 +34,12 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
-      // NIP sekarang ada di user_detail
       user_detail?: {
         nip?: string;
-        // tambahan field lain dari user_detail jika ada
       } | null;
       skpd: {
         nama_dinas: string;
         nama_operator: string;
-        no_dpa: string;
         kode_organisasi: string;
       } | null;
     }>;
@@ -79,7 +76,6 @@ const filteredData = computed(() => {
       (item.name || '').toLowerCase().includes(query) || 
       (item.skpd?.nama_dinas || '').toLowerCase().includes(query) ||
       (item.skpd?.nama_operator || '').toLowerCase().includes(query) ||
-      (item.skpd?.no_dpa || '').toLowerCase().includes(query) ||
       (item.skpd?.kode_organisasi || '').toLowerCase().includes(query)
     );
   }
@@ -122,8 +118,6 @@ function getFieldValue(item: any, field: string) {
       return item.skpd?.nama_dinas || '';
     case 'nama_operator':
       return item.skpd?.nama_operator || '';
-    case 'no_dpa':
-      return item.skpd?.no_dpa || '';
     case 'kode_organisasi':
       return item.skpd?.kode_organisasi || '';
     default:
@@ -250,7 +244,6 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         :class="{'opacity-100': sortField === 'name'}" />
                     </div>
                   </TableHead>
-                  <TableHead class="hidden lg:table-cell text-gray-600">No DPA</TableHead>
                   <TableHead class="hidden lg:table-cell text-gray-600">Kode Organisasi</TableHead>
                   <TableHead class="text-gray-600">Aksi</TableHead>
                 </TableRow>
@@ -282,7 +275,6 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                       </TableCell>
                       <TableCell class="text-gray-500">{{ user.skpd?.nama_operator || '-' }}</TableCell>
                       <TableCell class="text-gray-500">{{ user.name || '-' }}</TableCell>
-                      <TableCell class="hidden lg:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
                       <TableCell class="hidden lg:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
@@ -326,10 +318,6 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <div>
                               <p class="text-sm text-gray-600">NIP:</p>
                               <p class="font-mono text-gray-500 dark:text-gray-200">{{ getUserNip(user) || '-' }}</p>
-                            </div>
-                            <div>
-                              <p class="text-sm text-gray-600">No DPA:</p>
-                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.no_dpa || '-' }}</p>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Kode Organisasi:</p>

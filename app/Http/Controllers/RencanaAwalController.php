@@ -13,6 +13,7 @@ use App\Models\MonitoringPagu;
 use App\Models\SumberAnggaran;
 use App\Models\Periode;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RencanaAwalController extends Controller
 {
@@ -242,6 +243,13 @@ class RencanaAwalController extends Controller
                     });
             })
             ->get();
+
+        // Assign bidangurusanTugas before returning
+        $bidangurusanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 1
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->values();
 
         // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
@@ -598,6 +606,172 @@ class RencanaAwalController extends Controller
             return response()->json(['success' => false, 'message' => 'Item tidak ditemukan']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal menghapus item: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Save target data for a specific task (subkegiatan)
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function saveTarget(Request $request)
+    {
+        $validated = $request->validate([
+            'skpd_tugas_id' => 'required|numeric',
+            'tahun' => 'required',
+            'deskripsi' => 'required|string',
+            'targets' => 'required|array',
+            'sumber_anggaran_id' => 'required|numeric',
+            'periode_id' => 'nullable|numeric',
+            'nama_pptk' => 'nullable|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            // Log input untuk debugging
+            Log::debug('Received data for saveTarget', $request->all());
+            Log::info('Processing targets data with sumber anggaran ID: ' . $validated['sumber_anggaran_id']);
+            
+            // Cari atau buat monitoring baru
+            $monitoring = Monitoring::firstOrCreate(
+                [
+                    'skpd_tugas_id' => $validated['skpd_tugas_id'],
+                    'tahun' => $validated['tahun'],
+                    'deskripsi' => $validated['deskripsi'],
+                ],
+                [
+                    'nama_pptk' => $request->input('nama_pptk', ''),
+                    'periode_id' => $validated['periode_id'],
+                ]
+            );
+            
+            Log::info('Created or found monitoring record', ['id' => $monitoring->id]);
+            
+            // Cari atau buat monitoring_anggaran
+            $monitoringAnggaran = MonitoringAnggaran::firstOrCreate(
+                [
+                    'monitoring_id' => $monitoring->id,
+                    'sumber_anggaran_id' => $validated['sumber_anggaran_id'],
+                ]
+            );
+            
+            Log::info('Created or found monitoring_anggaran record', ['id' => $monitoringAnggaran->id]);
+            
+            // Hapus target lama jika ada
+            $deletedCount = MonitoringTarget::where('monitoring_anggaran_id', $monitoringAnggaran->id)->delete();
+            Log::info('Deleted old targets', ['count' => $deletedCount]);
+            
+            // Simpan target baru
+            foreach ($validated['targets'] as $target) {
+                $newTarget = MonitoringTarget::create([
+                    'monitoring_anggaran_id' => $monitoringAnggaran->id,
+                    'periode_id' => $target['triwulan'] ?? null,
+                    'kinerja_fisik' => $target['kinerja_fisik'],
+                    'keuangan' => $target['keuangan'],
+                ]);
+                
+                Log::info('Created target', [
+                    'id' => $newTarget->id,
+                    'triwulan' => $target['triwulan'] ?? null,
+                    'kinerja_fisik' => $target['kinerja_fisik'],
+                    'keuangan' => $target['keuangan']
+                ]);
+            }
+            
+            DB::commit();
+            return response()->json([
+                'success' => true, 
+                'message' => 'Target berhasil disimpan',
+                'data' => [
+                    'monitoring_id' => $monitoring->id,
+                    'monitoring_anggaran_id' => $monitoringAnggaran->id
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in saveTarget: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete target data for a specific monitoring anggaran
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function deleteTarget(Request $request)
+    {
+        $validated = $request->validate([
+            'skpd_tugas_id' => 'required|numeric',
+            'sumber_anggaran_id' => 'required|numeric',
+            'tahun' => 'required',
+            'periode_id' => 'nullable|numeric',
+        ]);
+
+        try {
+            Log::debug('Received data for deleteTarget', $request->all());
+            
+            // Cari monitoring berdasarkan skpd_tugas_id dan tahun
+            $monitoring = Monitoring::where('skpd_tugas_id', $validated['skpd_tugas_id'])
+                ->where('tahun', $validated['tahun'])
+                ->first();
+
+            if (!$monitoring) {
+                Log::warning('Monitoring record not found', [
+                    'skpd_tugas_id' => $validated['skpd_tugas_id'],
+                    'tahun' => $validated['tahun']
+                ]);
+                return response()->json(['success' => false, 'message' => 'Data monitoring tidak ditemukan'], 404);
+            }
+
+            // Cari monitoring anggaran berdasarkan monitoring_id dan sumber_anggaran_id
+            $monitoringAnggaran = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                ->where('sumber_anggaran_id', $validated['sumber_anggaran_id'])
+                ->first();
+
+            if (!$monitoringAnggaran) {
+                Log::warning('MonitoringAnggaran record not found', [
+                    'monitoring_id' => $monitoring->id,
+                    'sumber_anggaran_id' => $validated['sumber_anggaran_id']
+                ]);
+                
+                // Jika tidak ditemukan, coba lihat apa saja sumber anggaran yang ada
+                $availableAnggarans = MonitoringAnggaran::where('monitoring_id', $monitoring->id)->get();
+                Log::info('Available monitoring anggaran records', [
+                    'count' => $availableAnggarans->count(),
+                    'records' => $availableAnggarans->pluck('sumber_anggaran_id')->toArray()
+                ]);
+                
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Data anggaran tidak ditemukan',
+                    'available_anggaran_ids' => $availableAnggarans->pluck('sumber_anggaran_id')->toArray()
+                ], 404);
+            }
+
+            // Hapus semua target untuk monitoring_anggaran_id ini
+            $deletedCount = MonitoringTarget::where('monitoring_anggaran_id', $monitoringAnggaran->id)->delete();
+            Log::info('Deleted targets', ['count' => $deletedCount]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Target berhasil dihapus',
+                'deleted_count' => $deletedCount
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in deleteTarget: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 }

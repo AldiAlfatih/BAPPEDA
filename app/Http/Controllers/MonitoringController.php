@@ -15,6 +15,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use App\Models\MonitoringAnggaran;
 use App\Models\Periode;
+use App\Models\Periode;
 
 class MonitoringController extends Controller
 {
@@ -179,6 +180,11 @@ class MonitoringController extends Controller
             $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
         )->values();
 
+        $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+            $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+            $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+        )->values();
+
         $programTugas = $skpdTugas->filter(fn($item) => 
             $item->kodeNomenklatur->jenis_nomenklatur == 2 &&
             $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
@@ -213,6 +219,17 @@ class MonitoringController extends Controller
         // Get the user associated with this SKPD for proper navigation
         $skpdUser = User::where('id', $tugas->skpd->user_id)->first();
 
+        // Get active periods
+        $periodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
+            ->whereHas('tahap', function($query) {
+                $query->where('tahap', 'Rencana');
+            })
+            ->get();
+
+        // Get all periods for the dropdown
+        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
+            ->where('status', 1)
         // Get active periods
         $periodeAktif = Periode::with(['tahap', 'tahun'])
             ->where('status', 1)
@@ -303,6 +320,7 @@ class MonitoringController extends Controller
 
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,

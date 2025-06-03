@@ -37,6 +37,23 @@ interface User {
     nip: string;
 }
 
+interface ItemWithKodeNomenklatur {
+  id: number;
+  kode_nomenklatur: {
+    id: number;
+    nomor_kode: string;
+    nomenklatur: string;
+    jenis_nomenklatur: number;
+    details?: any[];
+  };
+  monitoring?: {
+    targets?: Array<{
+      kinerja_fisik: number;
+      keuangan: number;
+    }>;
+  };
+}
+
 interface Props {
     user?: User;
     programTugas?: any[];
@@ -97,6 +114,7 @@ interface Props {
     semuaPeriodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
     tahunAktif?: { id: number; tahun: string } | null;
     bidangurusanTugas?: any[];
+    bidangurusanTugas?: any[];
 }
 
 const props = defineProps<Props>();
@@ -124,6 +142,141 @@ onMounted(() => {
     selectedPeriodeId.value = props.semuaPeriodeAktif[0].id;
   }
 });
+
+// Modal and target editing states
+const showModal = ref(false);
+const currentItem = ref<ItemWithKodeNomenklatur | null>(null);
+const targetData = ref({
+  tw1: { kinerja_fisik: 0, keuangan: 0 },
+  tw2: { kinerja_fisik: 0, keuangan: 0 },
+  tw3: { kinerja_fisik: 0, keuangan: 0 },
+  tw4: { kinerja_fisik: 0, keuangan: 0 }
+});
+
+// Fill targets action
+const fillTargets = (item: ItemWithKodeNomenklatur) => {
+  currentItem.value = item;
+  // Populate target data from existing values if available
+  if (item.monitoring?.targets) {
+    targetData.value = {
+      tw1: { 
+        kinerja_fisik: item.monitoring.targets[0]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[0]?.keuangan || 0 
+      },
+      tw2: { 
+        kinerja_fisik: item.monitoring.targets[1]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[1]?.keuangan || 0 
+      },
+      tw3: { 
+        kinerja_fisik: item.monitoring.targets[2]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[2]?.keuangan || 0 
+      },
+      tw4: { 
+        kinerja_fisik: item.monitoring.targets[3]?.kinerja_fisik || 0, 
+        keuangan: item.monitoring.targets[3]?.keuangan || 0 
+      }
+    };
+  } else {
+    // Reset to defaults if no data exists
+    targetData.value = {
+      tw1: { kinerja_fisik: 0, keuangan: 0 },
+      tw2: { kinerja_fisik: 0, keuangan: 0 },
+      tw3: { kinerja_fisik: 0, keuangan: 0 },
+      tw4: { kinerja_fisik: 0, keuangan: 0 }
+    };
+  }
+  showModal.value = true;
+};
+
+// Save targets action
+const saveTargets = (item: ItemWithKodeNomenklatur) => {
+  if (!currentItem.value || !showModal.value) {
+    fillTargets(item); // If not already in edit mode, open the modal first
+    return;
+  }
+  
+  // Prepare data for saving
+  const targets = [
+    { kinerja_fisik: targetData.value.tw1.kinerja_fisik, keuangan: targetData.value.tw1.keuangan },
+    { kinerja_fisik: targetData.value.tw2.kinerja_fisik, keuangan: targetData.value.tw2.keuangan },
+    { kinerja_fisik: targetData.value.tw3.kinerja_fisik, keuangan: targetData.value.tw3.keuangan },
+    { kinerja_fisik: targetData.value.tw4.kinerja_fisik, keuangan: targetData.value.tw4.keuangan }
+  ];
+  
+  // Determine what kind of item we are saving (bidang urusan, program, kegiatan, or subkegiatan)
+  const itemType = item.kode_nomenklatur.jenis_nomenklatur;
+  const route = getRouteBasedOnItemType(itemType);
+  
+  // Send to server
+  router.post(route, {
+    tugas_id: item.id,
+    skpd_id: props.user?.skpd_id || props.tugas?.skpd_id,
+    sumber_dana: 'APBD', // Default sumber dana
+    deskripsi: 'Rencana Awal',
+    tahun: props.tahunAktif?.tahun || new Date().getFullYear(),
+    periode_id: selectedPeriodeId.value,
+    pagu_pokok: calculateItemTotal(item), // Get appropriate total based on item type
+    pagu_parsial: 0,
+    pagu_perubahan: 0,
+    targets: targets
+  }, {
+    onSuccess: () => {
+      alert('Target berhasil disimpan');
+      showModal.value = false;
+      currentItem.value = null;
+    },
+    onError: (errors) => {
+      alert('Gagal menyimpan target: ' + Object.values(errors).join('\n'));
+    }
+  });
+};
+
+// Helper to calculate total for an item based on its type
+const calculateItemTotal = (item: ItemWithKodeNomenklatur) => {
+  const itemType = item.kode_nomenklatur.jenis_nomenklatur;
+  
+  if (itemType === 1) { // Bidang urusan
+    return calculateBidangUrusan.value[item.kode_nomenklatur.id] || 0;
+  } else if (itemType === 2) { // Program
+    return calculateProgram.value[item.kode_nomenklatur.id] || 0;
+  } else if (itemType === 3) { // Kegiatan
+    return calculateKegiatan.value[item.id] || 0;
+  } else if (itemType === 4) { // Subkegiatan
+    // For subkegiatan with specific sumber dana, return the specific amount
+    const fundingData = props.dataAnggaranTerakhir?.[item.id];
+    if (fundingData) {
+      return Object.values(fundingData.values).reduce((sum, val) => sum + val, 0);
+    }
+    return 0;
+  }
+  return 0;
+};
+
+// Helper to determine the API endpoint based on item type
+const getRouteBasedOnItemType = (itemType: number) => {
+  // Using the same endpoint for all types for simplicity
+  return '/rencana-awal/save-monitoring-data';
+};
+
+// Delete item action
+const deleteItem = (item: ItemWithKodeNomenklatur) => {
+  if (confirm(`Apakah Anda yakin ingin menghapus item ini?\n${item.kode_nomenklatur.nomenklatur}`)) {
+    router.delete(`/rencana-awal/delete/${item.id}`, {
+      onSuccess: () => {
+        alert('Item berhasil dihapus');
+      },
+      onError: (errors) => {
+        alert('Gagal menghapus item: ' + Object.values(errors).join('\n'));
+      }
+    });
+  }
+};
+
+// Close modal
+const closeModal = () => {
+  showModal.value = false;
+  currentItem.value = null;
+};
 
 // Handler for period change
 const handlePeriodeChange = (event: Event) => {
@@ -177,7 +330,11 @@ const formattedSubKegiatanData = computed(() => {
     // Find the parent bidang urusan
     const parentBidangUrusan = props.bidangurusanTugas?.find(bu => 
       bu.kode_nomenklatur.id === parentProgram.kode_nomenklatur.details[0]?.id_bidang_urusan
+    const parentBidangUrusan = props.bidangurusanTugas?.find(bu => 
+      bu.kode_nomenklatur.id === parentProgram.kode_nomenklatur.details[0]?.id_bidang_urusan
     );
+
+    if (!parentBidangUrusan) return;
 
     if (!parentBidangUrusan) return;
 
@@ -304,6 +461,18 @@ const calculateBidangUrusan = computed<Record<number, number>>(() => {
   props.programTugas?.forEach(program => {
     const parentBidangUrusanId = program.kode_nomenklatur.details[0]?.id_bidang_urusan;
     if (parentBidangUrusanId) {
+      // Find the bidang urusan with this ID
+      const bidangUrusan = props.bidangurusanTugas?.find(bu => 
+        bu.kode_nomenklatur.id === parentBidangUrusanId
+      );
+      
+      if (bidangUrusan) {
+        const bidangUrusanNomenklaturId = bidangUrusan.kode_nomenklatur.id;
+        if (!bidangUrusanSums[bidangUrusanNomenklaturId]) {
+          bidangUrusanSums[bidangUrusanNomenklaturId] = 0;
+        }
+        bidangUrusanSums[bidangUrusanNomenklaturId] += calculateProgram.value[program.kode_nomenklatur.id] || 0;
+      }
       // Find the bidang urusan with this ID
       const bidangUrusan = props.bidangurusanTugas?.find(bu => 
         bu.kode_nomenklatur.id === parentBidangUrusanId
@@ -863,6 +1032,151 @@ watch([
             </div>
         </div>
     </AppLayout>
+
+    <!-- Modal for Target Editing -->
+    <teleport to="body">
+      <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-[800px] max-w-[90%] max-h-[90vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+              Edit Target: {{ currentItem?.kode_nomenklatur.nomenklatur }}
+            </h3>
+            <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="mb-4">
+            <p class="text-sm text-gray-600">Kode: {{ currentItem?.kode_nomenklatur.nomor_kode }}</p>
+            <p class="font-medium">{{ currentItem?.kode_nomenklatur.nomenklatur }}</p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Triwulan 1 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 1</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw1.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw1.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Triwulan 2 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 2</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw2.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw2.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Triwulan 3 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 3</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw3.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw3.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- Triwulan 4 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="font-bold text-blue-600 mb-2">Triwulan 4</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinerja Fisik (%)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw4.kinerja_fisik" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Keuangan (Rp)</label>
+                  <input 
+                    type="number" 
+                    v-model.number="targetData.tw4.keuangan" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3 mt-6">
+            <button 
+              @click="closeModal" 
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            >
+              Batal
+            </button>
+            <button 
+              @click="saveTargets(currentItem as ItemWithKodeNomenklatur)" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              :disabled="!currentItem"
+            >
+              Simpan Target
+            </button>
+          </div>
+        </div>
+      </div>
+    </teleport>
 </template>
 
 <style scoped>

@@ -266,6 +266,11 @@ class ManajemenAnggaranController extends Controller
 
         $urusanId = $tugas->kodeNomenklatur->details->first()?->id_urusan;
 
+        $bidangurusanTugas = $skpdTugas->filter(fn($item) =>
+            $item->kodeNomenklatur->jenis_nomenklatur == 1 &&
+            $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
+        )->values();
+
         $programTugas = $skpdTugas->filter(fn($item) =>
             $item->kodeNomenklatur->jenis_nomenklatur == 2 &&
             $item->kodeNomenklatur->details->first()?->id_urusan == $urusanId
@@ -378,6 +383,7 @@ class ManajemenAnggaranController extends Controller
 
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,
@@ -391,6 +397,7 @@ class ManajemenAnggaranController extends Controller
             'tahunAktif' => $tahunAktif,
             'semuaPeriodeAktif' => $semuaPeriodeAktif,
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
+            'bidangUrusanList' => $bidangurusanTugas,
         ]);
     }
 

@@ -279,6 +279,7 @@ class Triwulan1Controller extends Controller
         // We don't need urusan data, only bidang urusan
         return Inertia::render('Triwulan1/Detail', [
             'tugas' => $tugas,
+            'bidangurusanTugas' => $bidangurusanTugas,
             'programTugas' => $programTugas,
             'kegiatanTugas' => $kegiatanTugas,
             'subkegiatanTugas' => $subkegiatanTugas,

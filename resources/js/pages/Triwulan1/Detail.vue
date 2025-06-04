@@ -255,6 +255,88 @@ onMounted(() => {
     subkegiatanTugas: props.subkegiatanTugas,
     monitoringTargets: props.monitoringTargets
   });
+  
+  // Log semua targets untuk melihat data asli dari backend
+  console.log('ALL MONITORING TARGETS FROM BACKEND:', props.monitoringTargets);
+  
+  // =================================================================
+  // KHUSUS FILTER DENGAN PERIODE_ID = 2 (STRICT EQUALITY)
+  // =================================================================
+  
+  // Filter semua target yang HANYA memiliki periode_id = 2 (strict equality)
+  const strictPeriodeIdFilter = props.monitoringTargets.filter(t => t.periode_id === 2);
+  console.log('STRICT FILTER: TARGETS WITH PERIODE_ID = 2 ONLY:', strictPeriodeIdFilter);
+  
+  // Untuk masing-masing subkegiatan, cari target dengan periode_id = 2
+  props.subkegiatanTugas.forEach(subkegiatan => {
+    const targetsForSubkegiatan = props.monitoringTargets.filter(t => 
+      t.task_id === subkegiatan.id && t.periode_id === 2
+    );
+    console.log(`TARGETS FOR SUBKEGIATAN ${subkegiatan.id} WITH STRICT PERIODE_ID = 2:`, targetsForSubkegiatan);
+    
+    if (targetsForSubkegiatan.length > 0) {
+      console.log(`DATA TARGET SUBKEGIATAN ${subkegiatan.id}:`, {
+        kinerja_fisik: targetsForSubkegiatan[0].kinerja_fisik,
+        keuangan: targetsForSubkegiatan[0].keuangan,
+        periode_id: targetsForSubkegiatan[0].periode_id,
+      });
+    }
+  });
+  
+  // Cek apakah ada target dengan periode_id = 2 untuk subkegiatan manapun
+  const subkegiatanIds = props.subkegiatanTugas.map(sk => sk.id);
+  const strictSubkegiatanTargets = props.monitoringTargets.filter(t => 
+    subkegiatanIds.includes(t.task_id) && t.periode_id === 2
+  );
+  
+  console.log('STRICT FILTER: SUBKEGIATAN TARGETS WITH PERIODE_ID = 2:', strictSubkegiatanTargets);
+  
+  if (strictSubkegiatanTargets.length === 0) {
+    console.warn('PERINGATAN: Tidak ada target dengan periode_id = 2 untuk subkegiatan manapun (filter ketat)');
+  } else {
+    console.log(`DITEMUKAN ${strictSubkegiatanTargets.length} TARGET DENGAN PERIODE_ID = 2 UNTUK SUBKEGIATAN`);
+  }
+  
+  // =================================================================
+  
+  // Debug: Cek struktur periode_id
+  if (props.monitoringTargets.length > 0) {
+    const sample = props.monitoringTargets[0];
+    console.log('PERIODE ID TYPE:', typeof sample.periode_id, 'VALUE:', sample.periode_id);
+    
+    // Kelompokkan targets berdasarkan periode_id untuk melihat distribusi data
+    const targetsByPeriod = props.monitoringTargets.reduce((acc, target) => {
+      const periodId = target.periode_id || 'undefined';
+      if (!acc[periodId]) acc[periodId] = [];
+      acc[periodId].push(target);
+      return acc;
+    }, {});
+    
+    console.log('TARGETS GROUPED BY PERIODE_ID:', targetsByPeriod);
+    
+    // Cek khusus untuk periode_id = 2 (Triwulan 1)
+    const triwulan1Targets = props.monitoringTargets.filter(t => t.periode_id === 2);
+    console.log('STRICT PERIODE_ID === 2 TARGETS ONLY:', triwulan1Targets);
+    
+    // Periksa apakah ada target untuk subkegiatan dengan periode_id = 2
+    const subkegiatanIds = props.subkegiatanTugas.map(sk => sk.id);
+    const subkegiatanTriwulan1Targets = props.monitoringTargets.filter(t => 
+      subkegiatanIds.includes(t.task_id) && t.periode_id === 2
+    );
+    console.log('SUBKEGIATAN TARGETS WITH STRICT PERIODE_ID === 2:', subkegiatanTriwulan1Targets);
+    
+    if (subkegiatanTriwulan1Targets.length === 0) {
+      console.warn('PERINGATAN: Tidak ada target periode Triwulan 1 untuk subkegiatan manapun!');
+    }
+  }
+  
+  // Untuk melihat distribusi task_id pada monitoringTargets
+  const taskDistribution = {};
+  props.monitoringTargets.forEach(target => {
+    if (!taskDistribution[target.task_id]) taskDistribution[target.task_id] = 0;
+    taskDistribution[target.task_id]++;
+  });
+  console.log('DISTRIBUSI TARGET BERDASARKAN TASK_ID:', taskDistribution);
 });
 
 // Update the formatPercentage function to handle very large values
@@ -340,9 +422,11 @@ const programData = computed(() => {
   
   // Add program data
   props.programTugas.forEach(program => {
-    // Find targets directly associated with this task by task_id
-    const targetsForTask = props.monitoringTargets.filter(t => t.task_id === program.id);
-    console.log(`Program ${program.id} has ${targetsForTask.length} targets:`, targetsForTask);
+    // Find targets directly associated with this task by task_id AND strict periode_id = 2
+    const targetsForTask = props.monitoringTargets.filter(t => 
+      t.task_id === program.id && t.periode_id === 2
+    );
+    console.log(`Program ${program.id} has ${targetsForTask.length} targets with strict periode_id = 2:`, targetsForTask);
     
     // Calculate aggregate target data if multiple targets exist
     let kinerjaFisik = '-';
@@ -390,9 +474,11 @@ const programData = computed(() => {
     props.kegiatanTugas.forEach(kegiatan => {
       // Check if this kegiatan belongs to current program
       if (kegiatan.kode_nomenklatur?.nomor_kode?.startsWith(program.kode_nomenklatur?.nomor_kode)) {
-        // Find targets directly associated with this task by task_id
-        const kegiatanTargets = props.monitoringTargets.filter(t => t.task_id === kegiatan.id);
-        console.log(`Kegiatan ${kegiatan.id} has ${kegiatanTargets.length} targets:`, kegiatanTargets);
+        // Find targets directly associated with this task by task_id AND strict periode_id = 2
+        const kegiatanTargets = props.monitoringTargets.filter(t => 
+          t.task_id === kegiatan.id && t.periode_id === 2
+        );
+        console.log(`Kegiatan ${kegiatan.id} has ${kegiatanTargets.length} targets with strict periode_id = 2:`, kegiatanTargets);
         
         let kinerjaFisikKegiatan = '-';
         let keuanganKegiatan = '-';
@@ -441,13 +527,17 @@ const programData = computed(() => {
         props.subkegiatanTugas.forEach(subkegiatan => {
           // Check if this subkegiatan belongs to current kegiatan
           if (subkegiatan.kode_nomenklatur?.nomor_kode?.startsWith(kegiatan.kode_nomenklatur?.nomor_kode)) {
-            // Find targets directly associated with this task by task_id
-            const subkegiatanTargets = props.monitoringTargets.filter(t => t.task_id === subkegiatan.id);
-            console.log(`Subkegiatan ${subkegiatan.id} has ${subkegiatanTargets.length} targets:`, subkegiatanTargets);
+            // Find targets directly associated with this task by task_id AND strict periode_id = 2
+            const subkegiatanTargets = props.monitoringTargets.filter(t => 
+              t.task_id === subkegiatan.id && t.periode_id === 2
+            );
+            console.log(`Subkegiatan ${subkegiatan.id} has ${subkegiatanTargets.length} targets with strict periode_id = 2:`, subkegiatanTargets);
             
-            // Find realisasi data for this subkegiatan
-            const realisasiData = props.monitoringRealisasi.filter(r => r.task_id === subkegiatan.id);
-            console.log(`Subkegiatan ${subkegiatan.id} has ${realisasiData.length} realisasi records:`, realisasiData);
+            // Find realisasi data for this subkegiatan AND strict periode_id = 2
+            const realisasiData = props.monitoringRealisasi.filter(r => 
+              r.task_id === subkegiatan.id && r.periode_id === 2
+            );
+            console.log(`Subkegiatan ${subkegiatan.id} has ${realisasiData.length} realisasi records with strict periode_id = 2:`, realisasiData);
             
             let kinerjaFisikSubkegiatan = '-';
             let keuanganSubkegiatan = '-';
@@ -461,18 +551,29 @@ const programData = computed(() => {
             let pptkSubkegiatan = '-';
             
             if (subkegiatanTargets.length > 0) {
-              const avgKinerjaFisik = subkegiatanTargets.reduce((sum, t) => sum + t.kinerja_fisik, 0) / subkegiatanTargets.length;
-              const totalKeuangan = subkegiatanTargets.reduce((sum, t) => sum + t.keuangan, 0);
-              kinerjaFisikSubkegiatan = `${avgKinerjaFisik.toFixed(2)}%`;
-              keuanganSubkegiatan = `Rp ${totalKeuangan.toLocaleString('id-ID')}`;
+              // Ambil data langsung dari database tanpa kalkulasi
+              const target = subkegiatanTargets[0]; // Ambil target pertama
+              
+              // Debug target data dengan detail
+              console.log(`TARGET DATA FOR DISPLAY (SUBKEGIATAN ${subkegiatan.id}):`, {
+                id: target.id,
+                task_id: target.task_id,
+                kinerja_fisik: target.kinerja_fisik,
+                keuangan: target.keuangan,
+                periode: target.periode,
+                periode_id: target.periode_id
+              });
+              
+              // Tampilkan data murni dari database
+              kinerjaFisikSubkegiatan = target.kinerja_fisik ? `${target.kinerja_fisik}%` : '-';
+              keuanganSubkegiatan = target.keuangan ? `Rp ${target.keuangan.toLocaleString('id-ID')}` : '-';
               
               // Get deskripsi and nama_pptk from monitoringTargets
-              const firstTarget = subkegiatanTargets[0];
-              if (firstTarget.deskripsi) {
-                deskripsiSubkegiatan = firstTarget.deskripsi;
+              if (target.deskripsi) {
+                deskripsiSubkegiatan = target.deskripsi;
               }
-              if (firstTarget.nama_pptk) {
-                pptkSubkegiatan = firstTarget.nama_pptk;
+              if (target.nama_pptk) {
+                pptkSubkegiatan = target.nama_pptk;
               }
             }
             

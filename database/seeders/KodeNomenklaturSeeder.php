@@ -19,7 +19,9 @@ class KodeNomenklaturSeeder extends Seeder
             ['jenis_nomenklatur' => 3, 'nomor_kode' => '1.01.01.2.01', 'nomenklatur' => 'Perencanaan, Penganggaran dan Evaluasi Kinerja Perangkat Daerah'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
             ['jenis_nomenklatur' => 3, 'nomor_kode' => '1.02.01.2.01', 'nomenklatur' => 'Kegiatan Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah'],//RS HASRI AINUN HABIBIE
             ['jenis_nomenklatur' => 4, 'nomor_kode' => '1.01.01.2.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
+            ['jenis_nomenklatur' => 4, 'nomor_kode' => '1.01.01.2.01.0002', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah bismillah'],//RS HASRI AINUN HABIBIE
             ['jenis_nomenklatur' => 4, 'nomor_kode' => '1.02.01.2.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],//RS HASRI AINUN HABIBIE
+           
             ['jenis_nomenklatur' => 0, 'nomor_kode' => '2', 'nomenklatur' => 'URUSAN PEMERINTAHAN WAJIB YANG TIDAK BERKAITAN DENGAN PELAYANAN DASAR'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
             ['jenis_nomenklatur' => 1, 'nomor_kode' => '2.22', 'nomenklatur' => 'URUSAN PEMERINTAHAN BIDANG KEBUDAYAAN'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
             ['jenis_nomenklatur' => 2, 'nomor_kode' => '2.22.02', 'nomenklatur' => 'PROGRAM PENGEMBANGAN KEBUDAYAAN'],//DINAS PENDIDIKAN DAN KEBUDAYAAN

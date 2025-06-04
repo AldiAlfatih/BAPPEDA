@@ -23,6 +23,7 @@ class Monitoring extends Model
         'pagu_parsial',
         'pagu_perubahan',
         'is_finalized',
+        'monitoring_anggaran_id',
     ];
 
     public function skpdTugas()

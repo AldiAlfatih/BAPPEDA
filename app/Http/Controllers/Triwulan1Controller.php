@@ -170,6 +170,12 @@ class Triwulan1Controller extends Controller
             }
         }
 
+        $bidangurusanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 1
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->values();
+
         $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
                 && $item->kodeNomenklatur->details->first()
@@ -196,13 +202,6 @@ class Triwulan1Controller extends Controller
             }
         }
 
-        // Assign bidangurusanTugas variable
-        $bidangurusanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
-            return $item->kodeNomenklatur->jenis_nomenklatur == 1
-                && $item->kodeNomenklatur->details->first()
-                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
-        })->values();
-
         // Get monitoring target data with descriptions and realisasi
         $monitoringTargets = [];
         $monitoringRealisasi = [];
@@ -211,78 +210,85 @@ class Triwulan1Controller extends Controller
         // Direct query to get all related monitoring targets for these tasks
         $taskIds = $allTasks->pluck('id')->toArray();
         
-        // Get all monitoring records for these tasks
+        // Get all monitoring records for these tasks with filtered monitoringTarget by periode_id = 2
         $monitorings = \App\Models\Monitoring::whereIn('skpd_tugas_id', $taskIds)
-            ->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode'])
+            ->with(['monitoringAnggaran' => function($query) {
+                $query->with(['monitoringTarget' => function($query) {
+                    // Filter monitoringTarget untuk hanya mengambil dengan periode_id = 2
+                    $query->where('periode_id', 2);
+                    $query->with('periode');
+                }, 'monitoringRealisasi' => function($query) {
+                    // Filter monitoringRealisasi untuk hanya mengambil dengan periode_id = 2 
+                    $query->where('periode_id', 2);
+                    $query->with('periode');
+                }]);
+            }])
             ->get();
         
-        // Process monitoring data
+        // Debug - log jumlah monitoring
+        \Log::info('Total monitoring records fetched: ' . $monitorings->count());
+        
+        // Process monitoring data - khusus periode_id = 2
         foreach ($monitorings as $monitoring) {
             $taskId = $monitoring->skpd_tugas_id;
             
-            // If no monitoring anggaran, add default entry with deskripsi
             if ($monitoring->monitoringAnggaran->isEmpty()) {
-                $monitoringTargets[] = [
-                    'id' => null,
-                    'kinerja_fisik' => 0,
-                    'keuangan' => 0,
-                    'periode' => null,
-                    'monitoring_id' => $monitoring->id,
-                    'task_id' => $taskId,
-                    'deskripsi' => $monitoring->deskripsi,
-                    'nama_pptk' => $monitoring->nama_pptk ?? '-'
-                ];
-            } else {
-                // Process monitoring anggaran and targets
-                foreach ($monitoring->monitoringAnggaran as $anggaran) {
-                    // If no targets, add default entry with deskripsi
-                    if ($anggaran->monitoringTarget->isEmpty()) {
+                // Skip if no anggaran data
+                continue;
+            }
+            
+            foreach ($monitoring->monitoringAnggaran as $anggaran) {
+                // Process monitoring targets - periode_id = 2 only
+                if (!$anggaran->monitoringTarget->isEmpty()) {
+                    foreach ($anggaran->monitoringTarget as $target) {
+                        // Double check - hanya ambil dengan periode_id = 2
+                        if ($target->periode_id != 2) {
+                            continue;
+                        }
+                        
                         $monitoringTargets[] = [
-                            'id' => null,
-                            'kinerja_fisik' => 0,
-                            'keuangan' => 0,
-                            'periode' => null,
+                            'id' => $target->id,
+                            'kinerja_fisik' => $target->kinerja_fisik,
+                            'keuangan' => $target->keuangan,
+                            'periode_id' => $target->periode_id, // Include periode_id explicitly
+                            'periode' => $target->periode ? $target->periode->nama : null,
                             'monitoring_id' => $monitoring->id,
                             'task_id' => $taskId,
                             'deskripsi' => $monitoring->deskripsi,
                             'nama_pptk' => $monitoring->nama_pptk ?? '-'
                         ];
-                    } else {
-                        // Process target data
-                        foreach ($anggaran->monitoringTarget as $target) {
-                            $monitoringTargets[] = [
-                                'id' => $target->id,
-                                'kinerja_fisik' => $target->kinerja_fisik,
-                                'keuangan' => $target->keuangan,
-                                'periode' => $target->periode ? $target->periode->nama : null,
-                                'monitoring_id' => $monitoring->id,
-                                'task_id' => $taskId,
-                                'deskripsi' => $monitoring->deskripsi,
-                                'nama_pptk' => $monitoring->nama_pptk ?? '-'
-                            ];
-                        }
                     }
-                    
-                    // Process realisasi data
-                    if (!$anggaran->monitoringRealisasi->isEmpty()) {
-                        foreach ($anggaran->monitoringRealisasi as $realisasi) {
-                            $monitoringRealisasi[] = [
-                                'id' => $realisasi->id,
-                                'kinerja_fisik' => $realisasi->kinerja_fisik,
-                                'keuangan' => $realisasi->keuangan,
-                                'periode' => $realisasi->periode ? $realisasi->periode->tahap->tahap : 'Triwulan 1',
-                                'monitoring_id' => $monitoring->id,
-                                'task_id' => $taskId,
-                                'monitoring_anggaran_id' => $anggaran->id,
-                                'deskripsi' => $monitoring->deskripsi,
-                                'nama_pptk' => $monitoring->nama_pptk ?? '-'
-                            ];
+                }
+                
+                // Process monitoring realisasi - periode_id = 2 only
+                if (!$anggaran->monitoringRealisasi->isEmpty()) {
+                    foreach ($anggaran->monitoringRealisasi as $realisasi) {
+                        // Double check - hanya ambil dengan periode_id = 2
+                        if ($realisasi->periode_id != 2) {
+                            continue;
                         }
+                        
+                        $monitoringRealisasi[] = [
+                            'id' => $realisasi->id,
+                            'kinerja_fisik' => $realisasi->kinerja_fisik,
+                            'keuangan' => $realisasi->keuangan,
+                            'periode_id' => $realisasi->periode_id, // Include periode_id explicitly
+                            'periode' => $realisasi->periode ? $realisasi->periode->nama : null,
+                            'monitoring_id' => $monitoring->id,
+                            'task_id' => $taskId,
+                            'monitoring_anggaran_id' => $anggaran->id,
+                            'deskripsi' => $monitoring->deskripsi,
+                            'nama_pptk' => $monitoring->nama_pptk ?? '-'
+                        ];
                     }
                 }
             }
         }
-
+        
+        // Debug - log jumlah target dan realisasi yang ditemukan
+        \Log::info('Total monitoring targets (periode_id = 2): ' . count($monitoringTargets));
+        \Log::info('Total monitoring realisasi (periode_id = 2): ' . count($monitoringRealisasi));
+        
         // We don't need urusan data, only bidang urusan
         return Inertia::render('Triwulan1/Detail', [
             'tugas' => $tugas,

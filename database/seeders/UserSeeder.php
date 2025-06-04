@@ -140,7 +140,7 @@ class UserSeeder extends Seeder
                                 // Khusus hanya untuk dua dinas berikut, isi tugasnya:
                 if ($namaDinas === 'Dinas Pendidikan dan Kebudayaan') {
                     $relevantKode = Kodenomenklatur::whereIn('nomor_kode', [
-                        '1', '1.01', '1.01.01', '1.01.01.2.01', '1.01.01.2.01.0001',
+                        '1', '1.01', '1.01.01', '1.01.01.2.01', '1.01.01.2.01.0001', '1.01.01.2.01.0002',
                         '2', '2.22', '2.22.02', '2.22.02.2.01', '2.22.02.2.01.0001',
                     ])->pluck('id');
                 } elseif ($namaDinas === 'RS Hasri Ainun Habibie') {

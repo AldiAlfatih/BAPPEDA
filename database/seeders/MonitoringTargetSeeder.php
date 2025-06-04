@@ -112,19 +112,21 @@ class MonitoringTargetSeeder extends Seeder
                         $tahapNama = $periode->tahap->tahap;
 
                         $kinerjaFisik = match ($tahapNama) {
-                            'Triwulan 1' => 25,           // 🟡 Triwulan 1
+                            'Rencana' => 22,            // Rencana
+                            'Triwulan 1' => 58,           // 🟡 Triwulan 1
                             'Triwulan 2' => 50,           // 🟠 Triwulan 2
                             'Triwulan 3' => 75,           // 🔵 Triwulan 3
                             'Triwulan 4' => 100,          // 🟢 Triwulan 4
-                            default => 0,                 // Rencana
+                            default => 8,                 // Rencana
                         };
 
                         $keuangan = match ($tahapNama) {
-                            'Triwulan 1' => 125_000,  // 🟡 Triwulan 1
+                            'Rencana' => 254,            // Rencana
+                            'Triwulan 1' => 977_777,  // 🟡 Triwulan 1
                             'Triwulan 2' => 250_000,  // 🟠 Triwulan 2
                             'Triwulan 3' => 375_000,  // 🔵 Triwulan 3
                             'Triwulan 4' => 500_000,  // 🟢 Triwulan 4
-                            default => 0,                 // Rencana
+                            default => 456,                 // Rencana
                         };
 
                         MonitoringTarget::create([

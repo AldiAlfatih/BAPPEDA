@@ -659,15 +659,18 @@ async function saveTargets(subKegiatan: any) {
       return;
     }
     
+    // Map targets to the format expected by the backend
     const processedTargets = targets.map((target: any, idx: number) => {
       // Validate kinerja_fisik (must be between 0-100 if provided)
       if (target.kinerja_fisik !== '' && (isNaN(parseFloat(String(target.kinerja_fisik))) || parseFloat(String(target.kinerja_fisik)) < 0 || parseFloat(String(target.kinerja_fisik)) > 100)) {
         console.error('Invalid kinerja_fisik data', target.kinerja_fisik);
         errorRow.value = subKegiatan.id;
         hasError = true;
+        return null;
       }
       
       // Validate keuangan (must be a valid number if provided)
+      let keuanganValue = target.keuangan;
       if (target.keuangan !== '') {
         // Remove any thousand separators if present
         const cleanedValue = String(target.keuangan).replace(/\./g, '').replace(/,/g, '.');
@@ -675,21 +678,21 @@ async function saveTargets(subKegiatan: any) {
           console.error('Invalid keuangan data', target.keuangan);
           errorRow.value = subKegiatan.id;
           hasError = true;
+          return null;
         } else {
           // Convert to number for sending to server
-          target.keuangan = parseFloat(cleanedValue);
+          keuanganValue = parseFloat(cleanedValue);
         }
+      } else {
+        keuanganValue = 0;
       }
 
-      const processed = {
+      return {
         kinerja_fisik: target.kinerja_fisik !== '' ? parseFloat(String(target.kinerja_fisik)) : 0,
-        keuangan: target.keuangan !== '' ? parseFloat(String(target.keuangan)) : 0,
+        keuangan: keuanganValue,
         triwulan: idx + 1  // Add triwulan number (1, 2, 3, 4)
       };
-      
-      console.log(`Target triwulan ${idx+1}:`, processed);
-      return processed;
-    });
+    }).filter(target => target !== null);
     
     if (hasError) {
       console.error('Validation failed');
@@ -704,6 +707,7 @@ async function saveTargets(subKegiatan: any) {
     const sumberAnggaranId = getSumberAnggaranId(sumberDana);
     const payload = {
       skpd_tugas_id: subKegiatan.id,  // skpd_tugas_id untuk tabel monitoring
+      tugas_id: subKegiatan.id,  // Menambahkan tugas_id untuk kompatibilitas
       tahun: props.tahunAktif?.tahun,
       deskripsi: 'Rencana Awal',
       nama_pptk: '',  // Kosong atau default
@@ -727,14 +731,22 @@ async function saveTargets(subKegiatan: any) {
         // Update monitoring/targets di frontend
         subKegiatan.monitoring = subKegiatan.monitoring || {};
         subKegiatan.monitoring.targets = [...processedTargets]; // Make a copy to ensure reactivity
+        // Update monitoring_anggaran_id jika ada dari response
+        if (response.data && response.data.data) {
+          subKegiatan.monitoring.monitoring_anggaran_id = response.data.data.monitoring_anggaran_id || monitoringAnggaranId;
+        }
         
         delete editingTargets.value[uniqueKey];
         
-        // Reload the page after a slight delay to refresh data
+        // Reload the page using the current URL with proper query params
         setTimeout(() => {
-          if (props.user?.id) {
-            router.reload({ only: ['subkegiatanTugas', 'dataAnggaranTerakhir'] });
-          }
+          // Gunakan URL saat ini dengan parameter periode_id jika ada
+          const currentPath = window.location.pathname;
+          const queryParams = selectedPeriodeId.value ? `?periode_id=${selectedPeriodeId.value}` : '';
+          
+          router.visit(`${currentPath}${queryParams}`, {
+            only: ['subkegiatanTugas', 'dataAnggaranTerakhir']
+          });
         }, 500);
       },
       onError: (err) => {

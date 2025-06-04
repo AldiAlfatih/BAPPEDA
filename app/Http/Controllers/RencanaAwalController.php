@@ -634,16 +634,20 @@ class RencanaAwalController extends Controller
             Log::debug('Received data for saveTarget', $request->all());
             Log::info('Processing targets data with sumber anggaran ID: ' . $validated['sumber_anggaran_id']);
             
+            // Get tugas_id - support both field names
+            $tugasId = $validated['skpd_tugas_id'];
+            
             // Cari atau buat monitoring baru
             $monitoring = Monitoring::firstOrCreate(
                 [
-                    'skpd_tugas_id' => $validated['skpd_tugas_id'],
+                    'skpd_tugas_id' => $tugasId,
                     'tahun' => $validated['tahun'],
                     'deskripsi' => $validated['deskripsi'],
                 ],
                 [
                     'nama_pptk' => $request->input('nama_pptk', ''),
                     'periode_id' => $validated['periode_id'],
+                    'is_finalized' => false, // Ensure this field is set
                 ]
             );
             
@@ -664,6 +668,7 @@ class RencanaAwalController extends Controller
             Log::info('Deleted old targets', ['count' => $deletedCount]);
             
             // Simpan target baru
+            $createdTargets = [];
             foreach ($validated['targets'] as $target) {
                 $newTarget = MonitoringTarget::create([
                     'monitoring_anggaran_id' => $monitoringAnggaran->id,
@@ -671,6 +676,8 @@ class RencanaAwalController extends Controller
                     'kinerja_fisik' => $target['kinerja_fisik'],
                     'keuangan' => $target['keuangan'],
                 ]);
+                
+                $createdTargets[] = $newTarget;
                 
                 Log::info('Created target', [
                     'id' => $newTarget->id,
@@ -680,13 +687,18 @@ class RencanaAwalController extends Controller
                 ]);
             }
             
+            // Add monitoring anggaran relation to monitoring for easier frontend access
+            $monitoring->monitoring_anggaran_id = $monitoringAnggaran->id;
+            $monitoring->save();
+            
             DB::commit();
             return response()->json([
                 'success' => true, 
                 'message' => 'Target berhasil disimpan',
                 'data' => [
                     'monitoring_id' => $monitoring->id,
-                    'monitoring_anggaran_id' => $monitoringAnggaran->id
+                    'monitoring_anggaran_id' => $monitoringAnggaran->id,
+                    'targets' => $createdTargets
                 ]
             ]);
         } catch (\Exception $e) {

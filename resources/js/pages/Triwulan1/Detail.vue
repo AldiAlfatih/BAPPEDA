@@ -388,6 +388,7 @@ const programData = computed(() => {
     _realisasiKeuanganValue?: number; // Helper property for calculations
     _subItems?: number[]; // Helper property for tracking sub-items
     _targetKeuanganValue?: number; // Helper property for tracking target keuangan
+    _targetFisikValue?: number; // Helper property for tracking target fisik
   }> = [];
 
   // Only add bidang urusan as header
@@ -418,7 +419,7 @@ const programData = computed(() => {
   // Track program and kegiatan indices for later calculations
   const programIndices = new Map<number, number>(); // program ID -> data index
   const kegiatanIndices = new Map<number, {dataIndex: number, programId: number}>(); // kegiatan ID -> {data index, program ID}
-  const subkegiatanData = new Map<number, {kegiatanId: number, realisasiFisik?: number, realisasiKeuangan?: number}>();
+  const subkegiatanData = new Map<number, {kegiatanId: number, realisasiFisik?: number, realisasiKeuangan?: number, targetFisik?: number, targetKeuangan?: number}>();
   
   // Add program data
   props.programTugas.forEach(program => {
@@ -428,23 +429,12 @@ const programData = computed(() => {
     );
     console.log(`Program ${program.id} has ${targetsForTask.length} targets with strict periode_id = 2:`, targetsForTask);
     
-    // Calculate aggregate target data if multiple targets exist
+    // We initially set empty values. These will be calculated later based on kegiatan values
     let kinerjaFisik = '-';
     let keuangan = '-';
     let keuanganValue = 0;
+    let targetFisikValue = 0;
     let deskripsi = program.monitoring && program.monitoring[0] ? program.monitoring[0].deskripsi : 'Program';
-    
-    if (targetsForTask.length > 0) {
-      const avgKinerjaFisik = targetsForTask.reduce((sum, t) => sum + t.kinerja_fisik, 0) / targetsForTask.length;
-      const totalKeuangan = targetsForTask.reduce((sum, t) => sum + t.keuangan, 0);
-      kinerjaFisik = `${avgKinerjaFisik.toFixed(2)}%`;
-      keuangan = `Rp ${totalKeuangan.toLocaleString('id-ID')}`;
-      keuanganValue = totalKeuangan;
-      // If we have a target with deskripsi, use that
-      if (targetsForTask[0] && targetsForTask[0].deskripsi) {
-        deskripsi = targetsForTask[0].deskripsi;
-      }
-    }
     
     const programIndex = data.length;
     data.push({
@@ -454,6 +444,7 @@ const programData = computed(() => {
       targetFisik: kinerjaFisik,
       targetKeuangan: keuangan,
       _targetKeuanganValue: keuanganValue,
+      _targetFisikValue: targetFisikValue,
       realisasiFisik: '-',
       realisasiKeuangan: '-',
       capaianFisik: '-',
@@ -474,26 +465,12 @@ const programData = computed(() => {
     props.kegiatanTugas.forEach(kegiatan => {
       // Check if this kegiatan belongs to current program
       if (kegiatan.kode_nomenklatur?.nomor_kode?.startsWith(program.kode_nomenklatur?.nomor_kode)) {
-        // Find targets directly associated with this task by task_id AND strict periode_id = 2
-        const kegiatanTargets = props.monitoringTargets.filter(t => 
-          t.task_id === kegiatan.id && t.periode_id === 2
-        );
-        console.log(`Kegiatan ${kegiatan.id} has ${kegiatanTargets.length} targets with strict periode_id = 2:`, kegiatanTargets);
-        
+        // We initially set empty values. These will be calculated later based on subkegiatan values
         let kinerjaFisikKegiatan = '-';
         let keuanganKegiatan = '-';
+        let targetFisikValue = 0;
+        let keuanganValue = 0;
         let deskripsiKegiatan = kegiatan.monitoring && kegiatan.monitoring[0] ? kegiatan.monitoring[0].deskripsi : 'Kegiatan';
-        
-        if (kegiatanTargets.length > 0) {
-          const avgKinerjaFisik = kegiatanTargets.reduce((sum, t) => sum + t.kinerja_fisik, 0) / kegiatanTargets.length;
-          const totalKeuangan = kegiatanTargets.reduce((sum, t) => sum + t.keuangan, 0);
-          kinerjaFisikKegiatan = `${avgKinerjaFisik.toFixed(2)}%`;
-          keuanganKegiatan = `Rp ${totalKeuangan.toLocaleString('id-ID')}`;
-          // If we have a target with deskripsi, use that
-          if (kegiatanTargets[0] && kegiatanTargets[0].deskripsi) {
-            deskripsiKegiatan = kegiatanTargets[0].deskripsi;
-          }
-        }
         
         const kegiatanIndex = data.length;
         data.push({
@@ -502,6 +479,8 @@ const programData = computed(() => {
           program: `   ${kegiatan.kode_nomenklatur?.nomenklatur || '-'}`,
           targetFisik: kinerjaFisikKegiatan,
           targetKeuangan: keuanganKegiatan,
+          _targetFisikValue: targetFisikValue,
+          _targetKeuanganValue: keuanganValue,
           realisasiFisik: '-',
           realisasiKeuangan: '-',
           capaianFisik: '-',
@@ -541,6 +520,8 @@ const programData = computed(() => {
             
             let kinerjaFisikSubkegiatan = '-';
             let keuanganSubkegiatan = '-';
+            let targetFisikValue = 0;
+            let targetKeuanganValue = 0;
             let realisasiFisik = '-';
             let realisasiKeuangan = '-';
             let capaianFisik = '-';
@@ -567,6 +548,8 @@ const programData = computed(() => {
               // Tampilkan data murni dari database
               kinerjaFisikSubkegiatan = target.kinerja_fisik ? `${target.kinerja_fisik}%` : '-';
               keuanganSubkegiatan = target.keuangan ? `Rp ${target.keuangan.toLocaleString('id-ID')}` : '-';
+              targetFisikValue = target.kinerja_fisik || 0;
+              targetKeuanganValue = target.keuangan || 0;
               
               // Get deskripsi and nama_pptk from monitoringTargets
               if (target.deskripsi) {
@@ -625,7 +608,21 @@ const programData = computed(() => {
               subkegiatanData.set(subkegiatan.id, {
                 kegiatanId: kegiatan.id, 
                 realisasiFisik: realisasiFisikValue,
-                realisasiKeuangan: realisasiKeuanganValue
+                realisasiKeuangan: realisasiKeuanganValue,
+                targetFisik: targetFisikValue,
+                targetKeuangan: targetKeuanganValue
+              });
+              
+              // Add kegiatan's subItems reference
+              if (data[kegiatanIndex]._subItems) {
+                data[kegiatanIndex]._subItems.push(subkegiatan.id);
+              }
+            } else {
+              // Even if there's no realisasi, store target data for aggregation
+              subkegiatanData.set(subkegiatan.id, {
+                kegiatanId: kegiatan.id,
+                targetFisik: targetFisikValue,
+                targetKeuangan: targetKeuanganValue
               });
               
               // Add kegiatan's subItems reference
@@ -640,6 +637,8 @@ const programData = computed(() => {
               program: `      ${subkegiatan.kode_nomenklatur?.nomenklatur || '-'}`,
               targetFisik: kinerjaFisikSubkegiatan,
               targetKeuangan: keuanganSubkegiatan,
+              _targetFisikValue: targetFisikValue,
+              _targetKeuanganValue: targetKeuanganValue,
               realisasiFisik: realisasiFisik,
               realisasiKeuangan: realisasiKeuangan,
               capaianFisik: capaianFisik,
@@ -660,7 +659,7 @@ const programData = computed(() => {
     });
   });
   
-  // Calculate realisasi for kegiatan (average fisik, sum keuangan from subkegiatan)
+  // Calculate Target Kinerja Fisik (average) and Target Keuangan (sum) for KEGIATAN from SUB KEGIATANs
   kegiatanIndices.forEach((info, kegiatanId) => {
     const kegiatanItem = data[info.dataIndex];
     const relatedSubkegiatan = [...subkegiatanData.entries()]
@@ -668,6 +667,37 @@ const programData = computed(() => {
       .map(([id, _]) => id);
     
     if (relatedSubkegiatan.length > 0) {
+      // Calculate average target fisik from subkegiatan
+      let validSubkegiatanCount = 0;
+      const totalTargetFisik = relatedSubkegiatan.reduce((sum, id) => {
+        const subData = subkegiatanData.get(id);
+        if (subData?.targetFisik !== undefined) {
+          validSubkegiatanCount++;
+          return sum + (subData.targetFisik || 0);
+        }
+        return sum;
+      }, 0);
+      
+      const avgTargetFisik = validSubkegiatanCount > 0 ? totalTargetFisik / validSubkegiatanCount : 0;
+      
+      // Calculate sum target keuangan from subkegiatan
+      const totalTargetKeuangan = relatedSubkegiatan.reduce((sum, id) => {
+        const subData = subkegiatanData.get(id);
+        return sum + (subData?.targetKeuangan || 0);
+      }, 0);
+      
+      // Update kegiatan values for target
+      if (validSubkegiatanCount > 0) {
+        kegiatanItem.targetFisik = `${avgTargetFisik.toFixed(2)}%`;
+        kegiatanItem._targetFisikValue = avgTargetFisik;
+      }
+      
+      if (totalTargetKeuangan > 0) {
+        kegiatanItem.targetKeuangan = `Rp ${totalTargetKeuangan.toLocaleString('id-ID')}`;
+        kegiatanItem._targetKeuanganValue = totalTargetKeuangan;
+      }
+      
+      // Calculate realisasi for kegiatan (average fisik, sum keuangan from subkegiatan)
       // Calculate average realisasi fisik
       const totalFisik = relatedSubkegiatan.reduce((sum, id) => {
         const subData = subkegiatanData.get(id);
@@ -714,7 +744,7 @@ const programData = computed(() => {
     }
   });
   
-  // Calculate realisasi for program (average fisik, sum keuangan from kegiatan)
+  // Calculate Target Kinerja Fisik (average) and Target Keuangan (sum) for PROGRAM from KEGIATANs
   programIndices.forEach((programIndex, programId) => {
     const programItem = data[programIndex];
     const relatedKegiatan = [...kegiatanIndices.entries()]
@@ -722,18 +752,49 @@ const programData = computed(() => {
       .map(([kegiatanId, info]) => info.dataIndex);
     
     if (relatedKegiatan.length > 0) {
-      // Calculate average realisasi fisik from kegiatan
+      // Calculate average target fisik from kegiatan
       let validKegiatanCount = 0;
+      const totalTargetFisik = relatedKegiatan.reduce((sum, index) => {
+        const kegiatanItem = data[index];
+        if (kegiatanItem._targetFisikValue !== undefined) {
+          validKegiatanCount++;
+          return sum + kegiatanItem._targetFisikValue;
+        }
+        return sum;
+      }, 0);
+      
+      const avgTargetFisik = validKegiatanCount > 0 ? totalTargetFisik / validKegiatanCount : 0;
+      
+      // Calculate sum target keuangan from kegiatan
+      const totalTargetKeuangan = relatedKegiatan.reduce((sum, index) => {
+        const kegiatanItem = data[index];
+        return sum + (kegiatanItem._targetKeuanganValue || 0);
+      }, 0);
+      
+      // Update program values for target
+      if (validKegiatanCount > 0) {
+        programItem.targetFisik = `${avgTargetFisik.toFixed(2)}%`;
+        programItem._targetFisikValue = avgTargetFisik;
+      }
+      
+      if (totalTargetKeuangan > 0) {
+        programItem.targetKeuangan = `Rp ${totalTargetKeuangan.toLocaleString('id-ID')}`;
+        programItem._targetKeuanganValue = totalTargetKeuangan;
+      }
+      
+      // Calculate realisasi for program
+      // Calculate average realisasi fisik from kegiatan
+      let validRealisasiCount = 0;
       const totalFisik = relatedKegiatan.reduce((sum, index) => {
         const kegiatanItem = data[index];
         if (kegiatanItem._realisasiFisikValue !== undefined) {
-          validKegiatanCount++;
+          validRealisasiCount++;
           return sum + kegiatanItem._realisasiFisikValue;
         }
         return sum;
       }, 0);
       
-      const avgFisik = validKegiatanCount > 0 ? totalFisik / validKegiatanCount : 0;
+      const avgFisik = validRealisasiCount > 0 ? totalFisik / validRealisasiCount : 0;
       
       // Calculate sum realisasi keuangan from kegiatan
       const totalKeuangan = relatedKegiatan.reduce((sum, index) => {
@@ -742,7 +803,7 @@ const programData = computed(() => {
       }, 0);
       
       // Update program values
-      if (validKegiatanCount > 0) {
+      if (validRealisasiCount > 0) {
         programItem.realisasiFisik = `${avgFisik.toFixed(2)}%`;
         programItem._realisasiFisikValue = avgFisik;
       }
@@ -753,7 +814,7 @@ const programData = computed(() => {
       }
       
       // Calculate capaian
-      if (programItem.targetFisik !== '-' && validKegiatanCount > 0) {
+      if (programItem.targetFisik !== '-' && validRealisasiCount > 0) {
         const targetFisik = parseFloat(programItem.targetFisik.replace('%', ''));
         if (!isNaN(targetFisik) && targetFisik > 0) {
           const capaian = (avgFisik / targetFisik) * 100;
@@ -784,28 +845,22 @@ const programData = computed(() => {
     }
   });
   
-  // Calculate realisasi for bidang urusan (sum keuangan from all programs)
+  // Calculate Target Kinerja Fisik (average) and Target Keuangan (sum) for BIDANG URUSAN from PROGRAMs
   if (bidangUrusanIndex >= 0) {
     const bidangUrusanItem = data[bidangUrusanIndex];
     if (bidangUrusanItem._subItems && bidangUrusanItem._subItems.length > 0) {
-      // Calculate average kinerja fisik from all programs
+      // Calculate average target fisik from all programs
       let validProgramCount = 0;
-      const totalProgramFisik = bidangUrusanItem._subItems.reduce((sum, programId) => {
+      const totalProgramTargetFisik = bidangUrusanItem._subItems.reduce((sum, programId) => {
         const programItem = data[programIndices.get(programId) || 0];
-        if (programItem._realisasiFisikValue !== undefined) {
+        if (programItem._targetFisikValue !== undefined) {
           validProgramCount++;
-          return sum + programItem._realisasiFisikValue;
+          return sum + programItem._targetFisikValue;
         }
         return sum;
       }, 0);
       
-      const avgProgramFisik = validProgramCount > 0 ? totalProgramFisik / validProgramCount : 0;
-      
-      // Sum up all program keuangan
-      const totalBidangUrusanKeuangan = bidangUrusanItem._subItems.reduce((sum, programId) => {
-        const programItem = data[programIndices.get(programId) || 0];
-        return sum + (programItem._realisasiKeuanganValue || 0);
-      }, 0);
+      const avgProgramTargetFisik = validProgramCount > 0 ? totalProgramTargetFisik / validProgramCount : 0;
       
       // Sum up all program target keuangan
       const totalBidangUrusanTargetKeuangan = bidangUrusanItem._subItems.reduce((sum, programId) => {
@@ -813,40 +868,50 @@ const programData = computed(() => {
         return sum + (programItem._targetKeuanganValue || 0);
       }, 0);
       
-      // Update target keuangan for bidang urusan
+      // Update target values for bidang urusan
+      if (validProgramCount > 0) {
+        bidangUrusanItem.targetFisik = `${avgProgramTargetFisik.toFixed(2)}%`;
+      }
+      
       if (totalBidangUrusanTargetKeuangan > 0) {
         bidangUrusanItem.targetKeuangan = `Rp ${totalBidangUrusanTargetKeuangan.toLocaleString('id-ID')}`;
       }
       
+      // Calculate realisasi values for bidang urusan
+      // Calculate average kinerja fisik from all programs
+      let validProgramRealisasiCount = 0;
+      const totalProgramFisik = bidangUrusanItem._subItems.reduce((sum, programId) => {
+        const programItem = data[programIndices.get(programId) || 0];
+        if (programItem._realisasiFisikValue !== undefined) {
+          validProgramRealisasiCount++;
+          return sum + programItem._realisasiFisikValue;
+        }
+        return sum;
+      }, 0);
+      
+      const avgProgramFisik = validProgramRealisasiCount > 0 ? totalProgramFisik / validProgramRealisasiCount : 0;
+      
+      // Sum up all program keuangan
+      const totalBidangUrusanKeuangan = bidangUrusanItem._subItems.reduce((sum, programId) => {
+        const programItem = data[programIndices.get(programId) || 0];
+        return sum + (programItem._realisasiKeuanganValue || 0);
+      }, 0);
+      
       // Update realisasi fisik for bidang urusan
-      if (validProgramCount > 0) {
+      if (validProgramRealisasiCount > 0) {
         bidangUrusanItem.realisasiFisik = `${avgProgramFisik.toFixed(2)}%`;
         
-        // Calculate average target fisik from all programs
-        let validTargetCount = 0;
-        const totalTargetFisik = bidangUrusanItem._subItems.reduce((sum, programId) => {
-          const programItem = data[programIndices.get(programId) || 0];
-          if (programItem.targetFisik !== '-') {
-            validTargetCount++;
-            const targetValue = parseFloat(programItem.targetFisik.replace('%', ''));
-            return sum + (isNaN(targetValue) ? 0 : targetValue);
+        // Calculate capaian fisik for bidang urusan
+        if (bidangUrusanItem.targetFisik !== '-') {
+          const targetFisik = parseFloat(bidangUrusanItem.targetFisik.replace('%', ''));
+          if (!isNaN(targetFisik) && targetFisik > 0) {
+            const capaianFisik = (avgProgramFisik / targetFisik) * 100;
+            bidangUrusanItem.capaianFisik = `${capaianFisik.toFixed(2)}%`;
+            
+            // Calculate kinerja fisik tahunan
+            const kinerjaFisikTahunan = capaianFisik;
+            bidangUrusanItem.capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
           }
-          return sum;
-        }, 0);
-        
-        const avgTargetFisik = validTargetCount > 0 ? totalTargetFisik / validTargetCount : 0;
-        
-        // Set target fisik for bidang urusan
-        if (avgTargetFisik > 0) {
-          bidangUrusanItem.targetFisik = `${avgTargetFisik.toFixed(2)}%`;
-          
-          // Calculate capaian fisik for bidang urusan
-          const capaianFisik = (avgProgramFisik / avgTargetFisik) * 100;
-          bidangUrusanItem.capaianFisik = `${capaianFisik.toFixed(2)}%`;
-          
-          // Calculate kinerja fisik tahunan
-          const kinerjaFisikTahunan = capaianFisik;
-          bidangUrusanItem.capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
         }
       }
       
@@ -854,13 +919,16 @@ const programData = computed(() => {
         bidangUrusanItem.realisasiKeuangan = `Rp ${totalBidangUrusanKeuangan.toLocaleString('id-ID')}`;
         
         // Calculate capaian for bidang urusan
-        if (totalBidangUrusanTargetKeuangan > 0) {
-          // Use Math.min to cap the value at 100%
-          const capaian = Math.min(100, (totalBidangUrusanKeuangan / totalBidangUrusanTargetKeuangan) * 100);
-          bidangUrusanItem.capaianKeuangan = `${capaian.toFixed(2)}%`;
-          
-          // Calculate keuangan tahunan (same as capaian)
-          bidangUrusanItem.capaianTahunanKeuangan = bidangUrusanItem.capaianKeuangan;
+        if (bidangUrusanItem.targetKeuangan !== '-') {
+          const targetKeuangan = parseFloat(bidangUrusanItem.targetKeuangan.replace(/[^0-9.-]+/g, ''));
+          if (!isNaN(targetKeuangan) && targetKeuangan > 0) {
+            // Use Math.min to cap the value at 100%
+            const capaian = Math.min(100, (totalBidangUrusanKeuangan / targetKeuangan) * 100);
+            bidangUrusanItem.capaianKeuangan = `${capaian.toFixed(2)}%`;
+            
+            // Calculate keuangan tahunan (same as capaian)
+            bidangUrusanItem.capaianTahunanKeuangan = bidangUrusanItem.capaianKeuangan;
+          }
         }
       }
     }
@@ -1122,7 +1190,7 @@ const saveData = (id: number) => {
                             <tr>
                                 <th rowspan="3" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">Kode</th>
                                 <th rowspan="3" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center min-w-[180px] w-[180px]">BIDANG URUSAN & PROGRAM/ KEGIATAN/ SUB KEGIATAN</th>
-                                <th colspan="8" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">Triwulan 1</th>
+                                <th colspan="6" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">Triwulan 1</th>
                                 <th rowspan="3" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center min-w-[180px] w-[180px]">Keterangan</th>
                                 <th rowspan="3" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center min-w-[180px] w-[180px]">PPTK</th>
                                 <th rowspan="3" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">Aksi</th>
@@ -1130,15 +1198,13 @@ const saveData = (id: number) => {
                             <tr>
                                 <th colspan="2" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">TARGET</th>
                                 <th colspan="2" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">REALISASI</th>
-                                <th colspan="4" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">CAPAIAN</th>
+                                <th colspan="2" class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">CAPAIAN</th>
                             </tr>
                             <tr>
                                 <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KINERJA FISIK (%)</th>
                                 <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KEUANGAN (RP)</th>
                                 <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KINERJA FISIK (%)</th>
                                 <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KEUANGAN (RP)</th>
-                                <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KINERJA FISIK (%)</th>
-                                <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KEUANGAN (%)</th>
                                 <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KINERJA TAHUNAN (%)</th>
                                 <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center">KEUANGAN TAHUNAN (%)</th>
                             </tr>
@@ -1194,36 +1260,7 @@ const saveData = (id: number) => {
                                 </td>
                                 
                                 <!-- Capaian columns with inputs for subkegiatan -->
-                                <td class="px-3 py-2 text-center">
-                                    <template v-if="item.type === 'subkegiatan'">
-                                        <input 
-                                            type="text" 
-                                            class="w-24 h-8 border border-gray-300 rounded px-2 py-1 text-right text-xs"
-                                            :class="{ 'bg-gray-50 hover:bg-blue-50': true }"
-                                            :value="editedItems[item.id]?.capaianFisik || item.capaianFisik"
-                                            @input="(e: Event) => handleInputChange(item.id, 'capaianFisik', (e.target as HTMLInputElement).value)"
-                                            placeholder="0.00%"
-                                        />
-                                    </template>
-                                    <template v-else>
-                                        <span class="text-sm">{{ item.capaianFisik }}</span>
-                                    </template>
-                                </td>
-                                <td class="px-3 py-2 text-right">
-                                    <template v-if="item.type === 'subkegiatan'">
-                                        <input 
-                                            type="text" 
-                                            class="w-24 h-8 border border-gray-300 rounded px-2 py-1 text-right text-xs"
-                                            :class="{ 'bg-gray-50 hover:bg-blue-50': true }"
-                                            :value="editedItems[item.id]?.capaianKeuangan || item.capaianKeuangan"
-                                            @input="(e: Event) => handleInputChange(item.id, 'capaianKeuangan', (e.target as HTMLInputElement).value)"
-                                            placeholder="0.00%"
-                                        />
-                                    </template>
-                                    <template v-else>
-                                        <span class="text-sm">{{ item.capaianKeuangan }}</span>
-                                    </template>
-                                </td>
+    
                                 
                                 <td class="px-3 py-2 text-center text-sm">{{ item.capaianTahunanFisik }}</td>
                                 <td class="px-3 py-2 text-right text-sm">{{ item.capaianTahunanKeuangan }}</td>

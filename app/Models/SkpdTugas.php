@@ -17,6 +17,7 @@ class SkpdTugas extends Model
         'user_id',
         'kode_nomenklatur_id',
         'is_aktif',
+        'is_finalized'
     ];
 
     protected $dates = ['deleted_at'];
@@ -26,13 +27,22 @@ class SkpdTugas extends Model
         return $this->belongsTo(Skpd::class);
     }
 
-    public function user()
+    public function userMonitoring()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-
+    
     public function kodeNomenklatur()
     {
         return $this->belongsTo(KodeNomenklatur::class);
+    }
+    public function monitoring()
+    {
+        return $this->hasMany(Monitoring::class);
+    }
+
+    public function tugasMonitoring()
+    {
+        return $this->hasOne(Monitoring::class, 'skpd_tugas_id');
     }
 }

@@ -87,6 +87,7 @@ const props = defineProps<{
     kinerja_fisik: number;
     keuangan: number;
     periode: string;
+    periode_id: number;
     monitoring_id: number;
     task_id: number;
     deskripsi: string;
@@ -97,6 +98,7 @@ const props = defineProps<{
     kinerja_fisik: number;
     keuangan: number;
     periode: string;
+    periode_id: number;
     monitoring_id: number;
     task_id: number;
     monitoring_anggaran_id: number;
@@ -305,12 +307,12 @@ onMounted(() => {
     console.log('PERIODE ID TYPE:', typeof sample.periode_id, 'VALUE:', sample.periode_id);
     
     // Kelompokkan targets berdasarkan periode_id untuk melihat distribusi data
-    const targetsByPeriod = props.monitoringTargets.reduce((acc, target) => {
-      const periodId = target.periode_id || 'undefined';
-      if (!acc[periodId]) acc[periodId] = [];
-      acc[periodId].push(target);
-      return acc;
-    }, {});
+    const targetsByPeriod: Record<string, typeof props.monitoringTargets> = {};
+    props.monitoringTargets.forEach(target => {
+      const periodId = target.periode_id?.toString() || 'undefined';
+      if (!targetsByPeriod[periodId]) targetsByPeriod[periodId] = [];
+      targetsByPeriod[periodId].push(target);
+    });
     
     console.log('TARGETS GROUPED BY PERIODE_ID:', targetsByPeriod);
     
@@ -330,8 +332,8 @@ onMounted(() => {
     }
   }
   
-  // Untuk melihat distribusi task_id pada monitoringTargets
-  const taskDistribution = {};
+  // For taskDistribution, add proper type
+  const taskDistribution: Record<number, number> = {};
   props.monitoringTargets.forEach(target => {
     if (!taskDistribution[target.task_id]) taskDistribution[target.task_id] = 0;
     taskDistribution[target.task_id]++;
@@ -364,6 +366,605 @@ const formatPercentage = (value: string | number): string => {
   
   return value.toString();
 }
+
+// Helper function untuk mendapatkan pagu dari berbagai format data monitoring
+// Prioritas: perubahan > parsial > pokok
+const getPaguFromMonitoring = (item: any): {value: number, type: string} => {
+  if (!item) return {value: 0, type: 'tidak ada'};
+  
+  console.log(`Mencari pagu untuk item:`, item);
+  
+  // TAMBAHAN 1: Cek target keuangan sebagai fallback terakhir
+  let targetKeuanganValue = 0;
+  if (item._targetKeuanganValue && item._targetKeuanganValue > 0) {
+    targetKeuanganValue = item._targetKeuanganValue;
+    console.log(`Menemukan nilai _targetKeuanganValue yang bisa digunakan sebagai fallback: ${targetKeuanganValue}`);
+  } else if (item.targetKeuangan && typeof item.targetKeuangan === 'string') {
+    const matches = item.targetKeuangan.match(/[0-9,.]+/g);
+    if (matches && matches.length > 0) {
+      targetKeuanganValue = parseFloat(matches[0].replace(/[,.]/g, ''));
+      console.log(`Menemukan nilai targetKeuangan yang bisa digunakan sebagai fallback: ${targetKeuanganValue}`);
+    }
+  }
+  
+  // Cari data "Rencana Awal" dalam monitoring array jika ada
+  if (item.monitoring && Array.isArray(item.monitoring) && item.monitoring.length > 0) {
+    // Prioritaskan mencari dokumen "Rencana Awal"
+    const rencanaAwal = item.monitoring.find((m: any) => 
+      m.deskripsi && m.deskripsi.toLowerCase() === 'rencana awal'
+    );
+    
+    if (rencanaAwal) {
+      console.log(`Ditemukan data "Rencana Awal" dalam monitoring`);
+      
+      // Cek perubahan dulu di data rencana awal
+      if (rencanaAwal.pagu_perubahan && rencanaAwal.pagu_perubahan > 0) {
+        console.log(`Menggunakan pagu_perubahan dari Rencana Awal: ${rencanaAwal.pagu_perubahan}`);
+        return {value: rencanaAwal.pagu_perubahan, type: 'PERUBAHAN (Rencana Awal)'};
+      }
+      
+      // Cek parsial
+      if (rencanaAwal.pagu_parsial && rencanaAwal.pagu_parsial > 0) {
+        console.log(`Menggunakan pagu_parsial dari Rencana Awal: ${rencanaAwal.pagu_parsial}`);
+        return {value: rencanaAwal.pagu_parsial, type: 'PARSIAL (Rencana Awal)'};
+      }
+      
+      // Cek pokok
+      if (rencanaAwal.pagu_pokok && rencanaAwal.pagu_pokok > 0) {
+        console.log(`Menggunakan pagu_pokok dari Rencana Awal: ${rencanaAwal.pagu_pokok}`);
+        return {value: rencanaAwal.pagu_pokok, type: 'POKOK (Rencana Awal)'};
+      }
+      
+      // Cek monitoring_anggaran dalam Rencana Awal
+      if (rencanaAwal.monitoring_anggaran && Array.isArray(rencanaAwal.monitoring_anggaran) && 
+          rencanaAwal.monitoring_anggaran.length > 0) {
+        const anggaran = rencanaAwal.monitoring_anggaran[0];
+        
+        // Cek perubahan dulu
+        if (anggaran && anggaran.pagu_perubahan > 0) {
+          console.log(`Menggunakan monitoring_anggaran.pagu_perubahan dari Rencana Awal: ${anggaran.pagu_perubahan}`);
+          return {value: anggaran.pagu_perubahan, type: 'PERUBAHAN (Rencana Awal)'};
+        }
+        
+        // Cek parsial
+        if (anggaran && anggaran.pagu_parsial > 0) {
+          console.log(`Menggunakan monitoring_anggaran.pagu_parsial dari Rencana Awal: ${anggaran.pagu_parsial}`);
+          return {value: anggaran.pagu_parsial, type: 'PARSIAL (Rencana Awal)'};
+        }
+        
+        // Cek pokok
+        if (anggaran && anggaran.pagu_pokok > 0) {
+          console.log(`Menggunakan monitoring_anggaran.pagu_pokok dari Rencana Awal: ${anggaran.pagu_pokok}`);
+          return {value: anggaran.pagu_pokok, type: 'POKOK (Rencana Awal)'};
+        }
+        
+        // Cek pagu di monitoring_anggaran (tabel monitoring_pagu)
+        if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+          // Prioritaskan perubahan > parsial > pokok
+          const perubahanPagu = anggaran.pagu.find((p: any) => p.kategori === 3); // Perubahan
+          if (perubahanPagu && perubahanPagu.dana > 0) {
+            console.log(`Menggunakan pagu perubahan dari tabel pagu Rencana Awal: ${perubahanPagu.dana}`);
+            return {value: perubahanPagu.dana, type: 'PERUBAHAN (pagu)'};
+          }
+          
+          const parsialPagu = anggaran.pagu.find((p: any) => p.kategori === 2); // Parsial
+          if (parsialPagu && parsialPagu.dana > 0) {
+            console.log(`Menggunakan pagu parsial dari tabel pagu Rencana Awal: ${parsialPagu.dana}`);
+            return {value: parsialPagu.dana, type: 'PARSIAL (pagu)'};
+          }
+          
+          const pokokPagu = anggaran.pagu.find((p: any) => p.kategori === 1); // Pokok
+          if (pokokPagu && pokokPagu.dana > 0) {
+            console.log(`Menggunakan pagu pokok dari tabel pagu Rencana Awal: ${pokokPagu.dana}`);
+            return {value: pokokPagu.dana, type: 'POKOK (pagu)'};
+          }
+        }
+        
+        // TAMBAHAN 2: Cek keuangan target secara langsung
+        if (anggaran.monitoringTarget && Array.isArray(anggaran.monitoringTarget) && anggaran.monitoringTarget.length > 0) {
+          for (const target of anggaran.monitoringTarget) {
+            if (target && typeof target.keuangan === 'number' && target.keuangan > 0) {
+              console.log(`Menggunakan keuangan dari monitoringTarget: ${target.keuangan}`);
+              return {value: target.keuangan, type: 'TARGET KEUANGAN'};
+            }
+          }
+        }
+      }
+      
+      // TAMBAHAN 3: Cek budget data langsung dalam RencanaAwal
+      if (rencanaAwal.anggaran && typeof rencanaAwal.anggaran === 'number' && rencanaAwal.anggaran > 0) {
+        console.log(`Menggunakan anggaran langsung dari Rencana Awal: ${rencanaAwal.anggaran}`);
+        return {value: rencanaAwal.anggaran, type: 'ANGGARAN (Rencana Awal)'};
+      }
+      
+      // TAMBAHAN 4: Cek nilai dana langsung
+      if (rencanaAwal.dana && typeof rencanaAwal.dana === 'number' && rencanaAwal.dana > 0) {
+        console.log(`Menggunakan dana langsung dari Rencana Awal: ${rencanaAwal.dana}`);
+        return {value: rencanaAwal.dana, type: 'DANA (Rencana Awal)'};
+      }
+    }
+  }
+  
+  // Jika tidak ada data Rencana Awal, gunakan metode fallback seperti sebelumnya
+  
+  // Jika ada properti pagu langsung di item
+  // Cek perubahan dulu
+  if (item.pagu_perubahan && item.pagu_perubahan > 0) {
+    console.log(`Menggunakan pagu_perubahan langsung: ${item.pagu_perubahan}`);
+    return {value: item.pagu_perubahan, type: 'PERUBAHAN'};
+  }
+  
+  // Cek parsial
+  if (item.pagu_parsial && item.pagu_parsial > 0) {
+    console.log(`Menggunakan pagu_parsial langsung: ${item.pagu_parsial}`);
+    return {value: item.pagu_parsial, type: 'PARSIAL'};
+  }
+  
+  // Cek pokok
+  if (item.pagu_pokok && item.pagu_pokok > 0) {
+    console.log(`Menggunakan pagu_pokok langsung: ${item.pagu_pokok}`);
+    return {value: item.pagu_pokok, type: 'POKOK'};
+  }
+  
+  // TAMBAHAN 5: Cek anggaran langsung
+  if (item.anggaran && typeof item.anggaran === 'number' && item.anggaran > 0) {
+    console.log(`Menggunakan anggaran langsung: ${item.anggaran}`);
+    return {value: item.anggaran, type: 'ANGGARAN'};
+  }
+  
+  // Jika item memiliki monitoring_anggaran langsung
+  if (item.monitoring_anggaran && Array.isArray(item.monitoring_anggaran) && item.monitoring_anggaran.length > 0) {
+    const anggaran = item.monitoring_anggaran[0];
+    
+    // Cek perubahan dulu
+    if (anggaran && anggaran.pagu_perubahan > 0) {
+      console.log(`Menggunakan monitoring_anggaran.pagu_perubahan: ${anggaran.pagu_perubahan}`);
+      return {value: anggaran.pagu_perubahan, type: 'PERUBAHAN'};
+    }
+    
+    // Cek parsial
+    if (anggaran && anggaran.pagu_parsial > 0) {
+      console.log(`Menggunakan monitoring_anggaran.pagu_parsial: ${anggaran.pagu_parsial}`);
+      return {value: anggaran.pagu_parsial, type: 'PARSIAL'};
+    }
+    
+    // Cek pokok
+    if (anggaran && anggaran.pagu_pokok > 0) {
+      console.log(`Menggunakan monitoring_anggaran.pagu_pokok: ${anggaran.pagu_pokok}`);
+      return {value: anggaran.pagu_pokok, type: 'POKOK'};
+    }
+    
+    // Cek pagu di monitoring_anggaran (tabel monitoring_pagu)
+    if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+      // Prioritaskan perubahan > parsial > pokok
+      const perubahanPagu = anggaran.pagu.find((p: any) => p.kategori === 3); // Perubahan
+      if (perubahanPagu && perubahanPagu.dana > 0) {
+        console.log(`Menggunakan pagu perubahan dari tabel pagu: ${perubahanPagu.dana}`);
+        return {value: perubahanPagu.dana, type: 'PERUBAHAN (pagu)'};
+      }
+      
+      const parsialPagu = anggaran.pagu.find((p: any) => p.kategori === 2); // Parsial
+      if (parsialPagu && parsialPagu.dana > 0) {
+        console.log(`Menggunakan pagu parsial dari tabel pagu: ${parsialPagu.dana}`);
+        return {value: parsialPagu.dana, type: 'PARSIAL (pagu)'};
+      }
+      
+      const pokokPagu = anggaran.pagu.find((p: any) => p.kategori === 1); // Pokok
+      if (pokokPagu && pokokPagu.dana > 0) {
+        console.log(`Menggunakan pagu pokok dari tabel pagu: ${pokokPagu.dana}`);
+        return {value: pokokPagu.dana, type: 'POKOK (pagu)'};
+      }
+    }
+    
+    // TAMBAHAN 6: Cek monitoringTarget dalam anggaran
+    if (anggaran.monitoringTarget && Array.isArray(anggaran.monitoringTarget) && anggaran.monitoringTarget.length > 0) {
+      for (const target of anggaran.monitoringTarget) {
+        if (target && typeof target.keuangan === 'number' && target.keuangan > 0) {
+          console.log(`Menggunakan keuangan dari monitoringTarget dalam monitoring_anggaran: ${target.keuangan}`);
+          return {value: target.keuangan, type: 'TARGET KEUANGAN'};
+        }
+      }
+    }
+  }
+  
+  // Format di monitoring object
+  if (item.monitoring && typeof item.monitoring === 'object') {
+    // Format object
+    if (!Array.isArray(item.monitoring)) {
+      // Cek perubahan dulu
+      if (item.monitoring.pagu_perubahan > 0) {
+        console.log(`Menggunakan monitoring.pagu_perubahan (object): ${item.monitoring.pagu_perubahan}`);
+        return {value: item.monitoring.pagu_perubahan, type: 'PERUBAHAN'};
+      }
+      
+      // Cek parsial
+      if (item.monitoring.pagu_parsial > 0) {
+        console.log(`Menggunakan monitoring.pagu_parsial (object): ${item.monitoring.pagu_parsial}`);
+        return {value: item.monitoring.pagu_parsial, type: 'PARSIAL'};
+      }
+      
+      // Cek pokok
+      if (item.monitoring.pagu_pokok > 0) {
+        console.log(`Menggunakan monitoring.pagu_pokok (object): ${item.monitoring.pagu_pokok}`);
+        return {value: item.monitoring.pagu_pokok, type: 'POKOK'};
+      }
+      
+      // TAMBAHAN 7: Cek anggaran dalam monitoring object
+      if (item.monitoring.anggaran && typeof item.monitoring.anggaran === 'number' && item.monitoring.anggaran > 0) {
+        console.log(`Menggunakan monitoring.anggaran (object): ${item.monitoring.anggaran}`);
+        return {value: item.monitoring.anggaran, type: 'ANGGARAN'};
+      }
+      
+      // TAMBAHAN 8: Cek dana dalam monitoring object
+      if (item.monitoring.dana && typeof item.monitoring.dana === 'number' && item.monitoring.dana > 0) {
+        console.log(`Menggunakan monitoring.dana (object): ${item.monitoring.dana}`);
+        return {value: item.monitoring.dana, type: 'DANA'};
+      }
+    } 
+    // Format array (sudah ditangani di awal fungsi untuk Rencana Awal)
+    else if (Array.isArray(item.monitoring) && item.monitoring.length > 0) {
+      // Ambil item pertama jika bukan Rencana Awal
+      const monitoringItem = item.monitoring[0];
+      
+      // Cek pagu langsung di monitoring[0]
+      // Cek perubahan dulu
+      if (monitoringItem.pagu_perubahan > 0) {
+        console.log(`Menggunakan monitoring[0].pagu_perubahan: ${monitoringItem.pagu_perubahan}`);
+        return {value: monitoringItem.pagu_perubahan, type: 'PERUBAHAN'};
+      }
+      
+      // Cek parsial
+      if (monitoringItem.pagu_parsial > 0) {
+        console.log(`Menggunakan monitoring[0].pagu_parsial: ${monitoringItem.pagu_parsial}`);
+        return {value: monitoringItem.pagu_parsial, type: 'PARSIAL'};
+      }
+      
+      // Cek pokok
+      if (monitoringItem.pagu_pokok > 0) {
+        console.log(`Menggunakan monitoring[0].pagu_pokok: ${monitoringItem.pagu_pokok}`);
+        return {value: monitoringItem.pagu_pokok, type: 'POKOK'};
+      }
+      
+      // TAMBAHAN 9: Cek anggaran di monitoring[0]
+      if (monitoringItem.anggaran && typeof monitoringItem.anggaran === 'number' && monitoringItem.anggaran > 0) {
+        console.log(`Menggunakan monitoring[0].anggaran: ${monitoringItem.anggaran}`);
+        return {value: monitoringItem.anggaran, type: 'ANGGARAN'};
+      }
+      
+      // TAMBAHAN 10: Cek dana di monitoring[0]
+      if (monitoringItem.dana && typeof monitoringItem.dana === 'number' && monitoringItem.dana > 0) {
+        console.log(`Menggunakan monitoring[0].dana: ${monitoringItem.dana}`);
+        return {value: monitoringItem.dana, type: 'DANA'};
+      }
+      
+      // Cek di monitoring_anggaran
+      if (monitoringItem.monitoring_anggaran && 
+          Array.isArray(monitoringItem.monitoring_anggaran) && 
+          monitoringItem.monitoring_anggaran.length > 0) {
+        
+        const anggaran = monitoringItem.monitoring_anggaran[0];
+        
+        // Cek perubahan dulu
+        if (anggaran && anggaran.pagu_perubahan > 0) {
+          console.log(`Menggunakan monitoring[0].monitoring_anggaran[0].pagu_perubahan: ${anggaran.pagu_perubahan}`);
+          return {value: anggaran.pagu_perubahan, type: 'PERUBAHAN'};
+        }
+        
+        // Cek parsial
+        if (anggaran && anggaran.pagu_parsial > 0) {
+          console.log(`Menggunakan monitoring[0].monitoring_anggaran[0].pagu_parsial: ${anggaran.pagu_parsial}`);
+          return {value: anggaran.pagu_parsial, type: 'PARSIAL'};
+        }
+        
+        // Cek pokok
+        if (anggaran && anggaran.pagu_pokok > 0) {
+          console.log(`Menggunakan monitoring[0].monitoring_anggaran[0].pagu_pokok: ${anggaran.pagu_pokok}`);
+          return {value: anggaran.pagu_pokok, type: 'POKOK'};
+        }
+        
+        // Cek pagu di monitoring_anggaran (tabel monitoring_pagu)
+        if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+          // Prioritaskan perubahan > parsial > pokok
+          const perubahanPagu = anggaran.pagu.find((p: any) => p.kategori === 3); // Perubahan
+          if (perubahanPagu && perubahanPagu.dana > 0) {
+            console.log(`Menggunakan pagu perubahan dari tabel pagu: ${perubahanPagu.dana}`);
+            return {value: perubahanPagu.dana, type: 'PERUBAHAN (pagu)'};
+          }
+          
+          const parsialPagu = anggaran.pagu.find((p: any) => p.kategori === 2); // Parsial
+          if (parsialPagu && parsialPagu.dana > 0) {
+            console.log(`Menggunakan pagu parsial dari tabel pagu: ${parsialPagu.dana}`);
+            return {value: parsialPagu.dana, type: 'PARSIAL (pagu)'};
+          }
+          
+          const pokokPagu = anggaran.pagu.find((p: any) => p.kategori === 1); // Pokok
+          if (pokokPagu && pokokPagu.dana > 0) {
+            console.log(`Menggunakan pagu pokok dari tabel pagu: ${pokokPagu.dana}`);
+            return {value: pokokPagu.dana, type: 'POKOK (pagu)'};
+          }
+        }
+        
+        // TAMBAHAN 11: Cek monitoringTarget dalam anggaran[0]
+        if (anggaran.monitoringTarget && Array.isArray(anggaran.monitoringTarget) && anggaran.monitoringTarget.length > 0) {
+          for (const target of anggaran.monitoringTarget) {
+            if (target && typeof target.keuangan === 'number' && target.keuangan > 0) {
+              console.log(`Menggunakan keuangan dari monitoringTarget dalam monitoring[0].monitoring_anggaran[0]: ${target.keuangan}`);
+              return {value: target.keuangan, type: 'TARGET KEUANGAN'};
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // TAMBAHAN 9: Periksa targetKeuangan sebagai fallback terakhir
+  if (targetKeuanganValue > 0) {
+    console.log(`Menggunakan targetKeuangan sebagai fallback terakhir: ${targetKeuanganValue}`);
+    return {value: targetKeuanganValue, type: 'TARGET KEUANGAN (fallback)'};
+  }
+  
+  // Kembalikan 0 jika tidak ada nilai pagu yang ditemukan
+  console.log('Tidak ditemukan nilai pagu yang valid');
+  return {value: 0, type: 'tidak ada'};
+};
+
+// Function untuk mendapatkan pagu dari manajemen anggaran dengan prioritas yang jelas
+// PRIORITAS PAGU ANGGARAN:
+// 1. PERUBAHAN (kategori 3) - Nilai tertinggi prioritas
+// 2. PARSIAL (kategori 2) - Digunakan jika perubahan tidak ada
+// 3. POKOK (kategori 1) - Digunakan jika perubahan dan parsial tidak ada
+const getPaguDariManajemenAnggaran = (item: any): {value: number, type: string} => {
+  if (!item) return {value: 0, type: 'tidak ada'};
+  
+  console.log(`Mencari pagu dari monitoring_pagu untuk item:`, item);
+  
+  // LANGKAH 1: Cek monitoring_pagu di dalam monitoring
+  if (item.monitoring && Array.isArray(item.monitoring) && item.monitoring.length > 0) {
+    for (const monitoring of item.monitoring) {
+      if (monitoring.monitoring_anggaran && Array.isArray(monitoring.monitoring_anggaran) && 
+          monitoring.monitoring_anggaran.length > 0) {
+        for (const anggaran of monitoring.monitoring_anggaran) {
+          // Cek pagu di monitoring_anggaran (tabel monitoring_pagu)
+          if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+            // PRIORITAS 1: Periksa pagu perubahan di tabel monitoring_pagu
+            const perubahanPagu = anggaran.pagu.find((p: any) => p.kategori === 3); // Perubahan
+            if (perubahanPagu && perubahanPagu.dana > 0) {
+              console.log(`Menggunakan pagu perubahan dari monitoring_pagu: ${perubahanPagu.dana}`);
+              return {value: perubahanPagu.dana, type: 'PERUBAHAN (monitoring_pagu)'};
+            }
+            
+            // PRIORITAS 2: Periksa pagu parsial di tabel monitoring_pagu
+            const parsialPagu = anggaran.pagu.find((p: any) => p.kategori === 2); // Parsial
+            if (parsialPagu && parsialPagu.dana > 0) {
+              console.log(`Menggunakan pagu parsial dari monitoring_pagu: ${parsialPagu.dana}`);
+              return {value: parsialPagu.dana, type: 'PARSIAL (monitoring_pagu)'};
+            }
+            
+            // PRIORITAS 3: Periksa pagu pokok di tabel monitoring_pagu
+            const pokokPagu = anggaran.pagu.find((p: any) => p.kategori === 1); // Pokok
+            if (pokokPagu && pokokPagu.dana > 0) {
+              console.log(`Menggunakan pagu pokok dari monitoring_pagu: ${pokokPagu.dana}`);
+              return {value: pokokPagu.dana, type: 'POKOK (monitoring_pagu)'};
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // LANGKAH 2: Cek di manajemen anggaran sebagai fallback
+  if (item.manajemenAnggaran) {
+    // PRIORITAS 1: Perubahan
+    if (item.manajemenAnggaran.perubahan && item.manajemenAnggaran.perubahan > 0) {
+      console.log(`Menggunakan pagu perubahan dari manajemen anggaran: ${item.manajemenAnggaran.perubahan}`);
+      return {value: item.manajemenAnggaran.perubahan, type: 'PERUBAHAN'};
+    }
+    
+    // PRIORITAS 2: Parsial
+    if (item.manajemenAnggaran.parsial && item.manajemenAnggaran.parsial > 0) {
+      console.log(`Menggunakan pagu parsial dari manajemen anggaran: ${item.manajemenAnggaran.parsial}`);
+      return {value: item.manajemenAnggaran.parsial, type: 'PARSIAL'};
+    }
+    
+    // PRIORITAS 3: Pokok
+    if (item.manajemenAnggaran.pokok && item.manajemenAnggaran.pokok > 0) {
+      console.log(`Menggunakan pagu pokok dari manajemen anggaran: ${item.manajemenAnggaran.pokok}`);
+      return {value: item.manajemenAnggaran.pokok, type: 'POKOK'};
+    }
+  }
+  
+  // LANGKAH 3: Cek alternatif struktur data lain
+  if (item.anggaran) {
+    // PRIORITAS 1: Perubahan
+    if (item.anggaran.perubahan && item.anggaran.perubahan > 0) {
+      console.log(`Menggunakan pagu perubahan dari anggaran: ${item.anggaran.perubahan}`);
+      return {value: item.anggaran.perubahan, type: 'PERUBAHAN'};
+    }
+    
+    // PRIORITAS 2: Parsial
+    if (item.anggaran.parsial && item.anggaran.parsial > 0) {
+      console.log(`Menggunakan pagu parsial dari anggaran: ${item.anggaran.parsial}`);
+      return {value: item.anggaran.parsial, type: 'PARSIAL'};
+    }
+    
+    // PRIORITAS 3: Pokok
+    if (item.anggaran.pokok && item.anggaran.pokok > 0) {
+      console.log(`Menggunakan pagu pokok dari anggaran: ${item.anggaran.pokok}`);
+      return {value: item.anggaran.pokok, type: 'POKOK'};
+    }
+  }
+  
+  // LANGKAH 4: Cek pagu langsung
+  // PRIORITAS 1: Perubahan
+  if (item.pagu_perubahan && item.pagu_perubahan > 0) {
+    console.log(`Menggunakan pagu_perubahan: ${item.pagu_perubahan}`);
+    return {value: item.pagu_perubahan, type: 'PERUBAHAN'};
+  }
+  
+  // PRIORITAS 2: Parsial
+  if (item.pagu_parsial && item.pagu_parsial > 0) {
+    console.log(`Menggunakan pagu_parsial: ${item.pagu_parsial}`);
+    return {value: item.pagu_parsial, type: 'PARSIAL'};
+  }
+  
+  // PRIORITAS 3: Pokok
+  if (item.pagu_pokok && item.pagu_pokok > 0) {
+    console.log(`Menggunakan pagu_pokok: ${item.pagu_pokok}`);
+    return {value: item.pagu_pokok, type: 'POKOK'};
+  }
+  
+  console.log('Tidak ditemukan nilai pagu di monitoring_pagu');
+  return {value: 0, type: 'tidak ada'};
+};
+
+// Tetap menyimpan fungsi lama untuk kompatibilitas dengan kolom lain
+const getPaguTerakhirDariRencanaAwal = (item: any): {value: number, type: string} => {
+  if (!item) return {value: 0, type: 'tidak ada'};
+  
+  console.log(`Mencari pagu terakhir untuk item:`, item);
+  
+  // LANGKAH 1: Coba temukan data yang eksplisit berlabel "Rencana Awal"
+  if (item.monitoring && Array.isArray(item.monitoring) && item.monitoring.length > 0) {
+    // Prioritaskan mencari dokumen "Rencana Awal"
+    const rencanaAwal = item.monitoring.find((m: any) => 
+      m.deskripsi && m.deskripsi.toLowerCase() === 'rencana awal'
+    );
+    
+    if (rencanaAwal) {
+      console.log(`Ditemukan data "Rencana Awal" dalam monitoring`);
+      
+      // PRIORITAS UTAMA: Periksa perubahan di Rencana Awal
+      if (rencanaAwal.pagu_perubahan && rencanaAwal.pagu_perubahan > 0) {
+        console.log(`Menggunakan pagu_perubahan dari Rencana Awal: ${rencanaAwal.pagu_perubahan}`);
+        return {value: rencanaAwal.pagu_perubahan, type: 'PERUBAHAN (Rencana Awal)'};
+      }
+      
+      // Cek monitoring_anggaran dalam Rencana Awal
+      if (rencanaAwal.monitoring_anggaran && Array.isArray(rencanaAwal.monitoring_anggaran) && 
+          rencanaAwal.monitoring_anggaran.length > 0) {
+        const anggaran = rencanaAwal.monitoring_anggaran[0];
+        
+        // PRIORITAS UTAMA: Periksa perubahan di monitoring_anggaran
+        if (anggaran && anggaran.pagu_perubahan > 0) {
+          console.log(`Menggunakan monitoring_anggaran.pagu_perubahan dari Rencana Awal: ${anggaran.pagu_perubahan}`);
+          return {value: anggaran.pagu_perubahan, type: 'PERUBAHAN (Rencana Awal)'};
+        }
+        
+        // PRIORITAS UTAMA: Periksa pagu perubahan di tabel monitoring_pagu
+        if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+          const perubahanPagu = anggaran.pagu.find((p: any) => p.kategori === 3); // Perubahan
+          if (perubahanPagu && perubahanPagu.dana > 0) {
+            console.log(`Menggunakan pagu perubahan dari tabel pagu Rencana Awal: ${perubahanPagu.dana}`);
+            return {value: perubahanPagu.dana, type: 'PERUBAHAN (pagu)'};
+          }
+        }
+      }
+      
+      // PRIORITAS KEDUA: Periksa parsial di Rencana Awal
+      if (rencanaAwal.pagu_parsial && rencanaAwal.pagu_parsial > 0) {
+        console.log(`Menggunakan pagu_parsial dari Rencana Awal: ${rencanaAwal.pagu_parsial}`);
+        return {value: rencanaAwal.pagu_parsial, type: 'PARSIAL (Rencana Awal)'};
+      }
+      
+      // Cek parsial di monitoring_anggaran
+      if (rencanaAwal.monitoring_anggaran && Array.isArray(rencanaAwal.monitoring_anggaran) && 
+          rencanaAwal.monitoring_anggaran.length > 0) {
+        const anggaran = rencanaAwal.monitoring_anggaran[0];
+        
+        // PRIORITAS KEDUA: Periksa parsial di monitoring_anggaran
+        if (anggaran && anggaran.pagu_parsial > 0) {
+          console.log(`Menggunakan monitoring_anggaran.pagu_parsial dari Rencana Awal: ${anggaran.pagu_parsial}`);
+          return {value: anggaran.pagu_parsial, type: 'PARSIAL (Rencana Awal)'};
+        }
+        
+        // PRIORITAS KEDUA: Periksa pagu parsial di tabel monitoring_pagu  
+        if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+          const parsialPagu = anggaran.pagu.find((p: any) => p.kategori === 2); // Parsial
+          if (parsialPagu && parsialPagu.dana > 0) {
+            console.log(`Menggunakan pagu parsial dari tabel pagu Rencana Awal: ${parsialPagu.dana}`);
+            return {value: parsialPagu.dana, type: 'PARSIAL (pagu)'};
+          }
+        }
+      }
+      
+      // PRIORITAS KETIGA: Periksa pokok di Rencana Awal
+      if (rencanaAwal.pagu_pokok && rencanaAwal.pagu_pokok > 0) {
+        console.log(`Menggunakan pagu_pokok dari Rencana Awal: ${rencanaAwal.pagu_pokok}`);
+        return {value: rencanaAwal.pagu_pokok, type: 'POKOK (Rencana Awal)'};
+      }
+      
+      // Cek pokok di monitoring_anggaran
+      if (rencanaAwal.monitoring_anggaran && Array.isArray(rencanaAwal.monitoring_anggaran) && 
+          rencanaAwal.monitoring_anggaran.length > 0) {
+        const anggaran = rencanaAwal.monitoring_anggaran[0];
+        
+        // PRIORITAS KETIGA: Periksa pokok di monitoring_anggaran
+        if (anggaran && anggaran.pagu_pokok > 0) {
+          console.log(`Menggunakan monitoring_anggaran.pagu_pokok dari Rencana Awal: ${anggaran.pagu_pokok}`);
+          return {value: anggaran.pagu_pokok, type: 'POKOK (Rencana Awal)'};
+        }
+        
+        // PRIORITAS KETIGA: Periksa pagu pokok di tabel monitoring_pagu
+        if (anggaran.pagu && Array.isArray(anggaran.pagu) && anggaran.pagu.length > 0) {
+          const pokokPagu = anggaran.pagu.find((p: any) => p.kategori === 1); // Pokok
+          if (pokokPagu && pokokPagu.dana > 0) {
+            console.log(`Menggunakan pagu pokok dari tabel pagu Rencana Awal: ${pokokPagu.dana}`);
+            return {value: pokokPagu.dana, type: 'POKOK (pagu)'};
+          }
+        }
+      }
+    }
+  }
+  
+  // LANGKAH 2: Jika tidak ada label "Rencana Awal", cek nilai pagu langsung dari item
+  // PRIORITAS UTAMA: Perubahan
+  if (item.pagu_perubahan && item.pagu_perubahan > 0) {
+    console.log(`Menggunakan pagu_perubahan langsung: ${item.pagu_perubahan}`);
+    return {value: item.pagu_perubahan, type: 'PERUBAHAN'};
+  }
+  
+  // PRIORITAS KEDUA: Parsial
+  if (item.pagu_parsial && item.pagu_parsial > 0) {
+    console.log(`Menggunakan pagu_parsial langsung: ${item.pagu_parsial}`);
+    return {value: item.pagu_parsial, type: 'PARSIAL'};
+  }
+  
+  // PRIORITAS KETIGA: Pokok
+  if (item.pagu_pokok && item.pagu_pokok > 0) {
+    console.log(`Menggunakan pagu_pokok langsung: ${item.pagu_pokok}`);
+    return {value: item.pagu_pokok, type: 'POKOK'};
+  }
+  
+  console.log('Tidak ditemukan nilai pagu yang valid');
+  return {value: 0, type: 'tidak ada'};
+};
+
+// Function untuk memastikan nilai capaian keuangan tahunan dihitung dengan benar
+// RUMUS DASAR: (Realisasi Keuangan (Rp) ÷ Pagu Anggaran APBD) × 100
+// PRIORITAS PAGU ANGGARAN APBD: 
+// 1. PERUBAHAN (jika ada)
+// 2. PARSIAL (jika ada dan perubahan tidak ada)
+// 3. POKOK (jika parsial dan perubahan tidak ada)
+// Pagu diambil dari nilai di manajemen anggaran, dari getPaguDariManajemenAnggaran function
+const calculateCapaianKeuanganTahunan = (realisasi: number, pagu: number, paguType: string = 'pagu'): string => {
+  if (!pagu || pagu <= 0) return '0.00%';
+  
+  // Pastikan kedua nilai adalah numerik
+  const realisasiNum = parseFloat(realisasi.toString()) || 0;
+  const paguNum = parseFloat(pagu.toString()) || 1; // Hindari pembagian dengan 0
+  
+  // Hitung hasil
+  const result = (realisasiNum / paguNum) * 100;
+  
+  // Verifikasi hasil - tambahkan log yang lebih detail untuk debugging
+  console.log(`CAPAIAN KEUANGAN TAHUNAN CALCULATION:`);
+  console.log(`- Realisasi Keuangan: ${realisasiNum.toLocaleString('id-ID')}`);
+  console.log(`- Pagu Anggaran APBD (${paguType}): ${paguNum.toLocaleString('id-ID')}`);
+  console.log(`- Formula: (${realisasiNum} / ${paguNum}) * 100 = ${result.toFixed(4)}%`);
+  
+  // Jangan bulatkan ke 100%, kembalikan nilai asli dengan 2 desimal
+  return `${result.toFixed(2)}%`;
+};
 
 // Create programData computed property to combine tasks and monitoring data
 const programData = computed(() => {
@@ -402,11 +1003,11 @@ const programData = computed(() => {
       targetFisik: '-',
       targetKeuangan: '-',
       realisasiFisik: '-',
-      realisasiKeuangan: '-',
+      realisasiKeuangan: 'Rp 0',
       capaianFisik: '-',
       capaianKeuangan: '-',
       capaianTahunanFisik: '-',
-      capaianTahunanKeuangan: '-',
+      capaianTahunanKeuangan: '0.00%',
       keterangan: props.bidangUrusan.deskripsi || '-',
       pptk: '-',
       type: 'bidang_urusan',
@@ -434,7 +1035,6 @@ const programData = computed(() => {
     let keuangan = '-';
     let keuanganValue = 0;
     let targetFisikValue = 0;
-    let deskripsi = program.monitoring && program.monitoring[0] ? program.monitoring[0].deskripsi : 'Program';
     
     const programIndex = data.length;
     data.push({
@@ -446,12 +1046,12 @@ const programData = computed(() => {
       _targetKeuanganValue: keuanganValue,
       _targetFisikValue: targetFisikValue,
       realisasiFisik: '-',
-      realisasiKeuangan: '-',
+      realisasiKeuangan: 'Rp 0',
       capaianFisik: '-',
       capaianKeuangan: '-',
       capaianTahunanFisik: '-',
-      capaianTahunanKeuangan: '-',
-      keterangan: deskripsi,
+      capaianTahunanKeuangan: '0.00%',
+      keterangan: '-',
       pptk: program.nama_pptk || '-',
       type: 'program',
       indentLevel: 0,
@@ -470,7 +1070,6 @@ const programData = computed(() => {
         let keuanganKegiatan = '-';
         let targetFisikValue = 0;
         let keuanganValue = 0;
-        let deskripsiKegiatan = kegiatan.monitoring && kegiatan.monitoring[0] ? kegiatan.monitoring[0].deskripsi : 'Kegiatan';
         
         const kegiatanIndex = data.length;
         data.push({
@@ -487,7 +1086,7 @@ const programData = computed(() => {
           capaianKeuangan: '-',
           capaianTahunanFisik: '-',
           capaianTahunanKeuangan: '-',
-          keterangan: deskripsiKegiatan,
+          keterangan: '-',
           pptk: kegiatan.nama_pptk || '-',
           type: 'kegiatan',
           indentLevel: 1,
@@ -586,8 +1185,8 @@ const programData = computed(() => {
                   const capaian = (realisasiFisikValue / targetValue) * 100;
                   capaianFisik = `${capaian.toFixed(2)}%`;
                   
-                  // Calculate kinerja tahunan (based on S27/100*100 formula, assuming S27 is capaian fisik)
-                  const kinerjaFisikTahunan = capaian; // Same as capaian fisik
+                  // Calculate kinerja tahunan using the formula: kinerja fisik realisasi/100*100
+                  const kinerjaFisikTahunan = (realisasiFisikValue / 100) * 100;
                   capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
                 }
               }
@@ -599,8 +1198,24 @@ const programData = computed(() => {
                   const capaian = Math.min(100, (realisasiKeuanganValue / targetValue) * 100);
                   capaianKeuangan = `${capaian.toFixed(2)}%`;
                   
-                  // Calculate keuangan tahunan (same as capaian)
-                  capaianTahunanKeuangan = capaianKeuangan;
+                  // Calculate keuangan tahunan using the formula:
+                  // Realisasi keuangan / jumlah data dari pagu pada manajemen anggaran * 100
+                  // Get the subkegiatan data to find budget values
+                  const subkegiatanItem = props.subkegiatanTugas.find(sk => sk.id === subkegiatan.id);
+                  
+                  // Gunakan fungsi khusus untuk mendapatkan pagu dari manajemen anggaran
+                  const paguManajemenAnggaran = getPaguDariManajemenAnggaran(subkegiatan);
+                  
+                  if (paguManajemenAnggaran.value > 0) {
+                    capaianTahunanKeuangan = calculateCapaianKeuanganTahunan(
+                      realisasiKeuanganValue, 
+                      paguManajemenAnggaran.value, 
+                      paguManajemenAnggaran.type
+                    );
+                  } else {
+                    // Jika pagu dari manajemen anggaran tidak ditemukan, set capaian keuangan tahunan ke 0%
+                    capaianTahunanKeuangan = '0.00%';
+                  }
                 }
               }
               
@@ -724,8 +1339,8 @@ const programData = computed(() => {
           const capaian = (avgFisik / targetFisik) * 100;
           kegiatanItem.capaianFisik = `${capaian.toFixed(2)}%`;
           
-          // Calculate kinerja tahunan
-          const kinerjaFisikTahunan = capaian;
+          // Calculate kinerja tahunan using the formula: kinerja fisik realisasi/100*100
+          const kinerjaFisikTahunan = (avgFisik / 100) * 100;
           kegiatanItem.capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
         }
       }
@@ -737,8 +1352,24 @@ const programData = computed(() => {
           const capaian = Math.min(100, (totalKeuangan / targetKeuangan) * 100);
           kegiatanItem.capaianKeuangan = `${capaian.toFixed(2)}%`;
           
-          // Calculate keuangan tahunan (same as capaian)
-          kegiatanItem.capaianTahunanKeuangan = kegiatanItem.capaianKeuangan;
+          // Calculate keuangan tahunan using the formula:
+          // Realisasi keuangan / jumlah data dari pagu pada manajemen anggaran * 100
+          // Find the kegiatan to get budget values
+          const kegiatanObj = props.kegiatanTugas.find(k => k.id === kegiatanId);
+          
+          // Gunakan fungsi khusus untuk mendapatkan pagu dari manajemen anggaran
+          const paguManajemenAnggaran = getPaguDariManajemenAnggaran(kegiatanObj);
+          
+          if (paguManajemenAnggaran.value > 0) {
+            kegiatanItem.capaianTahunanKeuangan = calculateCapaianKeuanganTahunan(
+              totalKeuangan, 
+              paguManajemenAnggaran.value, 
+              paguManajemenAnggaran.type
+            );
+          } else {
+            // Jika pagu dari manajemen anggaran tidak ditemukan, set capaian keuangan tahunan ke 0%
+            kegiatanItem.capaianTahunanKeuangan = '0.00%';
+          }
         }
       }
     }
@@ -814,27 +1445,43 @@ const programData = computed(() => {
       }
       
       // Calculate capaian
-      if (programItem.targetFisik !== '-' && validRealisasiCount > 0) {
+      if (programItem.targetFisik !== '-') {
         const targetFisik = parseFloat(programItem.targetFisik.replace('%', ''));
         if (!isNaN(targetFisik) && targetFisik > 0) {
           const capaian = (avgFisik / targetFisik) * 100;
           programItem.capaianFisik = `${capaian.toFixed(2)}%`;
           
-          // Calculate kinerja tahunan
-          const kinerjaFisikTahunan = capaian;
+          // Calculate kinerja tahunan using the formula: kinerja fisik realisasi/100*100
+          const kinerjaFisikTahunan = (avgFisik / 100) * 100;
           programItem.capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
         }
       }
       
-      if (programItem.targetKeuangan !== '-' && totalKeuangan > 0) {
+      if (programItem.targetKeuangan !== '-') {
         const targetKeuangan = parseFloat(programItem.targetKeuangan.replace(/[^0-9.-]+/g, ''));
         if (!isNaN(targetKeuangan) && targetKeuangan > 0) {
           // Use Math.min to cap the value at 100%
           const capaian = Math.min(100, (totalKeuangan / targetKeuangan) * 100);
           programItem.capaianKeuangan = `${capaian.toFixed(2)}%`;
           
-          // Calculate keuangan tahunan (same as capaian)
-          programItem.capaianTahunanKeuangan = programItem.capaianKeuangan;
+          // Calculate keuangan tahunan using the formula:
+          // Realisasi keuangan / jumlah data dari pagu pada manajemen anggaran * 100
+          // Find the program to get budget values
+          const programObj = props.programTugas.find(p => p.id === programId);
+          
+          // Gunakan fungsi khusus untuk mendapatkan pagu dari manajemen anggaran
+          const paguManajemenAnggaran = getPaguDariManajemenAnggaran(programObj);
+          
+          if (paguManajemenAnggaran.value > 0) {
+            programItem.capaianTahunanKeuangan = calculateCapaianKeuanganTahunan(
+              totalKeuangan, 
+              paguManajemenAnggaran.value, 
+              paguManajemenAnggaran.type
+            );
+          } else {
+            // Jika pagu dari manajemen anggaran tidak ditemukan, set capaian keuangan tahunan ke 0%
+            programItem.capaianTahunanKeuangan = '0.00%';
+          }
         }
       }
       
@@ -908,8 +1555,8 @@ const programData = computed(() => {
             const capaianFisik = (avgProgramFisik / targetFisik) * 100;
             bidangUrusanItem.capaianFisik = `${capaianFisik.toFixed(2)}%`;
             
-            // Calculate kinerja fisik tahunan
-            const kinerjaFisikTahunan = capaianFisik;
+            // Calculate kinerja fisik tahunan using the formula: kinerja fisik realisasi/100*100
+            const kinerjaFisikTahunan = (avgProgramFisik / 100) * 100;
             bidangUrusanItem.capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
           }
         }
@@ -926,8 +1573,36 @@ const programData = computed(() => {
             const capaian = Math.min(100, (totalBidangUrusanKeuangan / targetKeuangan) * 100);
             bidangUrusanItem.capaianKeuangan = `${capaian.toFixed(2)}%`;
             
-            // Calculate keuangan tahunan (same as capaian)
-            bidangUrusanItem.capaianTahunanKeuangan = bidangUrusanItem.capaianKeuangan;
+            // Calculate keuangan tahunan using the formula:
+            // Realisasi keuangan / jumlah data dari pagu pada manajemen anggaran * 100
+            // For bidang urusan, use cumulative values from all associated programs
+            
+            // Variabel untuk menyimpan total pagu
+            let totalPaguValue = 0;
+            let paguType = 'gabungan';
+            
+            // Kumpulkan dari program
+            bidangUrusanItem._subItems?.forEach(programId => {
+              const programObj = props.programTugas.find(p => p.id === programId);
+              if (programObj) {
+                // Cek pagu dari manajemen anggaran di level program
+                const programPagu = getPaguDariManajemenAnggaran(programObj);
+                if (programPagu.value > 0) {
+                  totalPaguValue += programPagu.value;
+                }
+              }
+            });
+            
+            if (totalPaguValue > 0) {
+              bidangUrusanItem.capaianTahunanKeuangan = calculateCapaianKeuanganTahunan(
+                totalBidangUrusanKeuangan, 
+                totalPaguValue, 
+                paguType
+              );
+            } else {
+              // Jika pagu tidak ditemukan, set capaian keuangan tahunan ke 0%
+              bidangUrusanItem.capaianTahunanKeuangan = '0.00%';
+            }
           }
         }
       }
@@ -1025,10 +1700,13 @@ const saveData = (id: number) => {
   const item = editedItems.value[id];
   if (!item) return;
 
+  // Find the existing target data for this subkegiatan
+  const subkegiatan = programData.value.find(p => p.id === id);
+  if (!subkegiatan) return;
+
   // Calculate capaian manually if not entered
   if (item.capaianFisik === '-' && item.realisasiFisik !== '-') {
     // Find the target value for this subkegiatan
-    const subkegiatan = programData.value.find(p => p.id === id);
     if (subkegiatan && subkegiatan.targetFisik !== '-') {
       const targetValue = parseFloat(subkegiatan.targetFisik.replace('%', ''));
       const realisasiValue = parseFloat(item.realisasiFisik.replace('%', ''));
@@ -1041,7 +1719,6 @@ const saveData = (id: number) => {
 
   // Calculate capaian keuangan similarly
   if (item.capaianKeuangan === '-' && item.realisasiKeuangan !== '-') {
-    const subkegiatan = programData.value.find(p => p.id === id);
     if (subkegiatan && subkegiatan.targetKeuangan !== '-') {
       const targetValue = parseFloat(subkegiatan.targetKeuangan.replace(/[^0-9.-]+/g, ''));
       const realisasiValue = parseFloat(item.realisasiKeuangan.replace(/[^0-9.-]+/g, ''));
@@ -1057,11 +1734,30 @@ const saveData = (id: number) => {
   const cleanRealisasiKeuangan = item.realisasiKeuangan.replace(/[^0-9.-]+/g, '');
   const cleanNumber = isNaN(parseFloat(cleanRealisasiKeuangan)) ? 0 : parseFloat(cleanRealisasiKeuangan);
 
+  // Calculate capaian keuangan tahunan menggunakan getPaguDariManajemenAnggaran
+  const subkegiatanItem = props.subkegiatanTugas.find(sk => sk.id === id);
+  if (subkegiatanItem) {
+    // Dapatkan nilai pagu dari manajemen anggaran dengan prioritas (perubahan > parsial > pokok)
+    const paguManajemenAnggaran = getPaguDariManajemenAnggaran(subkegiatanItem);
+    
+    if (paguManajemenAnggaran.value > 0) {
+      // Hitung capaian keuangan tahunan: (realisasi keuangan / pagu) * 100
+      const calculatedValue = calculateCapaianKeuanganTahunan(
+        cleanNumber, 
+        paguManajemenAnggaran.value,
+        paguManajemenAnggaran.type
+      );
+      item.capaianKeuangan = calculatedValue;
+    } else {
+      console.log('Tidak ditemukan nilai pagu di monitoring_pagu untuk subkegiatan:', id);
+    }
+  }
+
   // Send data to server
   router.post('/triwulan1/save-realisasi', {
     id: id,
     realisasi_fisik: item.realisasiFisik.replace('%', ''),
-    realisasi_keuangan: cleanNumber, // Ensure this is a number, not a string with formatting
+    realisasi_keuangan: cleanNumber,
     capaian_fisik: item.capaianFisik.replace('%', ''),
     capaian_keuangan: item.capaianKeuangan.replace('%', ''),
     keterangan: item.keterangan,
@@ -1069,53 +1765,89 @@ const saveData = (id: number) => {
   }, {
     onSuccess: () => {
       alert('Data berhasil disimpan');
-      // Tambahkan atau perbarui data realisasi di properti monitoringRealisasi setelah berhasil disimpan
-      const existingIndex = props.monitoringRealisasi.findIndex(r => r.task_id === id);
       
-      if (existingIndex !== -1) {
-        // Update existing realisasi data
-        props.monitoringRealisasi[existingIndex].kinerja_fisik = parseFloat(item.realisasiFisik.replace('%', ''));
-        props.monitoringRealisasi[existingIndex].keuangan = cleanNumber; // Use the clean number here too
-      } else {
-        // Add new realisasi data
-        // Cari monitoring ID dari subkegiatan
-        const skpdTugas = props.subkegiatanTugas.find(sk => sk.id === id);
-        const monitoringId = skpdTugas?.monitoring?.[0]?.id || 0;
-        
-        props.monitoringRealisasi.push({
-          id: Date.now(), // Temporary ID until reload
-          kinerja_fisik: parseFloat(item.realisasiFisik.replace('%', '')),
-          keuangan: cleanNumber, // Use the clean number here too
-          periode: 'Triwulan 1',
-          monitoring_id: monitoringId,
-          task_id: id,
-          monitoring_anggaran_id: 0, // This will be set on the server
-          deskripsi: item.keterangan,
-          nama_pptk: item.pptk
-        });
-      }
-      
-      // Update the item in programData to show the new values
+      // Update the item in programData to show the new values while preserving target data
       const itemIndex = programData.value.findIndex(p => p.id === id);
       if (itemIndex !== -1) {
-        programData.value[itemIndex].realisasiKeuangan = formatCurrency(item.realisasiKeuangan);
-        programData.value[itemIndex].capaianKeuangan = formatPercentage(item.capaianKeuangan);
-        programData.value[itemIndex].capaianTahunanKeuangan = formatPercentage(item.capaianKeuangan); // Same as capaian for now
-        programData.value[itemIndex].keterangan = item.keterangan;
-        programData.value[itemIndex].pptk = item.pptk;
+        // Keep the existing target data
+        const existingTargetFisik = programData.value[itemIndex].targetFisik;
+        const existingTargetKeuangan = programData.value[itemIndex].targetKeuangan;
+        const existingTargetFisikValue = programData.value[itemIndex]._targetFisikValue;
+        const existingTargetKeuanganValue = programData.value[itemIndex]._targetKeuanganValue;
+
+        // Calculate capaian keuangan tahunan using the formula with manajemen anggaran data
+        const subkegiatanObject = props.subkegiatanTugas.find(sk => sk.id === id);
+        let capaianTahunanKeuangan = formatPercentage(item.capaianKeuangan);
         
+        if (subkegiatanObject) {
+          // Get pagu value from manajemen anggaran with priority
+          const paguManajemenAnggaran = getPaguDariManajemenAnggaran(subkegiatanObject);
+          
+          if (paguManajemenAnggaran.value > 0) {
+            // Calculate capaian keuangan tahunan: (realisasi keuangan / pagu manajemen anggaran) * 100
+            const calculatedValue = calculateCapaianKeuanganTahunan(
+              cleanNumber, 
+              paguManajemenAnggaran.value,
+              paguManajemenAnggaran.type
+            );
+            capaianTahunanKeuangan = formatPercentage(calculatedValue);
+          } else {
+            console.log('Tidak ditemukan pagu manajemen anggaran untuk subkegiatan:', id);
+          }
+        }
+
+        // Update only the realisasi and capaian data
+        programData.value[itemIndex] = {
+          ...programData.value[itemIndex],
+          realisasiKeuangan: formatCurrency(item.realisasiKeuangan),
+          realisasiFisik: item.realisasiFisik,
+          capaianKeuangan: formatPercentage(item.capaianKeuangan),
+          capaianFisik: formatPercentage(item.capaianFisik),
+          capaianTahunanKeuangan: capaianTahunanKeuangan, // Gunakan nilai yang dihitung dari pagu manajemen anggaran
+          capaianTahunanFisik: formatPercentage(item.capaianFisik),
+          keterangan: item.keterangan,
+          pptk: item.pptk,
+          // Preserve target data
+          targetFisik: existingTargetFisik,
+          targetKeuangan: existingTargetKeuangan,
+          _targetFisikValue: existingTargetFisikValue,
+          _targetKeuanganValue: existingTargetKeuanganValue
+        };
+
         // Also update the base data in monitoringTargets or monitoringRealisasi
-        const targetIndex = props.monitoringTargets.findIndex(t => t.task_id === id);
+        const targetIndex = props.monitoringTargets.findIndex(t => t.task_id === id && t.periode_id === 2);
         if (targetIndex !== -1) {
           props.monitoringTargets[targetIndex].deskripsi = item.keterangan;
           props.monitoringTargets[targetIndex].nama_pptk = item.pptk;
         }
         
         // Update realisasi if it exists
-        const realisasiIndex = props.monitoringRealisasi.findIndex(r => r.task_id === id);
+        const realisasiIndex = props.monitoringRealisasi.findIndex(r => r.task_id === id && r.periode_id === 2);
         if (realisasiIndex !== -1) {
-          props.monitoringRealisasi[realisasiIndex].deskripsi = item.keterangan;
-          props.monitoringRealisasi[realisasiIndex].nama_pptk = item.pptk;
+          props.monitoringRealisasi[realisasiIndex] = {
+            ...props.monitoringRealisasi[realisasiIndex],
+            kinerja_fisik: parseFloat(item.realisasiFisik.replace('%', '')),
+            keuangan: cleanNumber,
+            deskripsi: item.keterangan,
+            nama_pptk: item.pptk
+          };
+        } else {
+          // Add new realisasi data
+          const skpdTugas = props.subkegiatanTugas.find(sk => sk.id === id);
+          const monitoringId = skpdTugas?.monitoring?.[0]?.id || 0;
+          
+          props.monitoringRealisasi.push({
+            id: Date.now(),
+            kinerja_fisik: parseFloat(item.realisasiFisik.replace('%', '')),
+            keuangan: cleanNumber,
+            periode: 'Triwulan 1',
+            periode_id: 2, // Pastikan periode_id untuk Triwulan 1 adalah 2
+            monitoring_id: monitoringId,
+            task_id: id,
+            monitoring_anggaran_id: 0,
+            deskripsi: item.keterangan,
+            nama_pptk: item.pptk
+          });
         }
       }
       
@@ -1123,11 +1855,18 @@ const saveData = (id: number) => {
       delete editedItems.value[id];
     },
     onError: (errors) => {
+      if (errors.message && typeof errors.message === 'string') {
+        // Check if it's the period closed error
+        alert(errors.message);
+      } else {
       console.error('Error saving data:', errors);
       alert('Terjadi kesalahan saat menyimpan data: ' + Object.values(errors).join(', '));
+      }
     }
   });
 };
+
+// Kode yang dihapus untuk menghindari duplikasi deklarasi fungsi getPaguDariManajemenAnggaran
 </script>
 
 <template>
@@ -1276,7 +2015,7 @@ const saveData = (id: number) => {
                                         />
                                     </template>
                                     <template v-else>
-                                        <span class="text-sm">{{ item.keterangan }}</span>
+                                        <span class="text-sm">-</span>
                                     </template>
                                 </td>
                                 <td class="px-3 py-2 min-w-[180px] w-[180px]">

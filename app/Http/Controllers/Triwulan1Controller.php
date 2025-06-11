@@ -14,6 +14,7 @@ use App\Models\Periode;
 use App\Models\PeriodeTahap;
 use App\Models\PeriodeTahun;
 use App\Models\MonitoringRealisasi;
+use App\Models\MonitoringPagu;
 
 class Triwulan1Controller extends Controller
 {
@@ -327,23 +328,43 @@ class Triwulan1Controller extends Controller
             'nama_pptk' => 'nullable|string',
         ]);
 
-        // Get the Monitoring record associated with this task
+        // Check if the Triwulan 1 period is open
+        $periodeTriwulan1 = Periode::whereHas('tahap', function($query) {
+            $query->where('tahap', 'like', '%Triwulan 1%');
+        })->where('status', 1)->first();
+        
+        // If Triwulan 1 period is not active, return error
+        if (!$periodeTriwulan1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode Triwulan 1 belum dibuka. Data tidak dapat disimpan.'
+            ], 403);
+        }
+
+        // Get the task record
         $task = SkpdTugas::findOrFail($request->id);
         
-        // Get or create a monitoring record for this task
+        // First, find the Rencana Awal monitoring record to copy budget data from
+        $rencanaAwalMonitoring = Monitoring::where('skpd_tugas_id', $task->id)
+            ->where('deskripsi', 'Rencana Awal')
+            ->first();
+            
+        // Get or create a monitoring record for REALIZATION specifically
+        // Use both skpd_tugas_id and deskripsi to avoid overwriting "Rencana Awal" records
         $monitoring = Monitoring::firstOrCreate(
-            ['skpd_tugas_id' => $task->id],
             [
-                'skpd_id' => $task->skpd_id,
+                'skpd_tugas_id' => $task->id,
+                'deskripsi' => 'Realisasi Triwulan 1' // Use specific deskripsi for Triwulan 1
+            ],
+            [
                 'tahun' => date('Y'),
-                'deskripsi' => $request->keterangan ?? 'Realisasi ' . $task->kodeNomenklatur->nomenklatur,
                 'nama_pptk' => $request->nama_pptk ?? '-'
             ]
         );
         
         // Update monitoring info if provided
         if ($request->has('keterangan') || $request->has('nama_pptk')) {
-            $monitoring->deskripsi = $request->keterangan ?? $monitoring->deskripsi;
+            // Keep the deskripsi as 'Realisasi Triwulan 1' to prevent overwriting
             $monitoring->nama_pptk = $request->nama_pptk ?? $monitoring->nama_pptk;
             $monitoring->save();
         }
@@ -354,37 +375,76 @@ class Triwulan1Controller extends Controller
             ['sumber_anggaran_id' => 1] // Default sumber anggaran
         );
         
-        // Get active current period (Triwulan 1)
-        $periode = Periode::whereHas('tahap', function($query) {
-            $query->where('tahap', 'like', '%Triwulan 1%');
-        })->where('status', 1)->first();
-            
-        if (!$periode) {
-            // If no active Triwulan 1 period, get any Triwulan 1
-            $periode = Periode::whereHas('tahap', function($query) {
-                $query->where('tahap', 'like', '%Triwulan 1%');
-            })->first();
-            
-            if (!$periode) {
-                // Create a new period if none exists
-                $tahap = \App\Models\PeriodeTahap::firstOrCreate(['tahap' => 'Triwulan 1']);
-                $tahun = \App\Models\PeriodeTahun::first() ?? \App\Models\PeriodeTahun::create(['tahun' => date('Y')]);
+        // Copy budget data (pagu) from the Rencana Awal record if it exists
+        if ($rencanaAwalMonitoring) {
+            $rencanaAwalAnggaran = MonitoringAnggaran::where('monitoring_id', $rencanaAwalMonitoring->id)
+                ->first();
                 
-                $periode = Periode::create([
-                    'tahap_id' => $tahap->id,
-                    'tahun_id' => $tahun->id,
-                    'tanggal_mulai' => date('Y-01-01'),
-                    'tanggal_selesai' => date('Y-03-31'),
-                    'status' => 1
-                ]);
+            if ($rencanaAwalAnggaran) {
+                // Get the pagu data categorized as pokok (category=1)
+                $pokuPagu = MonitoringPagu::where('monitoring_anggaran_id', $rencanaAwalAnggaran->id)
+                    ->where('kategori', 1) // Pokok
+                    ->first();
+            
+                if ($pokuPagu) {
+                    // Create or update the pagu data for the realization record
+                    MonitoringPagu::updateOrCreate(
+                        [
+                            'monitoring_anggaran_id' => $anggaran->id,
+                            'kategori' => 1, // Pokok
+                            'periode_id' => $pokuPagu->periode_id
+                        ],
+                        [
+                            'dana' => $pokuPagu->dana
+                        ]
+                    );
+                }
+                
+                // Get the pagu data categorized as parsial (category=2)
+                $parsialPagu = MonitoringPagu::where('monitoring_anggaran_id', $rencanaAwalAnggaran->id)
+                    ->where('kategori', 2) // Parsial
+                    ->first();
+            
+                if ($parsialPagu) {
+                    // Create or update the pagu data for the realization record
+                    MonitoringPagu::updateOrCreate(
+                        [
+                            'monitoring_anggaran_id' => $anggaran->id,
+                            'kategori' => 2, // Parsial
+                            'periode_id' => $parsialPagu->periode_id
+                        ],
+                        [
+                            'dana' => $parsialPagu->dana
+                        ]
+                    );
+                }
+                
+                // Get the pagu data categorized as perubahan (category=3)
+                $perubahanPagu = MonitoringPagu::where('monitoring_anggaran_id', $rencanaAwalAnggaran->id)
+                    ->where('kategori', 3) // Perubahan
+                    ->first();
+                    
+                if ($perubahanPagu) {
+                    // Create or update the pagu data for the realization record
+                    MonitoringPagu::updateOrCreate(
+                        [
+                            'monitoring_anggaran_id' => $anggaran->id,
+                            'kategori' => 3, // Perubahan
+                            'periode_id' => $perubahanPagu->periode_id
+                        ],
+                        [
+                            'dana' => $perubahanPagu->dana
+                        ]
+                    );
+                }
             }
         }
         
-        // Try to find existing target for this angaran and period
+        // Try to find existing realisasi for this anggaran and period
         $realisasi = MonitoringRealisasi::firstOrCreate(
             [
                 'monitoring_anggaran_id' => $anggaran->id,
-                'periode_id' => $periode->id
+                'periode_id' => $periodeTriwulan1->id
             ],
             [
                 'kinerja_fisik' => $request->realisasi_fisik,
@@ -402,6 +462,6 @@ class Triwulan1Controller extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data realisasi berhasil disimpan'
-        ]);
-    }
+   ]);
+}
 }

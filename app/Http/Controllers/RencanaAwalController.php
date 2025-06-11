@@ -282,16 +282,14 @@ class RencanaAwalController extends Controller
             $jenisNomenklatur = $tugas->kodeNomenklatur->jenis_nomenklatur;
 
             // Cari atau buat monitoring untuk SKPD ini
-            $monitoring = Monitoring::where('skpd_id', $validated['skpd_id'])
+            $monitoring = Monitoring::where('skpd_tugas_id', $validated['tugas_id'])
                 ->where('deskripsi', $validated['deskripsi'])
                 ->where('tahun', $validated['tahun'])
-                ->where('tugas_id', $validated['tugas_id'])
                 ->first();
 
             if (!$monitoring) {
                 $monitoring = Monitoring::create([
-                    'skpd_id' => $validated['skpd_id'],
-                    'tugas_id' => $validated['tugas_id'],
+                    'skpd_tugas_id' => $validated['tugas_id'],
                     'sumber_dana' => $validated['sumber_dana'],
                     'periode_id' => $validated['periode_id'],
                     'tahun' => $validated['tahun'],
@@ -344,10 +342,11 @@ class RencanaAwalController extends Controller
         $validated = $request->validate([
             'skpd_id' => 'required|exists:skpd,id',
             'tahun' => 'required|digits:4|integer',
+            'tugas_id' => 'required|numeric',
         ]);
 
         try {
-            $monitoring = Monitoring::where('skpd_id', $validated['skpd_id'])
+            $monitoring = Monitoring::where('skpd_tugas_id', $validated['tugas_id'])
                 ->where('deskripsi', 'Rencana Awal')
                 ->where('tahun', $validated['tahun'])
                 ->first();
@@ -368,7 +367,7 @@ class RencanaAwalController extends Controller
                     $query->where('is_aktif', 1);
                 },
                 'monitoring.targets'
-            ])->where('skpd_id', $validated['skpd_id'])->first();
+            ])->find($validated['tugas_id']);
 
             $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
                 ->where('is_aktif', 1)
@@ -499,7 +498,7 @@ class RencanaAwalController extends Controller
             }
 
             // Get monitoring data
-            $monitoring = Monitoring::where('skpd_id', $validated['skpd_id'])
+            $monitoring = Monitoring::where('skpd_tugas_id', $validated['tugas_id'])
                 ->where('deskripsi', 'Rencana Awal')
                 ->where('tahun', $validated['tahun'])
                 ->first();
@@ -589,6 +588,17 @@ class RencanaAwalController extends Controller
         ]);
 
         try {
+            // Check if any period is currently open
+            $anyOpenPeriode = Periode::where('status', 1)->first();
+            
+            // If no period is open, return error
+            if (!$anyOpenPeriode) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Tidak ada periode yang aktif. Data Rencana Awal tidak dapat disimpan saat ini.'
+                ], 403);
+            }
+            
             DB::beginTransaction();
             
             // Log input untuk debugging
@@ -664,10 +674,13 @@ class RencanaAwalController extends Controller
 
             // Update atau buat target baru untuk setiap triwulan
             foreach ($validated['targets'] as $target) {
+                // Pemetaan triwulan ke periode_id yang benar
+                $periode_id = $target['triwulan'] + 1; // Triwulan 1 -> periode_id 2, Triwulan 2 -> periode_id 3, dst
+                
                 MonitoringTarget::updateOrCreate(
                     [
                         'monitoring_anggaran_id' => $monitoringAnggaran->id,
-                        'periode_id' => $target['triwulan'],
+                        'periode_id' => $periode_id, // Gunakan periode_id yang sudah dipetakan
                     ],
                     [
                         'kinerja_fisik' => $target['kinerja_fisik'],
@@ -753,6 +766,19 @@ class RencanaAwalController extends Controller
             }
 
             // Return response dengan data yang diperbarui dan lengkap
+            // Tambahkan log untuk debugging
+            \Log::info('Target berhasil disimpan dengan pemetaan triwulan->periode_id', [
+                'targets' => $updatedMonitoring->monitoringAnggaran->first() ? 
+                    $updatedMonitoring->monitoringAnggaran->first()->targets->map(function($target) {
+                        return [
+                            'id' => $target->id,
+                            'periode_id' => $target->periode_id,
+                            'kinerja_fisik' => $target->kinerja_fisik,
+                            'keuangan' => $target->keuangan
+                        ];
+                    }) : []
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Target berhasil disimpan',

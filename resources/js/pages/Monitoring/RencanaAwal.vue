@@ -359,7 +359,28 @@ const handlePeriodeChange = (event: Event) => {
   }
 };
 
-// Sample data for the top table
+// Add a function to update calculations when values change
+const recalculateAllTargets = () => {
+  // This is just a dummy function to trigger recalculation
+  // The actual work is done in the computed properties
+  console.log('Recalculating all targets');
+  // We don't need to do anything here as the computed properties will recalculate automatically
+};
+
+// Watch for changes in the editing targets and trigger recalculation
+watch(editingTargets, () => {
+  recalculateAllTargets();
+}, { deep: true });
+
+// Also watch for changes in the subkegiatan data
+watch(() => props.subkegiatanTugas, () => {
+  recalculateAllTargets();
+}, { deep: true });
+
+// Also watch for changes in the dataAnggaranTerakhir
+watch(() => props.dataAnggaranTerakhir, () => {
+  recalculateAllTargets();
+}, { deep: true });
 
 // Add a computed property to transform subkegiatan data to include bidang urusan and multiple rows per sumber dana
 const formattedSubKegiatanData = computed(() => {
@@ -395,6 +416,53 @@ const formattedSubKegiatanData = computed(() => {
     // Get the funding data for this subkegiatan
     const fundingData = props.dataAnggaranTerakhir?.[subKegiatan.id];
     
+    // Process monitoring data to extract targets more safely
+    const processMonitoringData = (subKegiatan: any) => {
+      // Initialize an array to hold normalized targets data (one entry per triwulan)
+      const normalizedTargets = [
+        { kinerja_fisik: 0, keuangan: 0 },
+        { kinerja_fisik: 0, keuangan: 0 },
+        { kinerja_fisik: 0, keuangan: 0 },
+        { kinerja_fisik: 0, keuangan: 0 }
+      ];
+      
+      // First check if we have direct targets
+      if (subKegiatan.monitoring?.targets?.length > 0) {
+        subKegiatan.monitoring.targets.forEach((target: any, index: number) => {
+          if (index < 4) {
+            normalizedTargets[index] = {
+              kinerja_fisik: target.kinerja_fisik || 0,
+              keuangan: target.keuangan || 0
+            };
+          }
+        });
+      } 
+      // Next check if we have monitoringAnggaran with targets
+      else if (subKegiatan.monitoring?.monitoringAnggaran?.length > 0) {
+        // For each monitoring anggaran
+        subKegiatan.monitoring.monitoringAnggaran.forEach((anggaran: any) => {
+          if (anggaran.targets?.length > 0) {
+            anggaran.targets.forEach((target: any, index: number) => {
+              if (index < 4) {
+                // Accumulate values if there are multiple sources
+                normalizedTargets[index].kinerja_fisik += target.kinerja_fisik || 0;
+                normalizedTargets[index].keuangan += target.keuangan || 0;
+              }
+            });
+          }
+        });
+        
+        // If we have multiple anggaran sources, calculate average for kinerja_fisik
+        if (subKegiatan.monitoring.monitoringAnggaran.length > 1) {
+          normalizedTargets.forEach(target => {
+            target.kinerja_fisik = target.kinerja_fisik / subKegiatan.monitoring.monitoringAnggaran.length;
+          });
+        }
+      }
+      
+      return normalizedTargets;
+    };
+    
     if (fundingData) {
       // Check each funding source
       const sources = [
@@ -413,6 +481,10 @@ const formattedSubKegiatanData = computed(() => {
         
         if (fundingData.sumber_anggaran[sourceKey] && fundingData.values[valueKey] > 0) {
           hasActiveSource = true;
+          
+          // Get normalized targets
+          const targets = processMonitoringData(subKegiatan);
+          
           result.push({
             id: `${subKegiatan.id}-${source.key}`,
             subKegiatan: subKegiatan,
@@ -422,13 +494,17 @@ const formattedSubKegiatanData = computed(() => {
             sumberDana: source.name,
             pokok: fundingData.values[valueKey],
             parsial: 0,
-            perubahan: 0
+            perubahan: 0,
+            normalizedTargets: targets
           });
         }
       });
       
       // If no active sources are found but funding data exists, create a default row
       if (!hasActiveSource) {
+        // Get normalized targets
+        const targets = processMonitoringData(subKegiatan);
+        
         result.push({
           id: `${subKegiatan.id}-default`,
           subKegiatan: subKegiatan,
@@ -438,12 +514,16 @@ const formattedSubKegiatanData = computed(() => {
           sumberDana: 'Belum diisi',
           pokok: 0,
           parsial: 0,
-          perubahan: 0
+          perubahan: 0,
+          normalizedTargets: targets
         });
       }
     } 
     // If no funding data but has monitoring, create at least one row for this subkegiatan
     else if (subKegiatan.monitoring) {
+      // Get normalized targets
+      const targets = processMonitoringData(subKegiatan);
+      
       result.push({
         id: `${subKegiatan.id}-default`,
         subKegiatan: subKegiatan,
@@ -453,7 +533,8 @@ const formattedSubKegiatanData = computed(() => {
         sumberDana: subKegiatan.monitoring.sumber_dana || 'Multiple',
         pokok: subKegiatan.monitoring.pagu_pokok || 0,
         parsial: subKegiatan.monitoring.pagu_parsial || 0,
-        perubahan: subKegiatan.monitoring.pagu_perubahan || 0
+        perubahan: subKegiatan.monitoring.pagu_perubahan || 0,
+        normalizedTargets: targets
       });
     }
     // If no funding data and no monitoring, still show the row with zero values
@@ -467,7 +548,13 @@ const formattedSubKegiatanData = computed(() => {
         sumberDana: 'Belum diisi',
         pokok: 0,
         parsial: 0,
-        perubahan: 0
+        perubahan: 0,
+        normalizedTargets: [
+          { kinerja_fisik: 0, keuangan: 0 },
+          { kinerja_fisik: 0, keuangan: 0 },
+          { kinerja_fisik: 0, keuangan: 0 },
+          { kinerja_fisik: 0, keuangan: 0 }
+        ]
       });
     }
   });
@@ -476,40 +563,166 @@ const formattedSubKegiatanData = computed(() => {
 });
 
 // Add computed properties to calculate the sums
-const calculateKegiatan = computed<Record<number, number>>(() => {
-  const kegiatanSums: Record<number, number> = {};
+const calculateKegiatan = computed<Record<number, any>>(() => {
+  const kegiatanSums: Record<string, any> = {};
   
   // First, calculate sums for each kegiatan based on its subkegiatans
   formattedSubKegiatanData.value.forEach(item => {
-    const kegiatanId = item.kegiatan.id;
+    const kegiatanId = item.kegiatan.id.toString();
     if (!kegiatanSums[kegiatanId]) {
-      kegiatanSums[kegiatanId] = 0;
+      kegiatanSums[kegiatanId] = {
+        pokok: 0,
+        parsial: 0,
+        perubahan: 0,
+        // Targets for each triwulan (fisik and keuangan)
+        targets: [
+          { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 1
+          { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 2
+          { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 3
+          { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }  // Triwulan 4
+        ]
+      };
     }
-    kegiatanSums[kegiatanId] += item.pokok;
+    
+    // Sum the pagu values (total budget for this item)
+    kegiatanSums[kegiatanId].pokok += item.pokok || 0;
+    kegiatanSums[kegiatanId].parsial += item.parsial || 0;
+    kegiatanSums[kegiatanId].perubahan += item.perubahan || 0;
+    
+    // Use the normalizedTargets we prepared
+    if (item.normalizedTargets) {
+      item.normalizedTargets.forEach((target: any, index: number) => {
+        if (index < 4) {
+          // Add kinerja_fisik (we'll calculate average later)
+          if (target.kinerja_fisik > 0) {
+            kegiatanSums[kegiatanId].targets[index].kinerja_fisik += target.kinerja_fisik;
+            kegiatanSums[kegiatanId].targets[index].count++;
+            kegiatanSums[kegiatanId].targets[index].has_values = true;
+          }
+          
+          // Sum keuangan values - use the actual keuangan value from each target
+          if (target.keuangan > 0) {
+            kegiatanSums[kegiatanId].targets[index].keuangan += target.keuangan;
+            kegiatanSums[kegiatanId].targets[index].has_values = true;
+          }
+        }
+      });
+    }
+    
+    // Also check editingTargets for any values being edited
+    const uniqueKey = getUniqueKey(item.subKegiatan, item.sumberDana);
+    if (editingTargets.value[uniqueKey]) {
+      editingTargets.value[uniqueKey].forEach((target: any, index: number) => {
+        if (index < 4) {
+          // Add kinerja_fisik from editing values if they exist
+          const kinerja_fisik = parseFloat(target.kinerja_fisik);
+          if (!isNaN(kinerja_fisik) && kinerja_fisik > 0) {
+            kegiatanSums[kegiatanId].targets[index].kinerja_fisik += kinerja_fisik;
+            kegiatanSums[kegiatanId].targets[index].count++;
+            kegiatanSums[kegiatanId].targets[index].has_values = true;
+          }
+          
+          // For edited values, we don't immediately add to keuangan since they're not yet saved
+          // The refreshData function will handle reloading the calculations after save
+        }
+      });
+    }
   });
   
-  return kegiatanSums;
+  // Calculate averages for kinerja_fisik
+  Object.keys(kegiatanSums).forEach(kegiatanId => {
+    const kegiatan = kegiatanSums[kegiatanId];
+    
+    // Calculate average for each triwulan's kinerja_fisik
+    kegiatan.targets.forEach((target: any) => {
+      if (target.count > 0) {
+        target.kinerja_fisik = target.kinerja_fisik / target.count;
+      }
+    });
+  });
+  
+  // Convert to numeric keys for the return value
+  const result: Record<number, any> = {};
+  Object.keys(kegiatanSums).forEach(key => {
+    result[parseInt(key)] = kegiatanSums[key];
+  });
+  
+  return result;
 });
 
-const calculateProgram = computed<Record<number, number>>(() => {
-  const programSums: Record<number, number> = {};
+const calculateProgram = computed<Record<number, any>>(() => {
+  const programSums: Record<string, any> = {};
   
   // Calculate sums for each program based on its kegiatans
   props.kegiatanTugas?.forEach(kegiatan => {
     const parentProgramId = kegiatan.kode_nomenklatur.details[0]?.id_program;
     if (parentProgramId) {
-      if (!programSums[parentProgramId]) {
-        programSums[parentProgramId] = 0;
+      const programId = parentProgramId.toString();
+      if (!programSums[programId]) {
+        programSums[programId] = {
+          pokok: 0,
+          parsial: 0,
+          perubahan: 0,
+          // Targets for each triwulan (fisik and keuangan)
+          targets: [
+            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 1
+            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 2
+            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 3
+            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }  // Triwulan 4
+          ]
+        };
       }
-      programSums[parentProgramId] += calculateKegiatan.value[kegiatan.id] || 0;
+      
+      // Get the calculated values for this kegiatan
+      const kegiatanData = calculateKegiatan.value[kegiatan.id];
+      if (kegiatanData) {
+        // Sum the pagu values
+        programSums[programId].pokok += kegiatanData.pokok || 0;
+        programSums[programId].parsial += kegiatanData.parsial || 0;
+        programSums[programId].perubahan += kegiatanData.perubahan || 0;
+        
+        // Process each triwulan's targets
+        kegiatanData.targets.forEach((target: any, index: number) => {
+          // Add kinerja_fisik (we'll calculate average later)
+          if (target.has_values && target.kinerja_fisik > 0) {
+            programSums[programId].targets[index].kinerja_fisik += target.kinerja_fisik;
+            programSums[programId].targets[index].count++;
+            programSums[programId].targets[index].has_values = true;
+          }
+          
+          // Sum the keuangan values from kegiatan targets
+          if (target.has_values && target.keuangan > 0) {
+            programSums[programId].targets[index].keuangan += target.keuangan;
+            programSums[programId].targets[index].has_values = true;
+          }
+        });
+      }
     }
   });
   
-  return programSums;
+  // Calculate averages for kinerja_fisik
+  Object.keys(programSums).forEach(programId => {
+    const program = programSums[programId];
+    
+    // Calculate average for each triwulan's kinerja_fisik
+    program.targets.forEach((target: any) => {
+      if (target.count > 0) {
+        target.kinerja_fisik = target.kinerja_fisik / target.count;
+      }
+    });
+  });
+  
+  // Convert to numeric keys for the return value
+  const result: Record<number, any> = {};
+  Object.keys(programSums).forEach(key => {
+    result[parseInt(key)] = programSums[key];
+  });
+  
+  return result;
 });
 
-const calculateBidangUrusan = computed<Record<number, number>>(() => {
-  const bidangUrusanSums: Record<number, number> = {};
+const calculateBidangUrusan = computed<Record<number, any>>(() => {
+  const bidangUrusanSums: Record<string, any> = {};
   
   // Calculate sums for each bidang urusan based on its programs
   props.programTugas?.forEach(program => {
@@ -521,16 +734,69 @@ const calculateBidangUrusan = computed<Record<number, number>>(() => {
       );
       
       if (bidangUrusan) {
-        const bidangUrusanNomenklaturId = bidangUrusan.kode_nomenklatur.id;
+        const bidangUrusanNomenklaturId = bidangUrusan.kode_nomenklatur.id.toString();
         if (!bidangUrusanSums[bidangUrusanNomenklaturId]) {
-          bidangUrusanSums[bidangUrusanNomenklaturId] = 0;
+          bidangUrusanSums[bidangUrusanNomenklaturId] = {
+            pokok: 0,
+            parsial: 0,
+            perubahan: 0,
+            // Targets for each triwulan (fisik and keuangan)
+            targets: [
+              { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 1
+              { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 2
+              { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 3
+              { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }  // Triwulan 4
+            ]
+          };
         }
-        bidangUrusanSums[bidangUrusanNomenklaturId] += calculateProgram.value[program.kode_nomenklatur.id] || 0;
+        
+        // Get the calculated values for this program
+        const programData = calculateProgram.value[program.kode_nomenklatur.id];
+        if (programData) {
+          // Sum the pagu values
+          bidangUrusanSums[bidangUrusanNomenklaturId].pokok += programData.pokok || 0;
+          bidangUrusanSums[bidangUrusanNomenklaturId].parsial += programData.parsial || 0;
+          bidangUrusanSums[bidangUrusanNomenklaturId].perubahan += programData.perubahan || 0;
+          
+          // Process each triwulan's targets
+          programData.targets.forEach((target: any, index: number) => {
+            // Add kinerja_fisik (we'll calculate average later)
+            if (target.has_values && target.kinerja_fisik > 0) {
+              bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].kinerja_fisik += target.kinerja_fisik;
+              bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].count++;
+              bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].has_values = true;
+            }
+            
+            // Sum the keuangan values from program targets
+            if (target.has_values && target.keuangan > 0) {
+              bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].keuangan += target.keuangan;
+              bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].has_values = true;
+            }
+          });
+        }
       }
     }
   });
   
-  return bidangUrusanSums;
+  // Calculate averages for kinerja_fisik
+  Object.keys(bidangUrusanSums).forEach(bidangUrusanId => {
+    const bidangUrusan = bidangUrusanSums[bidangUrusanId];
+    
+    // Calculate average for each triwulan's kinerja_fisik
+    bidangUrusan.targets.forEach((target: any) => {
+      if (target.count > 0) {
+        target.kinerja_fisik = target.kinerja_fisik / target.count;
+      }
+    });
+  });
+  
+  // Convert to numeric keys for the return value
+  const result: Record<number, any> = {};
+  Object.keys(bidangUrusanSums).forEach(key => {
+    result[parseInt(key)] = bidangUrusanSums[key];
+  });
+  
+  return result;
 });
 
 // Helper untuk inisialisasi data target
@@ -630,6 +896,7 @@ async function saveTargets(subKegiatan: any) {
       if (matchingItem) {
         sumberDana = matchingItem.sumberDana;
       } else {
+        // Default fallback jika tidak ditemukan
         sumberDana = 'APBD';
       }
     }
@@ -646,7 +913,9 @@ async function saveTargets(subKegiatan: any) {
     // Validate and format targets data
     const processedTargets = rawTargets.map((target: any, index: number) => {
       const kinerjaFisik = parseFloat(String(target.kinerja_fisik).replace(',', '.'));
-      const keuangan = parseInt(String(target.keuangan).replace(/[^\d]/g, ''));
+      const keuangan = typeof target.keuangan === 'string' 
+        ? parseInt(target.keuangan.replace(/[^\d]/g, '')) 
+        : (target.keuangan || 0);
             
       if (isNaN(kinerjaFisik) || kinerjaFisik < 0 || kinerjaFisik > 100) {
         throw new Error(`Kinerja fisik triwulan ${index + 1} harus berupa angka antara 0-100`);
@@ -662,12 +931,39 @@ async function saveTargets(subKegiatan: any) {
         triwulan: index + 1
       };
     });
-        
+    
     const sumberAnggaranId = getSumberAnggaranId(sumberDana);
     
     // Get pagu data from props.dataAnggaranTerakhir
     const paguData = props.dataAnggaranTerakhir?.[subKegiatan.id]?.values || {};
     const key = normalizeKey(sumberDana);
+    
+    // We need to ensure type safety here - create a safer version of the key lookup
+    let paguValue = 0;
+    if (paguData) {
+      // Use type assertion to make TypeScript happy
+      type PaguDataType = {
+        dak?: number;
+        dak_peruntukan?: number;
+        dak_fisik?: number;
+        dak_non_fisik?: number;
+        blud?: number;
+      };
+      
+      const typedPaguData = paguData as PaguDataType;
+      
+      if (key === 'dak' && typedPaguData.dak !== undefined) {
+        paguValue = typedPaguData.dak;
+      } else if (key === 'dak_peruntukan' && typedPaguData.dak_peruntukan !== undefined) {
+        paguValue = typedPaguData.dak_peruntukan;
+      } else if (key === 'dak_fisik' && typedPaguData.dak_fisik !== undefined) {
+        paguValue = typedPaguData.dak_fisik;
+      } else if (key === 'dak_non_fisik' && typedPaguData.dak_non_fisik !== undefined) {
+        paguValue = typedPaguData.dak_non_fisik;
+      } else if (key === 'blud' && typedPaguData.blud !== undefined) {
+        paguValue = typedPaguData.blud;
+      }
+    }
     
     const payload = {
       skpd_tugas_id: subKegiatan.id,
@@ -677,7 +973,7 @@ async function saveTargets(subKegiatan: any) {
       sumber_anggaran_id: sumberAnggaranId,
       periode_id: selectedPeriodeId.value,
       pagu: {
-        pokok: paguData[key] || 0,
+        pokok: paguValue,
         parsial: 0,
         perubahan: 0
       }
@@ -692,60 +988,54 @@ async function saveTargets(subKegiatan: any) {
         console.log('Success response:', response);
         successRow.value = subKegiatan.id;
         
-        if (response.data) {
-          // Update monitoring data di subkegiatan
-          if (!subKegiatan.monitoring) {
-            subKegiatan.monitoring = {};
-          }
-
-          // Update atau tambah monitoringAnggaran
-          if (!subKegiatan.monitoring.monitoringAnggaran) {
-            subKegiatan.monitoring.monitoringAnggaran = [];
-          }
-
-          // Cari atau buat monitoring anggaran untuk sumber dana ini
-          let monitoringAnggaran = subKegiatan.monitoring.monitoringAnggaran.find(
-            (ma: any) => ma.sumber_anggaran_id === sumberAnggaranId
-          );
-
-          if (!monitoringAnggaran) {
-            monitoringAnggaran = {
-              id: response.data.monitoring_anggaran_id,
-              monitoring_id: response.data.monitoring_id,
-              sumber_anggaran_id: sumberAnggaranId,
-              sumber_anggaran: response.data.sumber_anggaran,
-              targets: []
-            };
-            subKegiatan.monitoring.monitoringAnggaran.push(monitoringAnggaran);
-          }
-
-          // Update targets
-          monitoringAnggaran.targets = response.data.targets;
-
-          // Update pagu jika ada
-          if (response.data.pagu) {
-            if (!props.dataAnggaranTerakhir) {
-              props.dataAnggaranTerakhir = {};
-            }
-            if (!props.dataAnggaranTerakhir[subKegiatan.id]) {
-              props.dataAnggaranTerakhir[subKegiatan.id] = {
-                sumber_anggaran: {},
-                values: {}
+        // Update the UI with the new data
+        // Find the corresponding item in formattedSubKegiatanData
+        const itemToUpdate = formattedSubKegiatanData.value.find(
+          item => item.subKegiatan.id === subKegiatan.id && 
+                 item.sumberDana === sumberDana
+        );
+        
+        if (itemToUpdate && response.data && response.data.targets) {
+          // Create updated normalized targets
+          const updatedTargets = [
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 }
+          ];
+          
+          // Update with the new target values
+          response.data.targets.forEach((target: any) => {
+            const index = target.periode_id - 1;
+            if (index >= 0 && index < 4) {
+              updatedTargets[index] = {
+                kinerja_fisik: target.kinerja_fisik || 0,
+                keuangan: target.keuangan || 0
               };
             }
-
-            const key = normalizeKey(response.data.sumber_anggaran.nama);
-            props.dataAnggaranTerakhir[subKegiatan.id].sumber_anggaran[key] = true;
-            props.dataAnggaranTerakhir[subKegiatan.id].values[key] = response.data.pagu.dana;
-          }
+          });
+          
+          // Update the item with new targets
+          itemToUpdate.normalizedTargets = updatedTargets;
         }
-                
+        
         delete editingTargets.value[uniqueKey];
+        
+        // Refresh data from server after success to update all calculations
+        setTimeout(() => {
+          refreshData();
+        }, 500);
       },
       onError: (err: any) => {
         console.error('Error saving targets:', err);
         errorRow.value = subKegiatan.id;
-        alert(err.message || 'Terjadi kesalahan saat menyimpan target');
+        
+        // Check for the specific error about period not being active
+        if (err.message && err.message.includes('Tidak ada periode yang aktif')) {
+          alert('Tidak ada periode yang aktif saat ini. Data Rencana Awal tidak dapat disimpan. Silakan tunggu hingga periode dibuka oleh admin.');
+        } else {
+          alert(err.message || 'Terjadi kesalahan saat menyimpan target');
+        }
       },
       onFinish: () => {
         loadingRow.value = null;
@@ -878,6 +1168,24 @@ function goToMonitoringDetail() {
 
 function goToCreate() {
   router.visit('/rencanaawal/create');
+}
+
+// Add a function to refresh the data from the server
+function refreshData() {
+  // Reload data with the current period
+  const currentPeriodeId = selectedPeriodeId.value;
+  
+  if (props.tugas?.id) {
+    router.visit(`/monitoring/rencanaawal/${props.tugas.id}?periode_id=${currentPeriodeId || ''}`, {
+      preserveState: false, // Changed to false to force a full refresh
+      only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas']
+    });
+  } else if (props.user?.id) {
+    router.visit(`/monitoring/${props.user.id}?periode_id=${currentPeriodeId || ''}`, {
+      preserveState: false, // Changed to false to force a full refresh
+      only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas']
+    });
+  }
 }
 
 // Update ensureEditingTargets agar pakai key unik
@@ -1027,18 +1335,22 @@ watch([
                                 <tr class="bg-blue-50 font-semibold hover:bg-blue-100">
                                     <td class="p-2 border text-left">{{ bidangUrusan.kode_nomenklatur.nomor_kode }}</td>
                                     <td class="p-2 border">{{ bidangUrusan.kode_nomenklatur.nomenklatur }}</td>
-                                    <td class="p-2 border text-right">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.toLocaleString('id-ID') || '0' }}</td>
-                                    <td class="p-2 border text-right">0</td>
-                                    <td class="p-2 border text-right">0</td>
+                                    <td class="p-2 border text-right">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.pokok?.toLocaleString('id-ID') || '0' }}</td>
+                                    <td class="p-2 border text-right">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.parsial?.toLocaleString('id-ID') || '0' }}</td>
+                                    <td class="p-2 border text-right">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.perubahan?.toLocaleString('id-ID') || '0' }}</td>
                                     <td class="p-2 border text-left">-</td>
-                                    <td class="p-2 border text-left">-</td>
-                                    <td class="p-2 border text-right">-</td>
-                                    <td class="p-2 border text-left">-</td>
-                                    <td class="p-2 border text-right">-</td>
-                                    <td class="p-2 border text-left">-</td>
-                                    <td class="p-2 border text-right">-</td>
-                                    <td class="p-2 border text-left">-</td>
-                                    <td class="p-2 border text-right">-</td>
+                                    <!-- Triwulan 1 -->
+                                    <td class="p-2 border text-center">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[0]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                    <td class="p-2 border text-right">{{ (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                    <!-- Triwulan 2 -->
+                                    <td class="p-2 border text-center">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[1]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                    <td class="p-2 border text-right">{{ (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                    <!-- Triwulan 3 -->
+                                    <td class="p-2 border text-center">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[2]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                    <td class="p-2 border text-right">{{ (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                    <!-- Triwulan 4 -->
+                                    <td class="p-2 border text-center">{{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[3]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                    <td class="p-2 border text-right">{{ (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID') }}</td>
                                     <td></td>
                                 </tr>
 
@@ -1047,18 +1359,22 @@ watch([
                                     <tr class="border bg-gray-50 hover:bg-gray-100 font-medium">
                                         <td class="p-2 border text-left">{{ program.kode_nomenklatur.nomor_kode }}</td>
                                         <td class="p-2 border text-left">{{ program.kode_nomenklatur.nomenklatur }}</td>
-                                        <td class="p-2 border text-left">{{ calculateProgram[program.kode_nomenklatur.id]?.toLocaleString('id-ID') || '0' }}</td>
-                                        <td class="p-2 border text-right">{{ program.monitoring?.pagu_parsial?.toLocaleString('id-ID') || '0' }}</td>
-                                        <td class="p-2 border text-right">{{ program.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || '0' }}</td>
-                                        <td class="p-2 border text-left">{{ program.monitoring?.sumber_dana || '-' }}</td>
-                                        <td class="p-2 border text-left">{{ program.monitoring?.targets?.[0]?.kinerja_fisik || program.targets?.[0]?.kinerjaFisik || '-' }}</td>
-                                        <td class="p-2 border text-right">{{ program.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || program.targets?.[0]?.keuangan || '-' }}</td>
-                                        <td class="p-2 border text-left">{{ program.monitoring?.targets?.[1]?.kinerja_fisik || program.targets?.[1]?.kinerjaFisik || '-' }}</td>
-                                        <td class="p-2 border text-right">{{ program.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || program.targets?.[1]?.keuangan || '-' }}</td>
-                                        <td class="p-2 border text-left">{{ program.monitoring?.targets?.[2]?.kinerja_fisik || program.targets?.[2]?.kinerjaFisik || '-' }}</td>
-                                        <td class="p-2 border text-right">{{ program.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || program.targets?.[2]?.keuangan || '-' }}</td>
-                                        <td class="p-2 border text-left">{{ program.monitoring?.targets?.[3]?.kinerja_fisik || program.targets?.[3]?.kinerjaFisik || '-' }}</td>
-                                        <td class="p-2 border text-right">{{ program.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || program.targets?.[3]?.keuangan || '-' }}</td>
+                                        <td class="p-2 border text-right">{{ calculateProgram[program.kode_nomenklatur.id]?.pokok?.toLocaleString('id-ID') || '0' }}</td>
+                                        <td class="p-2 border text-right">{{ calculateProgram[program.kode_nomenklatur.id]?.parsial?.toLocaleString('id-ID') || '0' }}</td>
+                                        <td class="p-2 border text-right">{{ calculateProgram[program.kode_nomenklatur.id]?.perubahan?.toLocaleString('id-ID') || '0' }}</td>
+                                        <td class="p-2 border text-center">{{ program.monitoring?.sumber_dana || '-' }}</td>
+                                        <!-- Triwulan 1 -->
+                                        <td class="p-2 border text-center">{{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[0]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                        <td class="p-2 border text-right">{{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                        <!-- Triwulan 2 -->
+                                        <td class="p-2 border text-center">{{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[1]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                        <td class="p-2 border text-right">{{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                        <!-- Triwulan 3 -->
+                                        <td class="p-2 border text-center">{{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[2]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                        <td class="p-2 border text-right">{{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                        <!-- Triwulan 4 -->
+                                        <td class="p-2 border text-center">{{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[3]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                        <td class="p-2 border text-right">{{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID') }}</td>
                                         <td></td>
                                     </tr>
 
@@ -1067,18 +1383,22 @@ watch([
                                         <tr class="border hover:bg-gray-50">
                                             <td class="p-2 border text-left">{{ kegiatan.kode_nomenklatur.nomor_kode }}</td>
                                             <td class="p-2 border text-left">{{ kegiatan.kode_nomenklatur.nomenklatur }}</td>
-                                            <td class="p-2 border text-right">{{ calculateKegiatan[kegiatan.id]?.toLocaleString('id-ID') || '0' }}</td>
-                                            <td class="p-2 border text-right">{{ kegiatan.monitoring?.pagu_parsial?.toLocaleString('id-ID') || '0' }}</td>
-                                            <td class="p-2 border text-right">{{ kegiatan.monitoring?.pagu_perubahan?.toLocaleString('id-ID') || '0' }}</td>
+                                            <td class="p-2 border text-right">{{ calculateKegiatan[kegiatan.id]?.pokok?.toLocaleString('id-ID') || '0' }}</td>
+                                            <td class="p-2 border text-right">{{ calculateKegiatan[kegiatan.id]?.parsial?.toLocaleString('id-ID') || '0' }}</td>
+                                            <td class="p-2 border text-right">{{ calculateKegiatan[kegiatan.id]?.perubahan?.toLocaleString('id-ID') || '0' }}</td>
                                             <td class="p-2 border text-left">{{ kegiatan.monitoring?.sumber_dana || '-' }}</td>
-                                            <td class="p-2 border text-left">{{ kegiatan.monitoring?.targets?.[0]?.kinerja_fisik || kegiatan.targets?.[0]?.kinerjaFisik || '-' }}</td>
-                                            <td class="p-2 border text-right">{{ kegiatan.monitoring?.targets?.[0]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[0]?.keuangan || '-' }}</td>
-                                            <td class="p-2 border text-left">{{ kegiatan.monitoring?.targets?.[1]?.kinerja_fisik || kegiatan.targets?.[1]?.kinerjaFisik || '-' }}</td>
-                                            <td class="p-2 border text-right">{{ kegiatan.monitoring?.targets?.[1]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[1]?.keuangan || '-' }}</td>
-                                            <td class="p-2 border text-left">{{ kegiatan.monitoring?.targets?.[2]?.kinerja_fisik || kegiatan.targets?.[2]?.kinerjaFisik || '-' }}</td>
-                                            <td class="p-2 border text-right">{{ kegiatan.monitoring?.targets?.[2]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[2]?.keuangan || '-' }}</td>
-                                            <td class="p-2 border text-left">{{ kegiatan.monitoring?.targets?.[3]?.kinerja_fisik || kegiatan.targets?.[3]?.kinerjaFisik || '-' }}</td>
-                                            <td class="p-2 border text-right">{{ kegiatan.monitoring?.targets?.[3]?.keuangan?.toLocaleString('id-ID') || kegiatan.targets?.[3]?.keuangan || '-' }}</td>
+                                            <!-- Triwulan 1 -->
+                                            <td class="p-2 border text-center">{{ calculateKegiatan[kegiatan.id]?.targets?.[0]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                            <td class="p-2 border text-right">{{ (calculateKegiatan[kegiatan.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                            <!-- Triwulan 2 -->
+                                            <td class="p-2 border text-center">{{ calculateKegiatan[kegiatan.id]?.targets?.[1]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                            <td class="p-2 border text-right">{{ (calculateKegiatan[kegiatan.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                            <!-- Triwulan 3 -->
+                                            <td class="p-2 border text-center">{{ calculateKegiatan[kegiatan.id]?.targets?.[2]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                            <td class="p-2 border text-right">{{ (calculateKegiatan[kegiatan.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID') }}</td>
+                                            <!-- Triwulan 4 -->
+                                            <td class="p-2 border text-center">{{ calculateKegiatan[kegiatan.id]?.targets?.[3]?.kinerja_fisik?.toFixed(2) || '0.00' }}%</td>
+                                            <td class="p-2 border text-right">{{ (calculateKegiatan[kegiatan.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID') }}</td>
                                             <td></td>
                                         </tr>
                                         
@@ -1119,8 +1439,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="0.00%"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[0]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.subKegiatan.monitoring?.targets?.[0]?.kinerja_fisik }}%</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[0]?.kinerja_fisik">
+                                                        <span>Tersimpan: {{ item.normalizedTargets[0].kinerja_fisik.toFixed(2) }}%</span>
                                                     </div>
                                                 </td>
                                                 <td class="border px-1 py-1 text-center !bg-green-50">
@@ -1137,8 +1457,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="Rp 0"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[0]?.keuangan">
-                                                        <span>Tersimpan: {{ Number(item.subKegiatan.monitoring?.targets?.[0]?.keuangan).toLocaleString('id-ID') }}</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[0]?.keuangan">
+                                                        <span>Tersimpan: {{ Number(item.normalizedTargets[0].keuangan).toLocaleString('id-ID') }}</span>
                                                     </div>
                                                 </td>
                                                 
@@ -1157,8 +1477,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="0.00%"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[1]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.subKegiatan.monitoring?.targets?.[1]?.kinerja_fisik }}%</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[1]?.kinerja_fisik">
+                                                        <span>Tersimpan: {{ item.normalizedTargets[1].kinerja_fisik.toFixed(2) }}%</span>
                                                     </div>
                                                 </td>
                                                 <td class="border px-1 py-1 text-center !bg-green-50">
@@ -1175,8 +1495,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="Rp 0"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[1]?.keuangan">
-                                                        <span>Tersimpan: {{ Number(item.subKegiatan.monitoring?.targets?.[1]?.keuangan).toLocaleString('id-ID') }}</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[1]?.keuangan">
+                                                        <span>Tersimpan: {{ Number(item.normalizedTargets[1].keuangan).toLocaleString('id-ID') }}</span>
                                                     </div>
                                                 </td>
                                                 
@@ -1195,8 +1515,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="0.00%"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[2]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.subKegiatan.monitoring?.targets?.[2]?.kinerja_fisik }}%</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[2]?.kinerja_fisik">
+                                                        <span>Tersimpan: {{ item.normalizedTargets[2].kinerja_fisik.toFixed(2) }}%</span>
                                                     </div>
                                                 </td>
                                                 <td class="border px-1 py-1 text-center !bg-green-50">
@@ -1213,8 +1533,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="Rp 0"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[2]?.keuangan">
-                                                        <span>Tersimpan: {{ Number(item.subKegiatan.monitoring?.targets?.[2]?.keuangan).toLocaleString('id-ID') }}</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[2]?.keuangan">
+                                                        <span>Tersimpan: {{ Number(item.normalizedTargets[2].keuangan).toLocaleString('id-ID') }}</span>
                                                     </div>
                                                 </td>
                                                 
@@ -1233,8 +1553,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="0.00%"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[3]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.subKegiatan.monitoring?.targets?.[3]?.kinerja_fisik }}%</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[3]?.kinerja_fisik">
+                                                        <span>Tersimpan: {{ item.normalizedTargets[3].kinerja_fisik.toFixed(2) }}%</span>
                                                     </div>
                                                 </td>
                                                 <td class="border px-1 py-1 text-center !bg-green-50">
@@ -1251,8 +1571,8 @@ watch([
                                                         :disabled="loadingRow === item.subKegiatan.id" 
                                                         placeholder="Rp 0"
                                                     />
-                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.subKegiatan.monitoring?.targets?.[3]?.keuangan">
-                                                        <span>Tersimpan: {{ Number(item.subKegiatan.monitoring?.targets?.[3]?.keuangan).toLocaleString('id-ID') }}</span>
+                                                    <div class="text-xs mt-1 text-gray-500" v-if="item.normalizedTargets?.[3]?.keuangan">
+                                                        <span>Tersimpan: {{ Number(item.normalizedTargets[3].keuangan).toLocaleString('id-ID') }}</span>
                                                     </div>
                                                 </td>
                                                 <!-- Kolom aksi -->

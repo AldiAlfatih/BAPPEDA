@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+// use App\Http\Controllers\PeriodeController;
 // use App\Http\Controllers\Api\NomenklaturController;
 // use App\Http\Controllers\Api\BantuanController;
 use Illuminate\Http\Request;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+// Rute untuk mendapatkan periode aktif
+// Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif']);
 
 // Routes untuk Nomenklatur (CRUD)
 // Route::middleware(['auth:sanctum'])->group(function () {

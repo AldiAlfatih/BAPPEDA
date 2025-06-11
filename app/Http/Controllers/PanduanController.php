@@ -9,162 +9,111 @@ use Illuminate\Support\Facades\Storage;
 
 class PanduanController extends Controller
 {
-    /**
-     * Menampilkan daftar panduan.
-     */
     public function index()
     {
-        $panduan = Panduan::all();
-
-        // Tambahkan file_url dan sampul_url secara manual
-        $panduan->transform(function ($p) {
-            $p->file_url = $p->file ? Storage::url($p->file) : null;
-            $p->sampul_url = $p->sampul ? Storage::url($p->sampul) : null;
-            return $p;
+        $panduan = Panduan::all()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'judul' => $item->judul,
+                'deskripsi' => $item->deskripsi,
+                'file_url' => $item->file ? asset('storage/' . $item->file) : null,
+                'sampul_url' => $item->sampul ? asset('storage/' . $item->sampul) : null,
+            ];
         });
 
-        return Inertia::render('Panduan', [
-            'panduan' => $panduan,
-        ]);
+        return Inertia::render('Panduan', ['panduan' => $panduan]);
     }
 
-    /**
-     * Menyimpan panduan baru ke dalam penyimpanan.
-     */
     public function store(Request $request)
     {
-        try {
-            // Validasi input
-            $validated = $request->validate([
-                'judul' => 'required|string|max:255',
-                'deskripsi' => 'required|string',
-                'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-                'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            ]);
-
-            // Menyimpan data panduan
-            $panduan = new Panduan();
-            $panduan->judul = $validated['judul'];
-            $panduan->deskripsi = $validated['deskripsi'];
-            $panduan->file = null; // Default nilai null untuk file
-            $panduan->sampul = null; // Default nilai null untuk sampul
-
-            // Jika file panduan ada, simpan ke storage
-            if ($request->hasFile('file') && $request->file('file')->isValid()) {
-                $panduan->file = $request->file('file')->store('panduan_files', 'public');
-            }
-
-            // Jika gambar sampul ada, simpan ke storage
-            if ($request->hasFile('sampul') && $request->file('sampul')->isValid()) {
-                $panduan->sampul = $request->file('sampul')->store('panduan_sampul', 'public');
-            }
-
-            // Menyimpan data panduan ke database
-            $panduan->save();
-
-            // Mengirimkan data terbaru setelah disimpan ke Inertia
-            return redirect()->route('panduan.index')->with('success', 'Panduan berhasil ditambahkan.');
-        } catch (\Exception $e) {
-            // Log error untuk debugging
-            \Log::error('Error menyimpan panduan: ' . $e->getMessage());
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Menampilkan panduan yang dipilih.
-     */
-    public function show(string $id)
-    {
-        $panduan = Panduan::findOrFail($id);
-        $panduan->file_url = $panduan->file ? Storage::url($panduan->file) : null;
-        $panduan->sampul_url = $panduan->sampul ? Storage::url($panduan->sampul) : null;
-
-        return Inertia::render('Panduan/Show', ['panduan' => $panduan]);
-    }
-
-    /**
-     * Menampilkan formulir untuk mengedit panduan.
-     */
-    public function edit(string $id)
-    {
-        $panduan = Panduan::findOrFail($id);
-        $panduan->file_url = $panduan->file ? Storage::url($panduan->file) : null;
-        $panduan->sampul_url = $panduan->sampul ? Storage::url($panduan->sampul) : null;
-
-        return Inertia::render('panduan/Edit', ['panduan' => $panduan]);
-    }
-
-    /**
-     * Memperbarui panduan yang dipilih.
-     */
-    public function update(Request $request, string $id)
-    {
-        // Validasi input
-        $request->validate([
+        $validated = $request->validate([
             'judul' => 'required|string|max:255',
             'deskripsi' => 'required|string',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $panduan = new Panduan();
+        $panduan->judul = $validated['judul'];
+        $panduan->deskripsi = $validated['deskripsi'];
+
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('panduan_files', 'public');
+            $panduan->file = $filePath;
+        } else {
+            $panduan->file = null;
+        }
+
+        if ($request->hasFile('sampul')) {
+            $sampulPath = $request->file('sampul')->store('panduan_sampul', 'public');
+            $panduan->sampul = $sampulPath;
+        } else {
+            $panduan->sampul = null;
+        }
+
+        $panduan->save();
+
+        return redirect()->route('panduan.index')->with('success', 'Panduan berhasil ditambahkan.');
+    }
+
+    public function edit(string $id)
+    {
+        $panduan = Panduan::findOrFail($id);
+
+        return Inertia::render('Panduan/Edit', ['panduan' => $panduan]);
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $panduan = Panduan::findOrFail($id);
 
-        // Tentukan file path default menggunakan file lama
-        $filePath = $panduan->file; // Pertahankan file lama jika tidak ada yang baru
-        $sampulPath = $panduan->sampul; // Pertahankan sampul lama jika tidak ada yang baru
+        $panduan->judul = $validated['judul'];
+        $panduan->deskripsi = $validated['deskripsi'];
 
-        // Jika ada file baru, simpan file baru dan hapus file lama jika ada
         if ($request->hasFile('file')) {
+            // Hapus file lama jika ada
             if ($panduan->file) {
-                Storage::disk('public')->delete($panduan->file);  // Hapus file lama
+                Storage::disk('public')->delete($panduan->file);
             }
             $filePath = $request->file('file')->store('panduan_files', 'public');
+            $panduan->file = $filePath;
         }
 
-        // Jika ada gambar sampul baru, simpan gambar baru dan hapus gambar lama jika ada
         if ($request->hasFile('sampul')) {
+            // Hapus sampul lama jika ada
             if ($panduan->sampul) {
-                Storage::disk('public')->delete($panduan->sampul);  // Hapus sampul lama
+                Storage::disk('public')->delete($panduan->sampul);
             }
             $sampulPath = $request->file('sampul')->store('panduan_sampul', 'public');
+            $panduan->sampul = $sampulPath;
         }
 
-        // Update data panduan
-        $panduan->update([
-            'judul' => $request->judul,
-            'deskripsi' => $request->deskripsi,
-            'file' => $filePath,
-            'sampul' => $sampulPath,
-        ]);
+        $panduan->save();
 
         return redirect()->route('panduan.index')->with('success', 'Panduan berhasil diperbarui');
     }
 
-    /**
-     * Menghapus panduan yang dipilih.
-     */
     public function destroy(string $id)
     {
         $panduan = Panduan::findOrFail($id);
 
-        // Menghapus file terkait jika ada
+        // Hapus file dan sampul dari storage jika ada
         if ($panduan->file) {
             Storage::disk('public')->delete($panduan->file);
         }
-
-        // Menghapus sampul terkait jika ada
         if ($panduan->sampul) {
             Storage::disk('public')->delete($panduan->sampul);
         }
 
-        // Menghapus panduan
         $panduan->delete();
 
-        // Mengarahkan ulang ke halaman index Panduan dan mengirimkan data terbaru
         return redirect()->route('panduan.index')->with('success', 'Panduan berhasil dihapus.');
     }
 }

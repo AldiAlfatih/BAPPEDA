@@ -79,17 +79,12 @@ class UserSeeder extends Seeder
 
         // Operator names (34 entries)
         $operatorNames = [
-            'Ridwan Hidayat', 'Lisa Maulida', 'Joko Wibisono', 'Anisa Rahma', 'Dian Suryani',
-            'Hendra Putra', 'Lina Kartika', 'Fahmi Zulfikar', 'Nur Aisyah', 'Satria Nugraha',
-            'Wulan Ayu', 'Bayu Saputra', 'Yulianti Ningsih', 'Reza Fahlevi', 'Putri Amelia',
-            'Andika Pratama', 'Melati Rizki', 'Gilang Ramadhan', 'Vina Oktavia', 'Yusuf Kurniawan',
-            'Rani Sulastri', 'Fajar Ramadhan', 'Maya Dewi', 'Budi Santoso', 'Sari Wulandari',
-            'Ricky Pratama', 'Nina Amalia', 'Fahmi Hidayat', 'Dewi Larasati', 'Joko Santoso',
-            'Ratna Sari', 'Anton Wijaya', 'Indah Permatasari', 'Dedi Kurniawan', 'Citra Maharani',
+            'Ridwan Hidayat', 'Lisa Maulida', 'Joko Wibisono',
+            'Anisa Rahma', 'Dian Suryani', 'Hendra Putra',
         ];
 
-    // Buat semua user perangkat daerah dan simpan ke array
-    $pdUsers = [];
+        // Buat semua user perangkat daerah
+        $pdUsers = [];
         $nipCounter = 3; // Lanjut setelah admin dan superadmin
         foreach ($pdData as $item) {
             $pdUser = User::create([
@@ -102,7 +97,7 @@ class UserSeeder extends Seeder
             $pdUsers[] = $pdUser;
         }
 
-        // Buat user operator dan simpan untuk skpd
+        // Buat user operator
         $operatorUsers = [];
         foreach ($operatorNames as $operatorName) {
             $operatorEmail = Str::slug($operatorName) . '@gmail.com';
@@ -117,41 +112,56 @@ class UserSeeder extends Seeder
             $operatorUsers[] = $operatorUser;
         }
 
-        // Buat data SKPD dan tugas
-        foreach ($pdUsers as $index => $pdUser) {
-            $operatorUser = $operatorUsers[$index] ?? null;
-            if (!$operatorUser) continue;
+        // Bagi perangkat daerah ke 6 kelompok operator
+        $pdGroups = array_chunk($pdUsers, ceil(count($pdUsers) / count($operatorUsers)));
 
-            $skpd = Skpd::create([
-                'user_id' => $pdUser->id,
-                'nama_operator' => $operatorUser->name,
-                'nama_skpd' => $pdUser->name,
-                'nama_dinas' => $pdData[$index]['nama_dinas'],
-                'no_dpa' => 'DPA-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
-                'kode_organisasi' => 'ORG-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
-            ]);
+        foreach ($pdGroups as $groupIndex => $pdGroup) {
+            $operatorUser = $operatorUsers[$groupIndex];
 
-            // Tambahkan record skpd_kepala yang menghubungkan SKPD dengan User perangkat_daerah
-            SkpdKepala::create([
-                'skpd_id' => $skpd->id,
-                'user_id' => $pdUser->id, // User perangkat daerah dimulai dari ID 3
-                'is_aktif' => true,
-            ]);
+            foreach ($pdGroup as $index => $pdUser) {
+                $pdIndex = array_search($pdUser, $pdUsers);
+                $namaDinas = $pdData[$pdIndex]['nama_dinas']; // ✅ perbaikan di sini
 
-            $kodeUrusan = KodeNomenklatur::where('jenis_nomenklatur', 1)
-                            ->inRandomOrder()
-                            ->limit(2)
-                            ->pluck('id');
+                $skpd = Skpd::create([
+                    'user_id' => $pdUser->id,
+                    'nama_operator' => $operatorUser->name,
+                    'nama_skpd' => $pdUser->name,
+                    'nama_dinas' => $pdData[$pdIndex]['nama_dinas'],
+                    'no_dpa' => 'DPA-' . str_pad($pdIndex + 1, 4, '0', STR_PAD_LEFT),
+                    'kode_organisasi' => 'ORG-' . str_pad($pdIndex + 1, 3, '0', STR_PAD_LEFT),
+                ]);
 
-            foreach ($kodeUrusan as $kodeId) {
-                SkpdTugas::create([
+                SkpdKepala::create([
                     'skpd_id' => $skpd->id,
-                    'kode_nomenklatur_id' => $kodeId,
+                    'user_id' => $pdUser->id,
                     'is_aktif' => true,
                 ]);
+
+                                // Khusus hanya untuk dua dinas berikut, isi tugasnya:
+                if ($namaDinas === 'Dinas Pendidikan dan Kebudayaan') {
+                    $relevantKode = Kodenomenklatur::whereIn('nomor_kode', [
+                        '1', '1.01', '1.01.01', '1.01.01.2.01', '1.01.01.2.01.0001', '1.01.01.2.01.0002',
+                        '2', '2.22', '2.22.02', '2.22.02.2.01', '2.22.02.2.01.0001',
+                    ])->pluck('id');
+                } elseif ($namaDinas === 'RS Hasri Ainun Habibie') {
+                    $relevantKode = Kodenomenklatur::whereIn('nomor_kode', [
+                        '1', '1.02', '1.02.01', '1.02.01.2.01', '1.02.01.2.01.0001',
+                    ])->pluck('id');
+                } else {
+                    $relevantKode = collect();
+                }
+
+                foreach ($relevantKode as $kodeId) {
+                    SkpdTugas::create([
+                        'skpd_id' => $skpd->id,
+                        'kode_nomenklatur_id' => $kodeId,
+                        'is_aktif' => true,
+                    ]);
+                }
             }
         }
     }
+
 
     private function createUserDetail(User $user, int $nipIndex)
     {
@@ -161,6 +171,6 @@ class UserSeeder extends Seeder
             'nip' => '1987' . str_pad($nipIndex, 6, '0', STR_PAD_LEFT),
             'no_hp' => '0812' . rand(10000000, 99999999),
             'jenis_kelamin' => rand(0, 1) ? 'Laki-laki' : 'Perempuan',
-        ]);
-    }
+]);
+}
 }

@@ -25,4 +25,16 @@ class SkpdKepala extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function userDetail()
+    {
+        return $this->hasOneThrough(
+            \App\Models\UserDetail::class,
+            \App\Models\User::class,
+            'id', // User primary key
+            'user_id', // UserDetail foreign key
+            'user_id', // SkpdKepala foreign key
+            'id' // User primary key
+        );
+    }
 }

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('judul', 255);  // Menyimpan judul dengan panjang maksimal 255 karakter
             $table->text('deskripsi');     // Menyimpan deskripsi dengan panjang yang lebih besar
-            $table->string('file', 512)->nullable()->change();
-            $table->string('sampul')->nullable()->change();  // Menyimpan path file dengan panjang maksimal 512 karakter
+            $table->string('file', 512);
+            $table->string('sampul')->nullable();  // Menyimpan path file dengan panjang maksimal 512 karakter
             $table->timestamps();
         });
     }
@@ -26,10 +26,6 @@ return new class extends Migration
      */
     public function down()
     {
-       Schema::table('panduan', function (Blueprint $table) {
-            // Kembalikan ke kondisi semula jika diperlukan
-            $table->string('file')->nullable(false)->change();
-            $table->string('sampul')->nullable(false)->change();
-        });
+        Schema::dropIfExists('panduan');
     }
 };

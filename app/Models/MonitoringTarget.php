@@ -1,9 +1,8 @@
 <?php
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MonitoringTarget extends Model
 {
@@ -12,15 +11,20 @@ class MonitoringTarget extends Model
     protected $table = 'monitoring_target';
 
     protected $fillable = [
-        'monitoring_id',
+        'monitoring_anggaran_id',
         'periode_id',
         'kinerja_fisik',
-        'keuangan',
+        'keuangan'
     ];
 
-    public function monitoring()
+    protected $casts = [
+        'kinerja_fisik' => 'float',
+        'keuangan' => 'integer'
+    ];
+
+    public function monitoringAnggaran()
     {
-        return $this->belongsTo(Monitoring::class);
+        return $this->belongsTo(MonitoringAnggaran::class, 'monitoring_anggaran_id');
     }
 
     public function periode()
@@ -28,4 +32,3 @@ class MonitoringTarget extends Model
         return $this->belongsTo(Periode::class);
     }
 }
-

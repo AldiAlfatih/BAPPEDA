@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { type BreadcrumbItem } from '@/types'
-import { useForm, usePage} from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import { format } from 'date-fns'
 import { computed, ref, watch } from 'vue'
 
@@ -80,8 +80,7 @@ const updateChatStatus = () => {
   form.post(route('bantuan.chat.selesai', props.bantuan.id), {
     preserveScroll: true,
     onSuccess: () => {
-      // Mengganti Inertia.get dengan router.visit atau window.location
-      window.location.href = '/bantuan';
+      router.reload();
     },
   });
 };
@@ -94,8 +93,8 @@ const navigateBack = () => {
 <template>
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="p-2 ml-6 mr-6 mt-5 w-auto border rounded-md ">
-      <h1 class="text-2xl font-bold">Percakapan Bantuan</h1>
-      <h1 class="text-xl font-semibold">{{ bantuan.judul }}</h1>
+      <h1 class="text-2xl font-bold text-gray-600">Percakapan Bantuan</h1>
+      <h1 class="text-xl font-semibold text-gray-500">{{ bantuan.judul }}</h1>
     </div>
 
     <!-- Daftar Chat -->

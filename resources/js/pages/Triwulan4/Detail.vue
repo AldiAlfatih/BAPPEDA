@@ -1279,19 +1279,28 @@ const programData = computed(() => {
                   capaianKeuangan = `${capaian.toFixed(2)}%`;
                   
                   // Calculate keuangan tahunan using the formula:
-                  // Realisasi keuangan / jumlah data dari pagu terakhir pada sumber anggaran * 100
+                  // Realisasi keuangan / jumlah data dari pagu pada Rencana Awal * 100
                   // Find the program to get budget values
                   const programObj = props.programTugas.find(p => p.id === program.id);
                   
-                  // Gunakan helper function untuk mendapatkan pagu dari berbagai format
-                  const paguValue = getPaguFromMonitoring(programObj);
+                  // Gunakan fungsi khusus untuk mendapatkan pagu dari Rencana Awal (bukan manajemen anggaran)
+                  const paguRencanaAwal = getPaguTerakhirDariRencanaAwal(programObj);
                   
-                  if (paguValue.value > 0) {
-                    programItem.capaianTahunanKeuangan = calculateCapaianKeuanganTahunan(totalKeuangan, paguValue.value, paguValue.type);
-                  } else {
-                    // Jika pagu tidak ditemukan, set capaian keuangan tahunan ke 0%
-                    programItem.capaianTahunanKeuangan = '0.00%';
+                  console.log(`PERHITUNGAN CAPAIAN KEUANGAN TAHUNAN UNTUK PROGRAM ID=${program.id}:`);
+                  console.log(`- Nilai Realisasi Keuangan: ${realisasiKeuanganValue.toLocaleString('id-ID')}`);
+                  console.log(`- Nilai Pagu Terakhir dari Rencana Awal: ${paguRencanaAwal.value.toLocaleString('id-ID')} (${paguRencanaAwal.type})`);
+
+                  // Pastikan nilai pagu selalu valid
+                  let paguValue = paguRencanaAwal.value;
+                  if (paguValue <= 0) {
+                    paguValue = 1000000; // Default 1 juta jika tidak ada nilai pagu
+                    console.log(`- Menggunakan nilai DEFAULT untuk program karena pagu = 0: ${paguValue.toLocaleString('id-ID')}`);
                   }
+                  
+                  // Hitung capaian keuangan tahunan: (realisasi keuangan / pagu dari Rencana Awal) * 100
+                  const capaianTahunanResult = (realisasiKeuanganValue / paguValue) * 100;
+                  capaianTahunanKeuangan = `${capaianTahunanResult.toFixed(2)}%`;
+                  console.log(`- Rumus: (${realisasiKeuanganValue} / ${paguValue}) * 100 = ${capaianTahunanResult.toFixed(2)}%`);
                 }
               }
               

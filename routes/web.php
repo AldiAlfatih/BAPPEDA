@@ -46,13 +46,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/triwulan1/save-realisasi', [Triwulan1Controller::class, 'saveRealisasi'])->name('triwulan1.save-realisasi');
     Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
     Route::get('triwulan2/Detail/{id}', [Triwulan2Controller::class, 'showDetail'])->name('triwulan2.showDetail');
+    Route::post('/triwulan2/save-realisasi', [Triwulan2Controller::class, 'saveRealisasi'])->name('triwulan2.save-realisasi');
     Route::resource('triwulan3', Triwulan3Controller::class)->names('triwulan3');
     Route::get('triwulan3/Detail/{id}', [Triwulan3Controller::class, 'showDetail'])->name('triwulan3.showDetail');
+    Route::post('/triwulan3/save-realisasi', [Triwulan3Controller::class, 'saveRealisasi'])->name('triwulan3.save-realisasi');
     Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
     Route::get('triwulan4/Detail/{id}', [Triwulan4Controller::class, 'showDetail'])->name('triwulan4.showDetail');
-    Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
-    Route::resource('triwulan3', Triwulan3Controller::class)->names('triwulan3');
-    Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
+    Route::post('/triwulan4/save-realisasi', [Triwulan4Controller::class, 'saveRealisasi'])->name('triwulan4.save-realisasi');
     Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
     Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
 

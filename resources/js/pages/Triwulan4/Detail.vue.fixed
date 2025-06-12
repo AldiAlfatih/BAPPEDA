@@ -1,0 +1,212 @@
+// Define programData computed property
+const programData = computed(() => {
+  // Initialize with an empty array to prevent errors
+  if (!props.programTugas || !Array.isArray(props.programTugas)) {
+    console.log('No program data available');
+    return [];
+  }
+
+  const data: any[] = [];
+  const programIndices = new Map<number, number>();
+  const kegiatanIndices = new Map<number, {dataIndex: number, programId: number}>();
+  const subkegiatanData = new Map<number, {kegiatanId: number, realisasiFisik?: number, realisasiKeuangan?: number, targetFisik?: number, targetKeuangan?: number}>();
+  const bidangUrusanIndex = props.bidangUrusan ? 0 : -1;
+  
+  try {
+    // Initialize data with bidangUrusan if available
+    if (bidangUrusanIndex >= 0 && props.bidangUrusan) {
+      data.push({
+        id: props.bidangUrusan.id,
+        kode: props.bidangUrusan.nomor_kode,
+        program: `BIDANG URUSAN: ${props.bidangUrusan.nomenklatur}`,
+        targetFisik: '-',
+        targetKeuangan: '-',
+        realisasiFisik: '-',
+        realisasiKeuangan: '-',
+        capaianFisik: '-',
+        capaianKeuangan: '-',
+        capaianTahunanFisik: '-',
+        capaianTahunanKeuangan: '0.00%',
+        keterangan: props.bidangUrusan.deskripsi || '-',
+        pptk: '-',
+        type: 'bidang_urusan',
+        indentLevel: 0,
+        _subItems: [] // Initialize empty array for subItems
+      });
+    }
+    
+    // Process programs
+    if (props.programTugas && Array.isArray(props.programTugas)) {
+      props.programTugas.forEach((program) => {
+        const programId = program.id;
+        programIndices.set(programId, data.length);
+        
+        // Add program data to the array
+        data.push({
+          id: programId,
+          kode: program.kode_nomenklatur?.nomor_kode || '-',
+          program: program.kode_nomenklatur?.nomenklatur || '-',
+          targetFisik: '-',
+          targetKeuangan: '-',
+          realisasiFisik: '-',
+          realisasiKeuangan: '-',
+          capaianFisik: '-',
+          capaianKeuangan: '-',
+          capaianTahunanFisik: '-',
+          capaianTahunanKeuangan: '0.00%',
+          keterangan: '-',
+          pptk: '-',
+          type: 'program',
+          indentLevel: 0,
+          _subItems: [],
+          _targetFisikValue: 0,
+          _targetKeuanganValue: 0,
+          _realisasiFisikValue: 0,
+          _realisasiKeuanganValue: 0
+        });
+        
+        // Add program to bidang urusan subItems if applicable
+        if (bidangUrusanIndex >= 0 && data[bidangUrusanIndex]?._subItems) {
+          data[bidangUrusanIndex]._subItems.push(programId);
+        }
+      });
+    }
+    
+    // Calculate Target Kinerja Fisik (average) and Target Keuangan (sum) for BIDANG URUSAN from PROGRAMs
+    if (bidangUrusanIndex >= 0 && data[bidangUrusanIndex]) {
+      const bidangUrusanItem = data[bidangUrusanIndex];
+      if (bidangUrusanItem && bidangUrusanItem._subItems && bidangUrusanItem._subItems.length > 0) {
+        // Calculate average target fisik from all programs
+        let validProgramCount = 0;
+        const totalProgramTargetFisik = bidangUrusanItem._subItems.reduce((sum: number, programId: number) => {
+          const programItem = data[programIndices.get(programId) || 0];
+          if (programItem && programItem._targetFisikValue !== undefined) {
+            validProgramCount++;
+            return sum + programItem._targetFisikValue;
+          }
+          return sum;
+        }, 0);
+        
+        const avgProgramTargetFisik = validProgramCount > 0 ? totalProgramTargetFisik / validProgramCount : 0;
+        
+        // Sum up all program target keuangan
+        const totalBidangUrusanTargetKeuangan = bidangUrusanItem._subItems.reduce((sum: number, programId: number) => {
+          const programItem = data[programIndices.get(programId) || 0];
+          return sum + (programItem?._targetKeuanganValue || 0);
+        }, 0);
+        
+        // Update target values for bidang urusan
+        if (validProgramCount > 0) {
+          bidangUrusanItem.targetFisik = `${avgProgramTargetFisik.toFixed(2)}%`;
+        }
+        
+        if (totalBidangUrusanTargetKeuangan > 0) {
+          bidangUrusanItem.targetKeuangan = `Rp ${totalBidangUrusanTargetKeuangan.toLocaleString('id-ID')}`;
+        }
+        
+        // Calculate realisasi values for bidang urusan
+        // Calculate average kinerja fisik from all programs
+        let validProgramRealisasiCount = 0;
+        const totalProgramFisik = bidangUrusanItem._subItems.reduce((sum: number, programId: number) => {
+          const programItem = data[programIndices.get(programId) || 0];
+          if (programItem && programItem._realisasiFisikValue !== undefined) {
+            validProgramRealisasiCount++;
+            return sum + programItem._realisasiFisikValue;
+          }
+          return sum;
+        }, 0);
+        
+        const avgProgramFisik = validProgramRealisasiCount > 0 ? totalProgramFisik / validProgramRealisasiCount : 0;
+        
+        // Sum up all program keuangan
+        const totalBidangUrusanKeuangan = bidangUrusanItem._subItems.reduce((sum: number, programId: number) => {
+          const programItem = data[programIndices.get(programId) || 0];
+          return sum + (programItem?._realisasiKeuanganValue || 0);
+        }, 0);
+        
+        // Update realisasi fisik for bidang urusan
+        if (validProgramRealisasiCount > 0) {
+          bidangUrusanItem.realisasiFisik = `${avgProgramFisik.toFixed(2)}%`;
+          
+          // Calculate capaian fisik for bidang urusan
+          if (bidangUrusanItem.targetFisik !== '-') {
+            const targetFisik = parseFloat(bidangUrusanItem.targetFisik.replace('%', ''));
+            if (!isNaN(targetFisik) && targetFisik > 0) {
+              const capaianFisik = (avgProgramFisik / targetFisik) * 100;
+              bidangUrusanItem.capaianFisik = `${capaianFisik.toFixed(2)}%`;
+              
+              // Calculate kinerja fisik tahunan using the formula: kinerja fisik realisasi/100*100
+              const kinerjaFisikTahunan = (avgProgramFisik / 100) * 100;
+              bidangUrusanItem.capaianTahunanFisik = `${kinerjaFisikTahunan.toFixed(2)}%`;
+            }
+          }
+        }
+        
+        if (totalBidangUrusanKeuangan > 0) {
+          bidangUrusanItem.realisasiKeuangan = `Rp ${totalBidangUrusanKeuangan.toLocaleString('id-ID')}`;
+          
+          // Calculate capaian for bidang urusan
+          if (bidangUrusanItem.targetKeuangan !== '-') {
+            const targetKeuangan = parseFloat(bidangUrusanItem.targetKeuangan.replace(/[^0-9.-]+/g, ''));
+            if (!isNaN(targetKeuangan) && targetKeuangan > 0) {
+              // Use Math.min to cap the value at 100%
+              const capaian = Math.min(100, (totalBidangUrusanKeuangan / targetKeuangan) * 100);
+              bidangUrusanItem.capaianKeuangan = `${capaian.toFixed(2)}%`;
+              
+              // Calculate keuangan tahunan using the formula:
+              // Realisasi keuangan / jumlah data dari pagu terakhir pada sumber anggaran * 100
+              // For bidang urusan, use cumulative values from all associated programs
+              
+              // Variabel untuk menyimpan total pagu
+              let totalPaguValue = 0;
+              let paguType = 'gabungan';
+              
+              // Kumpulkan dari program
+              bidangUrusanItem._subItems?.forEach((programId: number) => {
+                const programObj = props.programTugas.find(p => p.id === programId);
+                if (programObj) {
+                  // Cek pagu di level program menggunakan fungsi khusus untuk mendapatkan pagu dari Rencana Awal
+                  const programPagu = getPaguTerakhirDariRencanaAwal(programObj);
+                  if (programPagu.value > 0) {
+                    totalPaguValue += programPagu.value;
+                  }
+                }
+              });
+              
+              console.log(`PERHITUNGAN CAPAIAN KEUANGAN TAHUNAN UNTUK BIDANG URUSAN:`);
+              console.log(`- Nilai Realisasi Keuangan: ${totalBidangUrusanKeuangan.toLocaleString('id-ID')}`);
+              console.log(`- Nilai Total Pagu dari Rencana Awal: ${totalPaguValue.toLocaleString('id-ID')} (${paguType})`);
+              
+              if (totalPaguValue > 0) {
+                // Hitung capaian keuangan tahunan: (realisasi keuangan / total pagu dari Rencana Awal) * 100
+                const capaianTahunanResult = (totalBidangUrusanKeuangan / totalPaguValue) * 100;
+                bidangUrusanItem.capaianTahunanKeuangan = `${capaianTahunanResult.toFixed(2)}%`;
+                console.log(`- Rumus: (${totalBidangUrusanKeuangan} / ${totalPaguValue}) * 100 = ${capaianTahunanResult.toFixed(2)}%`);
+              } else {
+                // Jika total pagu tidak ditemukan, set capaian keuangan tahunan ke 0%
+                bidangUrusanItem.capaianTahunanKeuangan = '0.00%';
+                console.log(`- Tidak ada total pagu yang valid, capaian keuangan tahunan diatur ke 0.00%`);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('Final program data:', data);
+  } catch (error) {
+    console.error('Error in programData computed property:', error);
+    return [];
+  }
+  
+  // Format percentages before returning data
+  return data.map(item => {
+    if (item && item.capaianKeuangan !== '-') {
+      item.capaianKeuangan = formatPercentage(item.capaianKeuangan);
+    }
+    if (item && item.capaianTahunanKeuangan !== '-') {
+      item.capaianTahunanKeuangan = formatPercentage(item.capaianTahunanKeuangan);
+    }
+    return item;
+  });
+}); 

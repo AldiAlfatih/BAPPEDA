@@ -209,6 +209,236 @@ class RencanaAwalController extends Controller
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
 
+        // Ambil tugas SKPD berdasarkan ID
+        $tugas = SkpdTugas::with([
+            'kodeNomenklatur',
+            'skpd.skpdKepala.user.userDetail',
+            'skpd.skpdKepala' => function($query) {
+                $query->where('is_aktif', 1);
+            }
+        ])->findOrFail($id);
+
+        // Get active periode
+        $periodeAktif = Periode::where('is_aktif', 1)
+            ->where('tahap', 'like', '%Rencana%')
+            ->with(['tahap', 'tahun'])
+            ->first();
+
+        // Ambil program, kegiatan, dan subkegiatan terkait dengan tugas SKPD
+        $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with(['kodeNomenklatur.details', 'monitoring.targets'])
+            ->get();
+
+        // Get all available urusan for this SKPD
+        $availableUrusans = $skpdTugas
+            ->filter(function($item) {
+                return $item->kodeNomenklatur->jenis_nomenklatur == 0 // Urusan
+                    && $item->kodeNomenklatur->details->first();
+            })
+            ->pluck('kodeNomenklatur.details.0.id_urusan')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // If no specific urusan requested, use the first available one
+        $urusanId = $requestedUrusanId ?? ($availableUrusans[0] ?? null);
+
+        // If we still don't have a valid urusan ID, try to get it from the current task
+        if (!$urusanId && $tugas->kodeNomenklatur->details->first()) {
+            $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
+        }
+
+        // Ambil data monitoring untuk SKPD ini
+        $monitoring = Monitoring::where('skpd_id', $tugas->skpd_id)
+            ->where('deskripsi', 'Rencana Awal')
+            ->where('tahun', date('Y'))
+            ->with('targets')
+            ->first();
+
+        // Ambil kepala SKPD
+        $kepalaSkpd = '-';
+        $kepala = $tugas->skpd->skpdKepala->first();
+        if ($kepala) {
+            if ($kepala->user && $kepala->user->userDetail && $kepala->user->userDetail->nama) {
+                $kepalaSkpd = $kepala->user->userDetail->nama;
+            } elseif ($kepala->user && $kepala->user->name) {
+                $kepalaSkpd = $kepala->user->name;
+            }
+        }
+
+        // Get bidang urusan data for the current urusan
+        $bidangUrusan = KodeNomenklatur::where('jenis_nomenklatur', 1)
+            ->whereHas('details', function($query) use ($urusanId) {
+                $query->where('id_urusan', $urusanId);
+            })
+            ->with(['details' => function($query) {
+                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
+            }])
+            ->first();
+
+        // Filter program, kegiatan, and subkegiatan for the selected urusan
+        $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 2
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->map(function($item) use ($monitoring) {
+            if ($monitoring) {
+                $item->monitoring = $monitoring;
+            }
+            return $item;
+        })->values();
+
+        $kegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 3
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->map(function($item) use ($monitoring) {
+            if ($monitoring) {
+                $item->monitoring = $monitoring;
+            }
+            return $item;
+        })->values();
+
+        $subkegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 4
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->map(function($item) use ($monitoring) {
+            if ($monitoring) {
+                $item->monitoring = $monitoring;
+            }
+            return $item;
+        })->values();
+
+        // Get all sumber dana options
+        $sumberDanaOptions = SumberAnggaran::all();
+
+        // Get the latest pagu data for each subkegiatan and each funding source
+        $subkegiatanWithSumberDana = [];
+        $dataAnggaranTerakhir = [];
+
+        foreach ($subkegiatanTugas as $subkegiatan) {
+            // Find the latest monitoring for this subkegiatan
+            $monitoring = Monitoring::where('tugas_id', $subkegiatan->id)
+                ->where('tahun', date('Y'))
+                ->latest()
+                ->first();
+
+            if (!$monitoring) {
+                // If no monitoring exists for this subkegiatan, create an empty record for display
+                $dataAnggaranTerakhir[$subkegiatan->id] = [
+                    'sumber_anggaran' => [
+                        'dak' => false,
+                        'dak_peruntukan' => false,
+                        'dak_fisik' => false,
+                        'dak_non_fisik' => false,
+                        'blud' => false
+                    ],
+                    'values' => [
+                        'dak' => 0,
+                        'dak_peruntukan' => 0,
+                        'dak_fisik' => 0,
+                        'dak_non_fisik' => 0,
+                        'blud' => 0
+                    ]
+                ];
+                continue;
+            }
+
+            // Get all monitoring_anggaran for this monitoring with the latest pagu
+            $monitoringAnggarans = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                ->with(['sumberAnggaran'])
+                ->get();
+
+            $sumberAnggaranValues = [
+                'dak' => false,
+                'dak_peruntukan' => false,
+                'dak_fisik' => false,
+                'dak_non_fisik' => false,
+                'blud' => false
+            ];
+
+            $sumberDanaValues = [
+                'dak' => 0,
+                'dak_peruntukan' => 0,
+                'dak_fisik' => 0,
+                'dak_non_fisik' => 0,
+                'blud' => 0
+            ];
+
+            foreach ($monitoringAnggarans as $anggaran) {
+                if (!$anggaran->sumberAnggaran) continue;
+
+                // Get the latest pagu for this anggaran
+                $latestPagu = MonitoringPagu::where('monitoring_anggaran_id', $anggaran->id)
+                    ->where('kategori', 1) // Pokok
+                    ->when($periodeAktif, function($query) use ($periodeAktif) {
+                        return $query->where('periode_id', $periodeAktif->id);
+                    })
+                    ->latest()
+                    ->first();
+
+                if ($latestPagu) {
+                    // Map the sumberAnggaran name to our keys
+                    $key = strtolower(str_replace(' ', '_', $anggaran->sumberAnggaran->nama));
+                    $key = $this->normalizeKey($key);
+
+                    if (array_key_exists($key, $sumberAnggaranValues)) {
+                        $sumberAnggaranValues[$key] = true;
+                        $sumberDanaValues[$key] = $latestPagu->dana;
+
+                        // Also add to the subkegiatanWithSumberDana array for display
+                        $subkegiatanWithSumberDana[] = [
+                            'id' => $subkegiatan->id,
+                            'kode_nomenklatur' => $subkegiatan->kodeNomenklatur,
+                            'sumber_anggaran' => $anggaran->sumberAnggaran->nama,
+                            'dana' => $latestPagu->dana,
+                            'monitoring' => $monitoring
+                        ];
+                    }
+                }
+            }
+
+            // Store the combined data
+            $dataAnggaranTerakhir[$subkegiatan->id] = [
+                'sumber_anggaran' => $sumberAnggaranValues,
+                'values' => $sumberDanaValues
+            ];
+            
+            // If no sumber dana entries were found, add a placeholder
+            if (empty(array_filter($sumberAnggaranValues))) {
+                $subkegiatanWithSumberDana[] = [
+                    'id' => $subkegiatan->id,
+                    'kode_nomenklatur' => $subkegiatan->kodeNomenklatur,
+                    'sumber_anggaran' => null,
+                    'dana' => 0,
+                    'monitoring' => $monitoring
+                ];
+            }
+        }
+
+        // Get all available urusan
+        $allUrusans = KodeNomenklatur::where('jenis_nomenklatur', 0)
+            ->whereIn('id', function($query) use ($tugas) {
+                $query->select('id_nomenklatur')
+                    ->from('nomenklatur_details')
+                    ->where('id_urusan', function($subQuery) use ($tugas) {
+                        $subQuery->select('id_urusan')
+                            ->from('nomenklatur_details')
+                            ->where('id_skpd', $tugas->skpd_id);
+                    });
+            })
+            ->get();
+
+        // Assign bidangurusanTugas before returning
+        $bidangurusanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+            return $item->kodeNomenklatur->jenis_nomenklatur == 1
+                && $item->kodeNomenklatur->details->first()
+                && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
+        })->values();
+
+        // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
             'tugas' => $tugas,
             'bidangurusanTugas' => $bidangurusanTugas,

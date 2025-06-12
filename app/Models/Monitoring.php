@@ -56,4 +56,5 @@ class Monitoring extends Model
             'id' // Local key di monitoring_anggaran
         );
     }
+    
 }

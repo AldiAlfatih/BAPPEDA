@@ -31,12 +31,6 @@ const props = defineProps<{
     nama_skpd: string;
   };
   tugas: {
-    id: number;
-    kode_nomenklatur: {
-      nomor_kode: string;
-      nomenklatur: string;
-      details: Array<{
-        id_urusan: number;
         id_bidang_urusan: number;
         id_program: number;
         id_kegiatan: number;

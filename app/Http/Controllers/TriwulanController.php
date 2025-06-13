@@ -25,9 +25,10 @@ class TriwulanController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(int $tid)
+    public function index(int $tid, int $tahun = null)
     {
         $user = Auth::user();
+        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini jika tidak disebutkan
 
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
@@ -35,13 +36,13 @@ class TriwulanController extends Controller
         }
 
         // Get periode information
-        $periode = $this->getPeriodeByTriwulan($tid);
+        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
         if (!$periode) {
-            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan.');
+            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan untuk tahun ' . $tahun . '.');
         }
 
         if ($user->hasRole('perangkat_daerah')) {
-            return redirect()->route('triwulan.show', ['tid' => $tid, 'id' => $user->id]);
+            return redirect()->route('triwulan.show', ['tid' => $tid, 'id' => $user->id, 'tahun' => $tahun]);
         }
 
         if ($user->hasRole('operator')) {
@@ -54,6 +55,7 @@ class TriwulanController extends Controller
             return Inertia::render('Triwulan', [
                 'users' => $users,
                 'tid' => $tid,
+                'tahun' => $tahun,
                 'periode' => $periode,
                 'triwulanName' => $this->getTriwulanName($tid),
             ]);
@@ -63,6 +65,7 @@ class TriwulanController extends Controller
         return Inertia::render('Triwulan', [
             'users' => $users,
             'tid' => $tid,
+            'tahun' => $tahun,
             'periode' => $periode,
             'triwulanName' => $this->getTriwulanName($tid),
         ]);
@@ -71,18 +74,20 @@ class TriwulanController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $tid, string $id)
+    public function show(int $tid, string $id, int $tahun = null)
     {
+        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
             return redirect()->back()->with('error', 'Invalid triwulan ID.');
         }
 
         $user = User::with('skpd')->findOrFail($id);
-        $periode = $this->getPeriodeByTriwulan($tid);
+        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
 
         if (!$periode) {
-            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan.');
+            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan untuk tahun ' . $tahun . '.');
         }
 
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
@@ -164,21 +169,24 @@ class TriwulanController extends Controller
             'kegiatanList' => $kegiatanList,
             'subkegiatanList' => $subkegiatanList,
             'tid' => $tid,
+            'tahun' => $tahun,
             'periode' => $periode,
             'triwulanName' => $this->getTriwulanName($tid),
         ]);
     }
 
-    public function showDetail(int $tid, $id)
+    public function showDetail(int $tid, $id, int $tahun = null)
     {
+        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
             return redirect()->back()->with('error', 'Invalid triwulan ID.');
         }
 
-        $periode = $this->getPeriodeByTriwulan($tid);
+        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
         if (!$periode) {
-            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan.');
+            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan untuk tahun ' . $tahun . '.');
         }
 
         $tugas = SkpdTugas::with([
@@ -265,8 +273,9 @@ class TriwulanController extends Controller
 
         $taskIds = $allTasks->pluck('id')->toArray();
 
-        // Get all monitoring records for these tasks with filtered monitoringTarget by the specific periode_id
+        // Get all monitoring records for these tasks with filtered data by tahun and periode
         $monitorings = \App\Models\Monitoring::whereIn('skpd_tugas_id', $taskIds)
+            ->where('tahun', $tahun) // Filter berdasarkan tahun
             ->with(['monitoringAnggaran' => function($query) use ($periode) {
                 $query->with(['monitoringTarget' => function($query) use ($periode) {
                     $query->where('periode_id', $periode->id);
@@ -278,7 +287,7 @@ class TriwulanController extends Controller
             }])
             ->get();
 
-        Log::info('Total monitoring records fetched for Triwulan ' . $tid . ': ' . $monitorings->count());
+        Log::info('Total monitoring records fetched for Triwulan ' . $tid . ' Tahun ' . $tahun . ': ' . $monitorings->count());
 
         // Process monitoring data for the specific periode
         foreach ($monitorings as $monitoring) {
@@ -360,6 +369,7 @@ class TriwulanController extends Controller
                 'nama_skpd' => $tugas->skpd->nama_skpd
             ],
             'tid' => $tid,
+            'tahun' => $tahun,
             'periode' => $periode,
             'triwulanName' => $this->getTriwulanName($tid),
         ]);
@@ -368,8 +378,10 @@ class TriwulanController extends Controller
     /**
      * Save realization data for a subkegiatan
      */
-    public function saveRealisasi(Request $request, int $tid)
+    public function saveRealisasi(Request $request, int $tid, int $tahun = null)
     {
+        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
             return response()->json([
@@ -389,11 +401,11 @@ class TriwulanController extends Controller
         ]);
 
         // Check if the specified triwulan period is open
-        $periode = $this->getPeriodeByTriwulan($tid);
+        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
         if (!$periode) {
             return response()->json([
                 'success' => false,
-                'message' => 'Periode ' . $this->getTriwulanName($tid) . ' tidak ditemukan.'
+                'message' => 'Periode ' . $this->getTriwulanName($tid) . ' tahun ' . $tahun . ' tidak ditemukan.'
             ], 404);
         }
 
@@ -410,6 +422,7 @@ class TriwulanController extends Controller
         // First, find the Rencana Awal monitoring record to copy budget data from
         $rencanaAwalMonitoring = Monitoring::where('skpd_tugas_id', $task->id)
             ->where('deskripsi', 'Rencana Awal')
+            ->where('tahun', $tahun) // Filter berdasarkan tahun
             ->first();
 
         // Get or create a monitoring record for REALIZATION specifically

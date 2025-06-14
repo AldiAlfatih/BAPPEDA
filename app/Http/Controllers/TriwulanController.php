@@ -23,36 +23,54 @@ use Illuminate\Support\Facades\Log;
 class TriwulanController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar resource.
      */
     public function index(int $tid, int $tahun = null)
     {
         $user = Auth::user();
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini jika tidak disebutkan
+        $tahun = $tahun ?? date('Y');
 
-        // Validate triwulan ID
+        // Validasi triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
             return redirect()->back()->with('error', 'Invalid triwulan ID.');
         }
 
-        // Get periode information
-        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
+        // Mendapatkan informasi periode tahun
+        $periodeTahun = PeriodeTahun::where('tahun', $tahun)->first();
+        if (!$periodeTahun) {
+            return redirect()->back()->with('error', 'Periode tahun tidak ditemukan.');
+        }
+
+        // Mendapatkan periode berdasarkan triwulan dan tahun
+        $periode = Periode::where('tahun_id', $periodeTahun->id)
+            ->whereHas('tahap', function($query) use ($tid) {
+                $query->where('id', $tid);
+            })
+            ->first();
+
         if (!$periode) {
             return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan untuk tahun ' . $tahun . '.');
         }
 
         if ($user->hasRole('perangkat_daerah')) {
-            return redirect()->route('triwulan.show', ['tid' => $tid, 'id' => $user->id, 'tahun' => $tahun]);
+            return redirect()->route('triwulan.show', [
+                'tid' => $tid,
+                'id' => $user->id,
+                'tahun' => $tahun
+            ]);
         }
 
         if ($user->hasRole('operator')) {
             $skpdUserIds = Skpd::where('nama_operator', $user->name)->pluck('user_id');
+
             $users = User::whereIn('id', $skpdUserIds)
                 ->role('perangkat_daerah')
-                ->with('skpd')
+                ->with(['skpd', 'monitoring' => function($query) use ($periode) {
+                    $query->where('periode_id', $periode->id);
+                }])
                 ->paginate(1000);
 
-            return Inertia::render('Triwulan', [
+            return Inertia::render('Triwulan',  [
                 'users' => $users,
                 'tid' => $tid,
                 'tahun' => $tahun,
@@ -61,7 +79,13 @@ class TriwulanController extends Controller
             ]);
         }
 
-        $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
+        // Filter data untuk admin
+        $users = User::role('perangkat_daerah')
+            ->with(['skpd', 'monitoring' => function($query) use ($periode) {
+                $query->where('periode_id', $periode->id);
+            }])
+            ->paginate(1000);
+
         return Inertia::render('Triwulan', [
             'users' => $users,
             'tid' => $tid,
@@ -72,11 +96,11 @@ class TriwulanController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan resource yang dipilih.
      */
     public function show(int $tid, string $id, int $tahun = null)
     {
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+        $tahun = $tahun ?? date('Y');
 
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
@@ -157,7 +181,6 @@ class TriwulanController extends Controller
             ->with('kodeNomenklatur')
             ->get();
 
-        // Determine the view based on triwulan
         $viewName = $this->getViewName($tid);
 
         return Inertia::render($viewName, [
@@ -175,20 +198,19 @@ class TriwulanController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan detail resource yang dipilih.
+     */
     public function showDetail(int $tid, $id, int $tahun = null)
     {
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
-
-        // Validate triwulan ID
+        $tahun = $tahun ?? date('Y');
         if (!in_array($tid, [1, 2, 3, 4])) {
             return redirect()->back()->with('error', 'Invalid triwulan ID.');
         }
-
         $periode = $this->getPeriodeByTriwulan($tid, $tahun);
         if (!$periode) {
             return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan untuk tahun ' . $tahun . '.');
         }
-
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',
             'skpd.skpdKepala.user.userDetail',
@@ -196,27 +218,23 @@ class TriwulanController extends Controller
                 $query->where('is_aktif', 1);
             },
         ])->findOrFail($id);
-
         $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
             ->where('is_aktif', 1)
             ->with([
                 'kodeNomenklatur.details',
-                'monitoring' => function($query) {
-                    $query->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode']);
+                'monitoring' => function($query) use ($periode) {
+                    $query->where('periode_id', $periode->id)
+                        ->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode']);
                 }
             ])
             ->get();
-
         $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
-
-        // Get bidang urusan data
         $bidangUrusan = KodeNomenklatur::where('jenis_nomenklatur', 1)
             ->whereHas('details', function($query) use ($urusanId) {
                 $query->where('id_urusan', $urusanId);
             })
             ->first();
 
-        // Find any monitoring that might have deskripsi for bidang urusan
         $bidangUrusanDeskripsi = '-';
         if ($bidangUrusan) {
             $monitoring = \App\Models\Monitoring::whereHas('skpdTugas', function($query) use ($bidangUrusan) {
@@ -266,16 +284,14 @@ class TriwulanController extends Controller
             }
         }
 
-        // Get monitoring target data with descriptions and realisasi
         $monitoringTargets = [];
         $monitoringRealisasi = [];
         $allTasks = collect()->concat($programTugas)->concat($kegiatanTugas)->concat($subkegiatanTugas);
 
         $taskIds = $allTasks->pluck('id')->toArray();
 
-        // Get all monitoring records for these tasks with filtered data by tahun and periode
         $monitorings = \App\Models\Monitoring::whereIn('skpd_tugas_id', $taskIds)
-            ->where('tahun', $tahun) // Filter berdasarkan tahun
+            ->where('tahun', $tahun)
             ->with(['monitoringAnggaran' => function($query) use ($periode) {
                 $query->with(['monitoringTarget' => function($query) use ($periode) {
                     $query->where('periode_id', $periode->id);
@@ -289,7 +305,6 @@ class TriwulanController extends Controller
 
         Log::info('Total monitoring records fetched for Triwulan ' . $tid . ' Tahun ' . $tahun . ': ' . $monitorings->count());
 
-        // Process monitoring data for the specific periode
         foreach ($monitorings as $monitoring) {
             $taskId = $monitoring->skpd_tugas_id;
 
@@ -298,7 +313,7 @@ class TriwulanController extends Controller
             }
 
             foreach ($monitoring->monitoringAnggaran as $anggaran) {
-                // Process monitoring targets
+
                 if (!$anggaran->monitoringTarget->isEmpty()) {
                     foreach ($anggaran->monitoringTarget as $target) {
                         if ($target->periode_id != $periode->id) {
@@ -319,7 +334,6 @@ class TriwulanController extends Controller
                     }
                 }
 
-                // Process monitoring realisasi
                 if (!$anggaran->monitoringRealisasi->isEmpty()) {
                     foreach ($anggaran->monitoringRealisasi as $realisasi) {
                         if ($realisasi->periode_id != $periode->id) {
@@ -346,7 +360,6 @@ class TriwulanController extends Controller
         Log::info('Total monitoring targets (periode_id = ' . $periode->id . '): ' . count($monitoringTargets));
         Log::info('Total monitoring realisasi (periode_id = ' . $periode->id . '): ' . count($monitoringRealisasi));
 
-        // Determine the detail view based on triwulan
         $detailViewName = $this->getDetailViewName($tid);
 
         return Inertia::render($detailViewName, [
@@ -376,13 +389,13 @@ class TriwulanController extends Controller
     }
 
     /**
-     * Save realization data for a subkegiatan
+     * Simpan data realisasi untuk subkegiatan
      */
     public function saveRealisasi(Request $request, int $tid, int $tahun = null)
     {
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+        $tahun = $tahun ?? date('Y');
 
-        // Validate triwulan ID
+        // Validasi triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
             return response()->json([
                 'success' => false,
@@ -400,15 +413,25 @@ class TriwulanController extends Controller
             'nama_pptk' => 'nullable|string',
         ]);
 
-        // Check if the specified triwulan period is open
-        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
+        // Mendapatkan periode berdasarkan triwulan dan tahun
+        $periodeTahun = PeriodeTahun::where('tahun', $tahun)->first();
+        if (!$periodeTahun) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode tahun tidak ditemukan.'
+            ], 404);
+        }
+        $periode = Periode::where('tahun_id', $periodeTahun->id)
+            ->whereHas('tahap', function($query) use ($tid) {
+                $query->where('id', $tid);
+            })
+            ->first();
         if (!$periode) {
             return response()->json([
                 'success' => false,
                 'message' => 'Periode ' . $this->getTriwulanName($tid) . ' tahun ' . $tahun . ' tidak ditemukan.'
             ], 404);
         }
-
         if ($periode->status != 1) {
             return response()->json([
                 'success' => false,
@@ -416,16 +439,14 @@ class TriwulanController extends Controller
             ], 403);
         }
 
-        // Get the task record
         $task = SkpdTugas::findOrFail($request->id);
 
-        // First, find the Rencana Awal monitoring record to copy budget data from
+
         $rencanaAwalMonitoring = Monitoring::where('skpd_tugas_id', $task->id)
             ->where('deskripsi', 'Rencana Awal')
-            ->where('tahun', $tahun) // Filter berdasarkan tahun
+            ->where('tahun', $tahun)
             ->first();
 
-        // Get or create a monitoring record for REALIZATION specifically
         $deskripsiRealisasi = 'Realisasi ' . $this->getTriwulanName($tid);
         $monitoring = Monitoring::firstOrCreate(
             [
@@ -438,25 +459,22 @@ class TriwulanController extends Controller
             ]
         );
 
-        // Update monitoring info if provided
         if ($request->has('keterangan') || $request->has('nama_pptk')) {
             $monitoring->nama_pptk = $request->nama_pptk ?? $monitoring->nama_pptk;
             $monitoring->save();
         }
 
-        // Get or create monitoring anggaran
         $anggaran = MonitoringAnggaran::firstOrCreate(
             ['monitoring_id' => $monitoring->id],
-            ['sumber_anggaran_id' => 1] // Default sumber anggaran
+            ['sumber_anggaran_id' => 1]
         );
 
-        // Copy budget data (pagu) from the Rencana Awal record if it exists
         if ($rencanaAwalMonitoring) {
             $rencanaAwalAnggaran = MonitoringAnggaran::where('monitoring_id', $rencanaAwalMonitoring->id)
                 ->first();
 
             if ($rencanaAwalAnggaran) {
-                // Copy pagu data for all categories (1=Pokok, 2=Parsial, 3=Perubahan)
+                // data pagu untuk semua kategori (1=Pokok, 2=Parsial, 3=Perubahan)
                 for ($kategori = 1; $kategori <= 3; $kategori++) {
                     $pagu = MonitoringPagu::where('monitoring_anggaran_id', $rencanaAwalAnggaran->id)
                         ->where('kategori', $kategori)
@@ -478,7 +496,6 @@ class TriwulanController extends Controller
             }
         }
 
-        // Try to find existing realisasi for this anggaran and period
         $realisasi = MonitoringRealisasi::firstOrCreate(
             [
                 'monitoring_anggaran_id' => $anggaran->id,
@@ -490,7 +507,6 @@ class TriwulanController extends Controller
             ]
         );
 
-        // Update values if record already existed
         if ($realisasi->wasRecentlyCreated === false) {
             $realisasi->kinerja_fisik = $request->realisasi_fisik;
             $realisasi->keuangan = $request->realisasi_keuangan;
@@ -504,28 +520,21 @@ class TriwulanController extends Controller
     }
 
     /**
-     * Get periode by triwulan ID
+     * Ambil data periode berdasarkan ID triwulan dan tahun
      */
-    private function getPeriodeByTriwulan(int $tid)
+    private function getPeriodeByTriwulan(int $tid, int $tahun)
     {
-        $triwulanNames = [
-            1 => 'Triwulan 1',
-            2 => 'Triwulan 2',
-            3 => 'Triwulan 3',
-            4 => 'Triwulan 4'
-        ];
-
-        if (!isset($triwulanNames[$tid])) {
-            return null;
-        }
-
-        return Periode::whereHas('tahap', function($query) use ($triwulanNames, $tid) {
-            $query->where('tahap', 'like', '%' . $triwulanNames[$tid] . '%');
-        })->first();
+        $periodeTahun = PeriodeTahun::where('tahun', $tahun)->first();
+        if (!$periodeTahun) return null;
+        return Periode::where('tahun_id', $periodeTahun->id)
+            ->whereHas('tahap', function($query) use ($tid) {
+                $query->where('id', $tid);
+            })
+            ->first();
     }
 
     /**
-     * Get triwulan name by ID
+     * Ambil nama triwulan berdasarkan ID
      */
     private function getTriwulanName(int $tid)
     {
@@ -540,7 +549,7 @@ class TriwulanController extends Controller
     }
 
     /**
-     * Get view name based on triwulan ID
+     * Ambil nama view berdasarkan ID triwulan
      */
     private function getViewName(int $tid)
     {
@@ -555,7 +564,7 @@ class TriwulanController extends Controller
     }
 
     /**
-     * Get detail view name based on triwulan ID
+     * Ambil nama view detail berdasarkan ID triwulan
      */
     private function getDetailViewName(int $tid)
     {
@@ -570,42 +579,42 @@ class TriwulanController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan form untuk membuat resource baru.
      */
-    public function create()
-    {
-        //
-    }
+    // public function create()
+    // {
+    //     //
+    // }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+    // /**
+    //  * Simpan resource baru ke database.
+    //  */
+    // public function store(Request $request)
+    // {
+    //     //
+    // }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+    // /**
+    //  * Menampilkan form untuk mengedit resource yang dipilih.
+    //  */
+    // public function edit(string $id)
+    // {
+    //     //
+    // }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+    // /**
+    //  * Update resource yang dipilih di database.
+    //  */
+    // public function update(Request $request, string $id)
+    // {
+    //     //
+    // }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+    // /**
+    //  * Hapus resource yang dipilih dari database.
+    //  */
+    // public function destroy(string $id)
+    // {
+    //     //
+    // }
 }

@@ -25,8 +25,9 @@ class TriwulanController extends Controller
     /**
      * Menampilkan daftar resource.
      */
-    public function index(int $tid, int $tahun = null)
+    public function index(int $tid, ?int $tahun = null)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $tahun = $tahun ?? date('Y');
 
@@ -43,7 +44,7 @@ class TriwulanController extends Controller
 
         // Mendapatkan periode berdasarkan triwulan dan tahun
         $periode = Periode::where('tahun_id', $periodeTahun->id)
-            ->whereHas('tahap', function($query) use ($tid) {
+            ->whereHas('tahap', function ($query) use ($tid) {
                 $query->where('id', $tid);
             })
             ->first();
@@ -65,7 +66,7 @@ class TriwulanController extends Controller
 
             $users = User::whereIn('id', $skpdUserIds)
                 ->role('perangkat_daerah')
-                ->with(['skpd', 'monitoring' => function($query) use ($periode) {
+                ->with(['skpd', 'monitoring' => function ($query) use ($periode) {
                     $query->where('periode_id', $periode->id);
                 }])
                 ->paginate(1000);
@@ -81,7 +82,7 @@ class TriwulanController extends Controller
 
         // Filter data untuk admin
         $users = User::role('perangkat_daerah')
-            ->with(['skpd', 'monitoring' => function($query) use ($periode) {
+            ->with(['skpd', 'monitoring' => function ($query) use ($periode) {
                 $query->where('periode_id', $periode->id);
             }])
             ->paginate(1000);
@@ -98,7 +99,7 @@ class TriwulanController extends Controller
     /**
      * Menampilkan resource yang dipilih.
      */
-    public function show(int $tid, string $id, int $tahun = null)
+    public function show(int $tid, string $id, ?int $tahun = null)
     {
         $tahun = $tahun ?? date('Y');
 
@@ -117,11 +118,11 @@ class TriwulanController extends Controller
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
         $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
-            ->with(['details' => function($query) {
+            ->with(['details' => function ($query) {
                 $query->select('id', 'id_nomenklatur', 'id_urusan');
             }])
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'nomor_kode' => $item->nomor_kode,
@@ -132,11 +133,11 @@ class TriwulanController extends Controller
             });
 
         $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
-            ->with(['details' => function($query) {
+            ->with(['details' => function ($query) {
                 $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
             }])
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'nomor_kode' => $item->nomor_kode,
@@ -147,11 +148,11 @@ class TriwulanController extends Controller
             });
 
         $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
-            ->with(['details' => function($query) {
+            ->with(['details' => function ($query) {
                 $query->select('id', 'id_nomenklatur', 'id_program');
             }])
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'nomor_kode' => $item->nomor_kode,
@@ -162,11 +163,11 @@ class TriwulanController extends Controller
             });
 
         $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
-            ->with(['details' => function($query) {
+            ->with(['details' => function ($query) {
                 $query->select('id', 'id_nomenklatur', 'id_kegiatan');
             }])
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'nomor_kode' => $item->nomor_kode,
@@ -201,7 +202,7 @@ class TriwulanController extends Controller
     /**
      * Menampilkan detail resource yang dipilih.
      */
-    public function showDetail(int $tid, $id, int $tahun = null)
+    public function showDetail(int $tid, $id, ?int $tahun = null)
     {
         $tahun = $tahun ?? date('Y');
         if (!in_array($tid, [1, 2, 3, 4])) {
@@ -214,7 +215,7 @@ class TriwulanController extends Controller
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',
             'skpd.skpdKepala.user.userDetail',
-            'skpd.skpdKepala' => function($query) {
+            'skpd.skpdKepala' => function ($query) {
                 $query->where('is_aktif', 1);
             },
         ])->findOrFail($id);
@@ -222,7 +223,7 @@ class TriwulanController extends Controller
             ->where('is_aktif', 1)
             ->with([
                 'kodeNomenklatur.details',
-                'monitoring' => function($query) use ($periode) {
+                'monitoring' => function ($query) use ($periode) {
                     $query->where('periode_id', $periode->id)
                         ->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode']);
                 }
@@ -230,45 +231,45 @@ class TriwulanController extends Controller
             ->get();
         $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
         $bidangUrusan = KodeNomenklatur::where('jenis_nomenklatur', 1)
-            ->whereHas('details', function($query) use ($urusanId) {
+            ->whereHas('details', function ($query) use ($urusanId) {
                 $query->where('id_urusan', $urusanId);
             })
             ->first();
 
         $bidangUrusanDeskripsi = '-';
         if ($bidangUrusan) {
-            $monitoring = \App\Models\Monitoring::whereHas('skpdTugas', function($query) use ($bidangUrusan) {
-                $query->whereHas('kodeNomenklatur', function($query) use ($bidangUrusan) {
+            $monitoring = \App\Models\Monitoring::whereHas('skpdTugas', function ($query) use ($bidangUrusan) {
+                $query->whereHas('kodeNomenklatur', function ($query) use ($bidangUrusan) {
                     $query->where('id', $bidangUrusan->id);
                 });
             })
-            ->select('deskripsi')
-            ->first();
+                ->select('deskripsi')
+                ->first();
 
             if ($monitoring && !empty($monitoring->deskripsi)) {
                 $bidangUrusanDeskripsi = $monitoring->deskripsi;
             }
         }
 
-        $bidangurusanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+        $bidangurusanTugas = $skpdTugas->filter(function ($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 1
                 && $item->kodeNomenklatur->details->first()
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
 
-        $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+        $programTugas = $skpdTugas->filter(function ($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
                 && $item->kodeNomenklatur->details->first()
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
 
-        $kegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+        $kegiatanTugas = $skpdTugas->filter(function ($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 3
                 && $item->kodeNomenklatur->details->first()
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
 
-        $subkegiatanTugas = $skpdTugas->filter(function($item) use ($urusanId) {
+        $subkegiatanTugas = $skpdTugas->filter(function ($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 4
                 && $item->kodeNomenklatur->details->first()
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
@@ -292,11 +293,11 @@ class TriwulanController extends Controller
 
         $monitorings = \App\Models\Monitoring::whereIn('skpd_tugas_id', $taskIds)
             ->where('tahun', $tahun)
-            ->with(['monitoringAnggaran' => function($query) use ($periode) {
-                $query->with(['monitoringTarget' => function($query) use ($periode) {
+            ->with(['monitoringAnggaran' => function ($query) use ($periode) {
+                $query->with(['monitoringTarget' => function ($query) use ($periode) {
                     $query->where('periode_id', $periode->id);
                     $query->with('periode');
-                }, 'monitoringRealisasi' => function($query) use ($periode) {
+                }, 'monitoringRealisasi' => function ($query) use ($periode) {
                     $query->where('periode_id', $periode->id);
                     $query->with('periode');
                 }]);
@@ -391,7 +392,7 @@ class TriwulanController extends Controller
     /**
      * Simpan data realisasi untuk subkegiatan
      */
-    public function saveRealisasi(Request $request, int $tid, int $tahun = null)
+    public function saveRealisasi(Request $request, int $tid, ?int $tahun = null)
     {
         $tahun = $tahun ?? date('Y');
 
@@ -422,7 +423,7 @@ class TriwulanController extends Controller
             ], 404);
         }
         $periode = Periode::where('tahun_id', $periodeTahun->id)
-            ->whereHas('tahap', function($query) use ($tid) {
+            ->whereHas('tahap', function ($query) use ($tid) {
                 $query->where('id', $tid);
             })
             ->first();
@@ -527,7 +528,7 @@ class TriwulanController extends Controller
         $periodeTahun = PeriodeTahun::where('tahun', $tahun)->first();
         if (!$periodeTahun) return null;
         return Periode::where('tahun_id', $periodeTahun->id)
-            ->whereHas('tahap', function($query) use ($tid) {
+            ->whereHas('tahap', function ($query) use ($tid) {
                 $query->where('id', $tid);
             })
             ->first();

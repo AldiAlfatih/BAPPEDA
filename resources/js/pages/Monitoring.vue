@@ -9,6 +9,7 @@ import TabelListSKPD from '@/components/data/TabelListSKPD.vue';
 // Or, if the file is named differently or in another folder, adjust accordingly:
 // import { TabelListSKPD } from '@/components/data/TabelListSkpd.vue';
 // import { TabelListSKPD } from '@/components/TabelListSKPD.vue';
+<<<<<<< HEAD
 import { 
   Plus, 
   Pencil, 
@@ -16,6 +17,15 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight, 
+=======
+import {
+  Plus,
+  Pencil,
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
   ArrowUpDown,
   FileText,
   Info,
@@ -30,9 +40,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const props = defineProps<{
   users: {
@@ -70,6 +77,7 @@ const breadcrumbs: BreadcrumbItem[] = [
           <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Perangkat Daerah</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Monitoring Perangkat Daerah</p>
         </div>
+<<<<<<< HEAD
         <!-- <Button 
           class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" 
           @click="goToCreatePage"
@@ -79,6 +87,8 @@ const breadcrumbs: BreadcrumbItem[] = [
           <span v-if="loadingCreate">Membuka...</span>
           <span v-else>Tambahkan PD</span>
         </Button> -->
+=======
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
       </div>
       <TabelListSKPD url_detail="monitoring.show" :users="users"></TabelListSKPD>
     </div>

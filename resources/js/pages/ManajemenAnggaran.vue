@@ -5,13 +5,13 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import TabelListSKPD from '@/components/data/TabelListSKPD.vue';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Pencil, 
-  Eye, 
-  Search, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  Plus,
+  Pencil,
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
   ArrowUpDown,
   FileText,
   Info,
@@ -70,8 +70,8 @@ function goToShowPage(id: number) {
           <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Manajemen Anggaran Perangkat Daerah</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Manajemen Anggaran Perangkat Daerah</p>
         </div>
-        <!-- <Button 
-          class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" 
+        <!-- <Button
+          class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105"
           @click="goToCreatePage"
           :disabled="loadingCreate"
         >
@@ -80,7 +80,14 @@ function goToShowPage(id: number) {
           <span v-else>Tambahkan PD</span>
         </Button> -->
       </div>
+<<<<<<< HEAD
       <TabelListSKPD url_detail="monitoring.show" :users="users"></TabelListSKPD>
     </div>
   </AppLayout>
 </template>
+=======
+      <TabelListSKPD url_detail="manajemenanggaran.show" :users="users"></TabelListSKPD>
+    </div>
+  </AppLayout>
+</template>
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18

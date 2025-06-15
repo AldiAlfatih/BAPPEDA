@@ -1,5 +1,6 @@
 <script setup lang="ts">
 
+<<<<<<< HEAD
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -16,6 +17,18 @@ import {
   FileText,
   Info,
   Building2,
+=======
+import { ref, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { Button } from '@/components/ui/button';
+import {
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  Info,
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
   User
 } from 'lucide-vue-next';
 import {
@@ -66,22 +79,36 @@ function getUserNip(user: any): string {
 // Filter dan Sorting
 const filteredData = computed(() => {
   let data = [...props.users.data];
+<<<<<<< HEAD
   
   // Filter berdasarkan pencarian
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     data = data.filter(item => 
       (item.name || '').toLowerCase().includes(query) || 
+=======
+
+  // Filter berdasarkan pencarian
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    data = data.filter(item =>
+      (item.name || '').toLowerCase().includes(query) ||
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
       (item.skpd?.nama_dinas || '').toLowerCase().includes(query) ||
       (item.skpd?.nama_operator || '').toLowerCase().includes(query) ||
       (item.skpd?.kode_organisasi || '').toLowerCase().includes(query)
     );
   }
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
   // Sorting
   data.sort((a, b) => {
     let aVal = getFieldValue(a, sortField.value);
     let bVal = getFieldValue(b, sortField.value);
+<<<<<<< HEAD
     
     // Handle null values
     if (aVal === null || aVal === undefined) aVal = '';
@@ -98,6 +125,24 @@ const filteredData = computed(() => {
     return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal;
   });
   
+=======
+
+    // Handle null values
+    if (aVal === null || aVal === undefined) aVal = '';
+    if (bVal === null || bVal === undefined) bVal = '';
+
+    // String comparison
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return sortDirection.value === 'asc'
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+
+    // Number comparison
+    return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal;
+  });
+
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
   return data;
 });
 
@@ -159,12 +204,21 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 <template>
     <div>
         <!-- Search dan filter -->
+<<<<<<< HEAD
       <div class="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
         <div class="relative w-full sm:w-96">
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input 
             v-model="searchQuery" 
             placeholder="Cari nama dinas, penanggung jawab, NIP, kode..." 
+=======
+      <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full sm:w-96">
+          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            v-model="searchQuery"
+            placeholder="Cari nama dinas, penanggung jawab, NIP, kode..."
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
             class="pl-10 pr-4 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
             @input="handleSearchChange"
           />
@@ -181,7 +235,11 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       </div>
 
       <!-- Main Card dengan Table -->
+<<<<<<< HEAD
       <Card class="shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl mb-6">
+=======
+      <Card class="shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl">
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
         <CardContent class="p-0">
           <div class="overflow-x-auto">
             <Table>
@@ -191,21 +249,33 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                   <TableHead class="cursor-pointer group" @click="toggleSort('nama_dinas')">
                     <div class="flex items-center gap-1 text-gray-600">
                       Nama Dinas
+<<<<<<< HEAD
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+=======
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                         :class="{'opacity-100': sortField === 'nama_dinas'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('nama_operator')">
                     <div class="flex items-center gap-1 text-gray-600">
                       Nama Penanggung Jawab
+<<<<<<< HEAD
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+=======
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                         :class="{'opacity-100': sortField === 'nama_operator'}" />
                     </div>
                   </TableHead>
                   <TableHead class="cursor-pointer group" @click="toggleSort('name')">
                     <div class="flex items-center gap-1 text-gray-600">
                       Nama Kepala Daerah
+<<<<<<< HEAD
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+=======
+                      <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                         :class="{'opacity-100': sortField === 'name'}" />
                     </div>
                   </TableHead>
@@ -243,12 +313,20 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                       <TableCell class="hidden lg:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
+<<<<<<< HEAD
                           <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
+=======
+                          <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                             @click.stop="goToEditPage(user.id)">
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button> -->
+<<<<<<< HEAD
                           <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white" 
+=======
+                          <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                             @click.stop="goToShowPage(user.id)">
                             <Eye class="w-4 h-4 mr-1" />
                             <span class="hidden sm:inline">Detail</span>
@@ -256,7 +334,11 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         </div>
                       </TableCell>
                     </TableRow>
+<<<<<<< HEAD
                     
+=======
+
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                     <!-- Detail ekspansi -->
                     <TableRow v-if="showDetailId === user.id" class="bg-blue-50/50 dark:bg-blue-900/10">
                       <TableCell :colspan="7" class="animate-fadeIn">
@@ -288,12 +370,20 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             </div>
                           </div>
                           <div class="pt-3 flex justify-end gap-2">
+<<<<<<< HEAD
                             <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white" 
+=======
+                            <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                               @click.stop="goToEditPage(user.id)">
                               <Pencil class="w-4 h-4 mr-2" />
                               Edit Data
                             </Button> -->
+<<<<<<< HEAD
                             <Button size="sm" class="bg-orange-500 hover:bg-blue-700 text-white" 
+=======
+                            <Button size="sm" class="bg-orange-500 hover:bg-blue-700 text-white"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
                               @click.stop="goToShowPage(user.id)">
                               <Eye class="w-4 h-4 mr-1" />
                               Lihat Detail Lengkap
@@ -319,6 +409,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       </Card>
 
       <!-- Pagination -->
+<<<<<<< HEAD
       <div v-if="totalPages > 1" class="flex justify-between items-center mt-6">
         <div class="text-sm text-gray-500">
           Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai 
@@ -329,6 +420,18 @@ function truncateText(text: string | null | undefined, length: number = 30): str
           <Button 
             variant="outline" 
             size="sm" 
+=======
+      <div v-if="totalPages > 1" class="flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+          Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai
+          {{ Math.min(currentPage * itemsPerPage, filteredData.length) }}
+          dari {{ filteredData.length }} data
+        </div>
+        <div class="flex gap-2 items-center">
+          <Button
+            variant="outline"
+            size="sm"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
             @click="currentPage = Math.max(1, currentPage - 1)"
             :disabled="currentPage === 1"
             class="flex items-center gap-1"
@@ -336,10 +439,17 @@ function truncateText(text: string | null | undefined, length: number = 30): str
             <ChevronLeft class="w-4 h-4" />
             <span class="hidden sm:inline">Sebelumnya</span>
           </Button>
+<<<<<<< HEAD
           
           <div class="hidden sm:flex gap-1">
             <Button 
               v-for="page in totalPages" 
+=======
+
+          <div class="hidden sm:flex gap-1">
+            <Button
+              v-for="page in totalPages"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
               :key="page"
               :variant="page === currentPage ? 'default' : 'outline'"
               size="sm"
@@ -349,6 +459,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
               {{ page }}
             </Button>
           </div>
+<<<<<<< HEAD
           
           <div class="sm:hidden">
             <span class="text-sm">{{ currentPage }} / {{ totalPages }}</span>
@@ -357,6 +468,16 @@ function truncateText(text: string | null | undefined, length: number = 30): str
           <Button 
             variant="outline" 
             size="sm" 
+=======
+
+          <div class="sm:hidden">
+            <span class="text-sm">{{ currentPage }} / {{ totalPages }}</span>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18
             @click="currentPage = Math.min(totalPages, currentPage + 1)"
             :disabled="currentPage === totalPages"
             class="flex items-center gap-1"
@@ -389,4 +510,8 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 .table-row-hover {
   transition: background-color 0.2s ease;
 }
+<<<<<<< HEAD
 </style>
+=======
+</style>
+>>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18

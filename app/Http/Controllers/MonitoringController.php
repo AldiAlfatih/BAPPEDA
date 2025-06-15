@@ -49,7 +49,7 @@ class MonitoringController extends Controller
             ]);
         }
 
-                $usersQuery = User::role('perangkat_daerah')
+            $usersQuery = User::role('perangkat_daerah')
             ->with(['skpd', 'userDetail']);
         
         $users = $usersQuery->paginate(1000);
@@ -377,7 +377,7 @@ class MonitoringController extends Controller
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'user' => [
                 'nip' => $skpdUser?->userDetail?->nip ?? '-',
-                'id' => $skpdUser?->id ?? $tugas->skpd_id, // Use user ID instead of skpd_id
+                'id' => $skpdUser?->id ?? $tugas->skpd_id,
                 'nama_skpd' => $tugas->skpd->nama_skpd ?? $tugas->skpd->nama_dinas,
                 'skpd_id' => $tugas->skpd_id // Keep skpd_id for other purposes
             ],

@@ -19,10 +19,8 @@ class RencanaAwalController extends Controller
 {
     public function show($id, Request $request)
     {
-        // Get the specified bidang urusan ID from the request (if provided)
         $requestedUrusanId = $request->input('urusan_id');
 
-        // Ambil tugas SKPD berdasarkan ID dengan relasi yang lengkap
         $tugas = SkpdTugas::with([
             'kodeNomenklatur.details',
             'skpd.skpdKepala.user.userDetail',
@@ -31,13 +29,11 @@ class RencanaAwalController extends Controller
             }
         ])->findOrFail($id);
 
-        // Get active periode
         $periodeAktif = Periode::where('is_aktif', 1)
             ->where('tahap', 'like', '%Rencana%')
             ->with(['tahap', 'tahun'])
             ->first();
 
-        // Ambil program, kegiatan, dan subkegiatan terkait dengan tugas SKPD
         $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
             ->where('is_aktif', 1)
             ->with([
@@ -57,10 +53,9 @@ class RencanaAwalController extends Controller
             ])
             ->get();
 
-        // Get all available urusan for this SKPD
         $availableUrusans = $skpdTugas
             ->filter(function($item) {
-                return $item->kodeNomenklatur->jenis_nomenklatur == 0 // Urusan
+                return $item->kodeNomenklatur->jenis_nomenklatur == 0
                     && $item->kodeNomenklatur->details->first();
             })
             ->pluck('kodeNomenklatur.details.0.id_urusan')
@@ -68,15 +63,12 @@ class RencanaAwalController extends Controller
             ->values()
             ->toArray();
 
-        // If no specific urusan requested, use the first available one
         $urusanId = $requestedUrusanId ?? ($availableUrusans[0] ?? null);
 
-        // If we still don't have a valid urusan ID, try to get it from the current task
         if (!$urusanId && $tugas->kodeNomenklatur->details->first()) {
             $urusanId = $tugas->kodeNomenklatur->details->first()->id_urusan;
         }
 
-        // Get bidang urusan data for the current urusan
         $bidangUrusan = KodeNomenklatur::where('jenis_nomenklatur', 1)
             ->whereHas('details', function($query) use ($urusanId) {
                 $query->where('id_urusan', $urusanId);
@@ -86,7 +78,6 @@ class RencanaAwalController extends Controller
             }])
             ->first();
 
-        // Filter program, kegiatan, and subkegiatan for the selected urusan
         $programTugas = $skpdTugas->filter(function($item) use ($urusanId) {
             return $item->kodeNomenklatur->jenis_nomenklatur == 2
                 && $item->kodeNomenklatur->details->first()
@@ -105,7 +96,6 @@ class RencanaAwalController extends Controller
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
 
-        // Get kepala SKPD
         $kepalaSkpd = '-';
         $kepala = $tugas->skpd->skpdKepala->first();
         if ($kepala) {
@@ -116,10 +106,8 @@ class RencanaAwalController extends Controller
             }
         }
 
-        // Get all sumber dana options
         $sumberDanaOptions = SumberAnggaran::all();
 
-        // Get the latest pagu data for each subkegiatan and each funding source
         $dataAnggaranTerakhir = [];
         foreach ($subkegiatanTugas as $subkegiatan) {
             $monitoring = $subkegiatan->monitoring->first();

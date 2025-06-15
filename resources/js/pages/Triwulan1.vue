@@ -55,11 +55,12 @@ const loadingCreate = ref(false);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Monitoring Triwulan 1', href: '/Monitoring' },
+  { title: 'Monitoring Triwulan 1', href: route('triwulan.index', { tid: 1 }) },
 ];
 
 // Filter dan Sorting
 const filteredData = computed(() => {
+  if (!props.users || !props.users.data) return [];
   let data = [...props.users.data];
 
   // Filter berdasarkan pencarian
@@ -144,7 +145,11 @@ function toggleSort(field: string) {
 // }
 
 function goToShowPage(id: number) {
-  router.visit(route('triwulan1.show', { id }));
+  router.visit(route('triwulan.show', { tid: 1, id }));
+}
+
+function ShowTugas(tugasId: number, userId: number) {
+  router.visit(route('triwulan.detail', { tid: 1, id: userId, taskId: tugasId }));
 }
 
 function toggleDetail(id: number) {
@@ -175,8 +180,8 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       <!-- Header dengan judul dan action -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Perangkat Daerah</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Monitoring Perangkat Daerah</p>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Triwulan 1</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data</p>
         </div>
         <!-- <Button
           class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105"

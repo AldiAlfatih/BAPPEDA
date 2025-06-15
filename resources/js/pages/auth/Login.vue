@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+import { onMounted } from 'vue';
 
 defineProps<{
     status?: string;
@@ -17,14 +18,35 @@ defineProps<{
 const form = useForm({
     email: '',
     password: '',
-    remember: false,
+    remember: false as boolean,
 });
 
 const submit = () => {
+    if (form.remember) {
+        localStorage.setItem('remembered_email', form.email);
+        localStorage.setItem('remembered_password', form.password);
+    } else {
+        localStorage.removeItem('remembered_email');
+        localStorage.removeItem('remembered_password');
+    }
+    
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
     });
 };
+
+// Check if we have remembered credentials when component mounts
+onMounted(() => {
+    // Try to get stored credentials from localStorage if remember was checked
+    const rememberedEmail = localStorage.getItem('remembered_email');
+    const rememberedPassword = localStorage.getItem('remembered_password');
+    
+    if (rememberedEmail && rememberedPassword) {
+        form.email = rememberedEmail;
+        form.password = rememberedPassword;
+        form.remember = true;
+    }
+});
 </script>
 
 <template>

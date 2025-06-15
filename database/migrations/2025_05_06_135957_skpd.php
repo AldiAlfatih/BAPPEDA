@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('skpd', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('nama_skpd');
-            $table->string('nama_operator');
-            $table->string('nama_dinas');
-            $table->string('no_dpa');
+            // $table->string('nama_operator');
+            // $table->string('nama_dinas');
+            // $table->string('no_dpa');
             $table->string('kode_organisasi');
-             $table->softDeletes(); 
+            $table->softDeletes(); 
             $table->timestamps();
         });
 
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('skpd_id')->constrained('skpd'); 
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
-            $table->integer('is_aktif');
+            // $table->integer('is_aktif');
              $table->softDeletes(); 
             $table->timestamps();
         });
@@ -43,8 +43,8 @@ return new class extends Migration
        Schema::create('tim_kerja', function (Blueprint $table) {
             $table->id();
             $table->foreignId('skpd_id')->constrained('skpd');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->integer('is_aktif');
+            $table->foreignId('operator_id')->constrained('users')->onDelete('cascade');
+            // $table->integer('is_aktif');
              $table->softDeletes(); 
             $table->timestamps();
         });

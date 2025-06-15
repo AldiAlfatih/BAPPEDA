@@ -12,6 +12,7 @@ use App\Models\Skpd;
 use App\Models\SkpdKepala;
 use App\Models\SkpdTugas;
 use App\Models\TimKerja;
+use App\Models\Monitoring;
 
 class User extends Authenticatable
 {
@@ -57,28 +58,30 @@ class User extends Authenticatable
     }
 
     /**
-     * Memastikan relasi ke profileSkpd bekerja dengan benar
+     * Relasi ke Skpd melalui table skpd_kepala
      */
-    public function Skpd()
+    public function skpd()
     {
-        return $this->hasOne(Skpd::class);
+        return $this->belongsToMany(Skpd::class, 'skpd_kepala', 'user_id', 'skpd_id');
     }
+    
     public function skpdKepala()
     {
         return $this->hasMany(SkpdKepala::class);
     }
+    
     public function skpdTugas()
     {
         return $this->hasMany(SkpdTugas::class);
     }
+    
     public function timKerja()
     {
-        return $this->hasMany(TimKerja::class);
+        return $this->hasMany(TimKerja::class, 'operator_id');
     }
-    public function skpds()
+
+    public function monitoring()
     {
-        return $this->belongsTo(Skpd::class);
+        return $this->hasMany(Monitoring::class);
     }
-
-
 }

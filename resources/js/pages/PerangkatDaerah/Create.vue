@@ -5,8 +5,8 @@ import { type BreadcrumbItem } from '@/types';
 import { computed, ref, watch } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Perangkat Daerah', href: '/perangkatdaerah' },
-  { title: 'Tambah PD', href: '/perangkatdaerah/create' },
+  { title: 'Perangkat Daerah', href: '/manajemen-tim/perangkatdaerah' },
+  { title: 'Tambah PD', href: '/manajemen-tim/perangkatdaerah/create' },
 ];
 
 const props = defineProps({
@@ -157,7 +157,7 @@ watch(() => route().current(), (newRoute) => {
                 <button 
                   type="button" 
                   class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                  @click="$inertia.visit('/perangkatdaerah')"
+                  @click="$inertia.visit('/manajemen-tim/perangkatdaerah')"
                   :disabled="isSubmitting"
                 >
                   Kembali

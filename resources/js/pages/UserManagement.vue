@@ -62,7 +62,7 @@ const deletingId = ref<number | null>(null);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'User Management', href: '/usermanagement' },
+  { title: 'User Management', href: '/manajemen-tim/usermanagement' },
 ];
 
 // Filter dan Sorting
@@ -127,13 +127,13 @@ function toggleSort(field: string) {
 // Navigation
 function goToCreatePage() {
   loadingCreate.value = true;
-  router.visit('/usermanagement/create', {
+  router.visit('/manajemen-tim/usermanagement/create', {
     onFinish: () => (loadingCreate.value = false),
   });
 }
 
 function goToEditPage(id: number) {
-  router.visit(`/usermanagement/${id}/edit`);
+  router.visit(`/manajemen-tim/usermanagement/${id}/edit`);
 }
 
 function deleteUser(id: number) {
@@ -143,7 +143,7 @@ function deleteUser(id: number) {
 function confirmDeleteAction() {
   if (confirmDelete.value) {
     deletingId.value = confirmDelete.value;
-    router.delete(`/usermanagement/${confirmDelete.value}`, {
+    router.delete(`/manajemen-tim/usermanagement/${confirmDelete.value}`, {
       onFinish: () => {
         deletingId.value = null;
         confirmDelete.value = null;

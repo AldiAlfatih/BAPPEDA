@@ -25,17 +25,17 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Manajemen Tim',
-        href: '/usermanagement',
+        href: '/manajemen-tim/usermanagement',
         icon: Users,
         guard: ['super_admin','admin'],
         children: [
         {
             title: 'User',
-            href: '/usermanagement',
+            href: '/manajemen-tim/usermanagement',
         },
         {
             title: 'Perangkat Daerah',
-            href: '/perangkatdaerah',
+            href: '/manajemen-tim/perangkatdaerah',
         },
         ],
     },
@@ -43,19 +43,19 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Perangkat Daerah',
-        href: '/perangkatdaerah',
+        href: '/manajemen-tim/perangkatdaerah',
         guard: ['perangkat_daerah'],
         icon: Users,
     },
 
     {
         title: 'Monitoring',
-        href: '/monitoring',
+        href: '/rencana-awal',
         icon: Monitor,
         children: [
         {
             title: 'Manajemen Periode',
-            href: '/periode',
+            href: '/monitoring/periode',
             guard: ['admin'],
         },
         {
@@ -64,11 +64,11 @@ const mainNavItems: NavItem[] = [
         },
         {
             title: 'Rencana Awal',
-            href: '/monitoring',
+            href: '/rencana-awal',
         },
         {
             title: 'Triwulan 1',
-            href: '/triwulan1',
+            href: route('triwulan.index', { tid: 1 }),
         },
         {
             title: 'Triwulan 2',

@@ -26,22 +26,22 @@ const goToLogin = () => {
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <img src="/images/icon-1.png" class="w-8 h-8"/>
-          <span class="text-lg">Sistem Inovasi Daerah</span>
+          <img src="/images/icon-1.png" class="w-12 h-12"/>
+          <span class="text-2xl">Sistem Inovasi Daerah</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <img src="/images/icon-2.png" class="w-8 h-8"/>
-          <span class="text-lg">Monitoring Pembangunan</span>
+          <img src="/images/icon-2.png" class="w-12 h-12"/>
+          <span class="text-2xl">Monitoring Pembangunan</span>
         </div>
         <div
           class="flex items-center space-x-4 cursor-pointer hover:underline"
           @click="goToLogin"
         >
-          <img src="/images/icon-3.png" class="w-8 h-8"/>
-          <span class="text-lg">Indikator Kinerja</span>
+          <img src="/images/icon-3.png" class="w-12 h-12"/>
+          <span class="text-2xl">Indikator Kinerja</span>
         </div>
       </div>
     </div>

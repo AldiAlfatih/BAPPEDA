@@ -55,7 +55,7 @@ const loadingCreate = ref(false);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Monitoring', href: '/Monitoring' },
+  { title: 'Monitoring', href: '/rencana-awal' },
 ];
 
 // Filter dan Sorting
@@ -134,7 +134,7 @@ function toggleSort(field: string) {
 // Navigation
 // function goToCreatePage() {
 //   loadingCreate.value = true;
-//   router.visit('/perangkatdaerah/create', {
+//   router.visit('/manajemen-tim/perangkatdaerah/create', {
 //     onFinish: () => (loadingCreate.value = false),
 //   });
 // }

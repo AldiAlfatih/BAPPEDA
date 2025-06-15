@@ -6,7 +6,7 @@ import { type BreadcrumbItem } from '@/types'
 import { Inertia, Method } from '@inertiajs/inertia'
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Periode', href: '/periode' },
+  { title: 'Periode', href: '/monitoring/periode' },
 ]
 
 const props = defineProps<{
@@ -37,7 +37,7 @@ function toggleStatus(id: number) {
 
   const newStatus = item.status === 1 ? 0 : 1
 
-  Inertia.put(`/periode/${id}/status`, { status: newStatus }, {
+  Inertia.put(`/monitoring/periode/${id}/status`, { status: newStatus }, {
     onSuccess: () => {
       item.status = newStatus
     },
@@ -52,7 +52,7 @@ function getStatusLabel(status: number) {
 }
 
 function editItem(id: number) {
-  Inertia.visit(`/periode/${id}/edit`)
+  Inertia.visit(`/monitoring/periode/${id}/edit`)
 }
 
 const searchQuery = ref('')
@@ -75,7 +75,7 @@ const years = computed(() => props.tahuns)
 
 function deleteItem(id: number) {
   if (confirm('Apakah Anda yakin ingin menghapus periode ini?')) {
-    Inertia.delete(`/periode/${id}`)
+    Inertia.delete(`/monitoring/periode/${id}`)
   }
 }
 
@@ -84,7 +84,7 @@ const isGenerating = ref(false)
 function generatePeriode() {
   if (confirm('Apakah Anda ingin membuat otomatis periode untuk tahun berjalan?')) {
     isGenerating.value = true
-    Inertia.visit('/periode/generate', {
+    Inertia.visit('/monitoring/periode/generate', {
       method: 'POST' as Method,
       preserveScroll: true,
       data: { tahun: yearFilter.value }, // Mengirimkan tahun yang dipilih

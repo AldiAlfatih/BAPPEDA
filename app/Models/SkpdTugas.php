@@ -14,7 +14,7 @@ class SkpdTugas extends Model
 
     protected $fillable = [
         'skpd_id',
-        'user_id',
+        // 'user_id',
         'kode_nomenklatur_id',
         'is_aktif',
         'is_finalized'
@@ -34,7 +34,7 @@ class SkpdTugas extends Model
     
     public function kodeNomenklatur()
     {
-        return $this->belongsTo(KodeNomenklatur::class);
+        return $this->belongsTo(KodeNomenklatur::class, 'kode_nomenklatur_id');
     }
     public function monitoring()
     {

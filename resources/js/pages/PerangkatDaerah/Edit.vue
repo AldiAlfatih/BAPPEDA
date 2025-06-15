@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Perangkat Daerah', href: '/perangkatdaerah' },
-  { title: 'Edit PD', href: '/perangkatdaerah/edit' },
+  { title: 'Perangkat Daerah', href: '/manajemen-tim/perangkatdaerah' },
+  { title: 'Edit PD', href: '/manajemen-tim/perangkatdaerah/edit' },
 ];
 
 const props = defineProps<{
@@ -49,7 +49,7 @@ const selectedOperatorName = computed(() => {
 function submitForm() {
   form.put(route('perangkatdaerah.update', props.skpd.id), {
     onSuccess: () => {
-      router.visit('/perangkatdaerah');
+      router.visit('/manajemen-tim/perangkatdaerah');
     },
     onError: (errors) => {
       console.error('Update failed:', errors);
@@ -58,7 +58,7 @@ function submitForm() {
 }
 
 function goBack() {
-  router.visit('/perangkatdaerah');
+  router.visit('/manajemen-tim/perangkatdaerah');
 }
 </script>
 

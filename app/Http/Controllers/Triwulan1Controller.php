@@ -33,8 +33,10 @@ class Triwulan1Controller extends Controller
                 ->with('skpd')
                 ->paginate(1000);
 
-            return Inertia::render('Triwulan1', [
+            return Inertia::render('Triwulan', [
                 'users' => $users,
+                // 'tid' => $tid,
+
             ]);
         }
         $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
@@ -43,9 +45,9 @@ class Triwulan1Controller extends Controller
         ]);
     }
 
-     public function show(string $id)
+     public function show(integer $tid, string $id)
    {
-       $user = User::with('skpd')->findOrFail($id);
+       $user = User::with(['skpd', 'userDetail'])->findOrFail($id);
 
        $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
@@ -125,7 +127,7 @@ class Triwulan1Controller extends Controller
        ]);
    }
 
-   public function showDetail($id)
+   public function showDetail(integer $tid, $id)
     {
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',

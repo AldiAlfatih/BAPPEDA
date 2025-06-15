@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Skpd;
 use App\Models\SkpdTugas;
 use App\Models\SkpdKepala;
+use App\Models\TimKerja;
 use App\Models\Kodenomenklatur;
 use App\Models\UserDetail;
 use Spatie\Permission\Models\Role;
@@ -120,24 +121,27 @@ class UserSeeder extends Seeder
 
             foreach ($pdGroup as $index => $pdUser) {
                 $pdIndex = array_search($pdUser, $pdUsers);
-                $namaDinas = $pdData[$pdIndex]['nama_dinas']; // ✅ perbaikan di sini
+                $namaDinas = $pdData[$pdIndex]['nama_dinas']; 
 
+                // Buat SKPD dengan struktur baru
                 $skpd = Skpd::create([
-                    'user_id' => $pdUser->id,
-                    'nama_operator' => $operatorUser->name,
-                    'nama_skpd' => $pdUser->name,
-                    'nama_dinas' => $pdData[$pdIndex]['nama_dinas'],
-                    'no_dpa' => 'DPA-' . str_pad($pdIndex + 1, 4, '0', STR_PAD_LEFT),
+                    'nama_skpd' => $namaDinas,
                     'kode_organisasi' => 'ORG-' . str_pad($pdIndex + 1, 3, '0', STR_PAD_LEFT),
                 ]);
 
+                // Buat SKPD Kepala
                 SkpdKepala::create([
                     'skpd_id' => $skpd->id,
                     'user_id' => $pdUser->id,
-                    'is_aktif' => true,
                 ]);
 
-                                // Khusus hanya untuk dua dinas berikut, isi tugasnya:
+                // Buat Tim Kerja dengan struktur baru
+                TimKerja::create([
+                    'skpd_id' => $skpd->id,
+                    'operator_id' => $operatorUser->id,
+                ]);
+
+                // Khusus hanya untuk dua dinas berikut, isi tugasnya:
                 if ($namaDinas === 'Dinas Pendidikan dan Kebudayaan') {
                     $relevantKode = Kodenomenklatur::whereIn('nomor_kode', [
                         '1', '1.01', '1.01.01', '1.01.01.2.01', '1.01.01.2.01.0001', '1.01.01.2.01.0002',
@@ -162,7 +166,6 @@ class UserSeeder extends Seeder
         }
     }
 
-
     private function createUserDetail(User $user, int $nipIndex)
     {
         UserDetail::create([
@@ -171,6 +174,6 @@ class UserSeeder extends Seeder
             'nip' => '1987' . str_pad($nipIndex, 6, '0', STR_PAD_LEFT),
             'no_hp' => '0812' . rand(10000000, 99999999),
             'jenis_kelamin' => rand(0, 1) ? 'Laki-laki' : 'Perempuan',
-]);
-}
+        ]);
+    }
 }

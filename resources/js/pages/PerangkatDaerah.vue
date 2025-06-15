@@ -43,12 +43,13 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
-      skpd: {
-        nama_dinas: string;
-        nama_operator: string;
-        no_dpa: string;
+      skpd: Array<{
+        nama_skpd: string;
         kode_organisasi: string;
-      } | null;
+        // tambahkan field lain jika perlu
+      }>;
+      operator_name?: string;
+      timKerja?: Array<any>;
     }>;
   };
 }>();
@@ -64,7 +65,7 @@ const loadingCreate = ref(false);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Perangkat Daerah', href: '/PerangkatDaerah' },
+  { title: 'Perangkat Daerah', href: '/manajemen-tim/perangkatdaerah' },
 ];
 
 // Filter dan Sorting
@@ -143,7 +144,7 @@ function toggleSort(field: string) {
 // Navigation
 function goToCreatePage() {
   loadingCreate.value = true;
-  router.visit('/perangkatdaerah/create', {
+  router.visit('/manajemen-tim/perangkatdaerah/create', {
     onFinish: () => (loadingCreate.value = false),
   });
 }
@@ -266,23 +267,23 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                       </TableCell>
                       <TableCell class="font-medium">
                         <div class="flex items-center gap-2 text-gray-500">
-                          <span>{{ truncateText(user.skpd?.nama_dinas) }}</span>
-                          <TooltipProvider v-if="user.skpd?.nama_dinas && user.skpd.nama_dinas.length > 30">
+                          <span>{{ truncateText(user.skpd?.[0]?.nama_skpd) }}</span>
+                          <TooltipProvider v-if="user.skpd?.[0]?.nama_skpd && user.skpd[0].nama_skpd.length > 30">
                             <Tooltip>
                               <TooltipTrigger>
                                 <Info class="w-4 h-4 text-blue-500" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <div class="max-w-md p-2">{{ user.skpd?.nama_dinas }}</div>
+                                <div class="max-w-md p-2">{{ user.skpd?.[0]?.nama_skpd }}</div>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                      <TableCell class="text-gray-500">{{ user.skpd?.nama_operator || '-' }}</TableCell>
+                      <TableCell class="text-gray-500">{{ user.operator_name || '-' }}</TableCell>
                       <TableCell class="text-gray-500">{{ user.name || '-' }}</TableCell>
                       <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
+                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.[0]?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
                           <Button size="sm" class="bg-green-900 hover:bg-green-700 text-white" 
@@ -316,7 +317,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Nama Dinas:</p>
-                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_dinas || '-' }}</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.[0]?.nama_skpd || '-' }}</p>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Nama Penanggung Jawab:</p>
@@ -328,7 +329,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Kode Organisasi:</p>
-                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.kode_organisasi || '-' }}</p>
+                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.[0]?.kode_organisasi || '-' }}</p>
                             </div>
                           </div>
                           <div class="pt-3 flex justify-end gap-2">

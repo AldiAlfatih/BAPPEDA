@@ -5,16 +5,23 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { Eye } from 'lucide-vue-next';
+import TabelTugasPD from '@/components/data/TabelTugasPD.vue';
 
 const props = defineProps<{
-    user: {
-        skpd: {
+    skpd: {
+        id: number;
+        nama_dinas: string;
+        nama_operator: string;
+        no_dpa: string;
+        kode_organisasi: string;
+        nama_skpd?: string;
+        user: {
             id: number;
-            nama_skpd: string;
-            nama_dinas: string;
-            no_dpa: string;
-            kode_organisasi: string;
-        } | null;
+            name: string;
+            user_detail?: {
+                nip?: string;
+            } | null;
+        };
     };
     urusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number }[];
     bidangUrusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number; urusan_id: number }[];
@@ -44,11 +51,6 @@ const flashMessage = computed(() => {
     return pageProps.flash || {};
 });
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Monitoring', href: '/Triwulan1' },
-    { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
-];
-
 const showFlash = ref({
     success: false,
     error: false,
@@ -70,35 +72,24 @@ onMounted(() => {
     }
 });
 
-const jenisNomenklaturOptions = [
-    { value: 0, label: 'Urusan' },
-    { value: 1, label: 'Bidang Urusan' },
-    { value: 2, label: 'Program' },
-    { value: 3, label: 'Kegiatan' },
-    { value: 4, label: 'Sub Kegiatan' },
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Monitoring', href: '/Triwulan1' },
+    { title: `Monitoring Detail ${props.skpd.nama_skpd}`, href: '' },
 ];
 
-// Filter hanya tugas dengan jenis nomenklatur = 0 (Urusan)
-const urusanTugas = computed(() => {
-    return props.skpdTugas.filter(tugas => tugas.kode_nomenklatur.jenis_nomenklatur === 0);
-});
+function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
+  if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
+    return user.user_detail.nip;
+  }
 
-const urusanOptions = computed(() => {
-    return props.urusanList
-        .filter(item => item.jenis_nomenklatur === 0)
-        .map(item => ({
-            label: `${item.nomor_kode} - ${item.nomenklatur}`,
-            value: item.id,
-        }));
-});
+  if (typeof user.nip === 'string' && user.nip.trim() !== '') {
+    return user.nip;
+  }
 
-function ShowTugas(tugasId: number) {
-    router.visit(`/triwulan1/Detail/${tugasId}`);
+  return '-';
 }
 
-function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: any } }) {
-    return `${task.kode_nomenklatur.nomor_kode} - ${task.kode_nomenklatur.nomenklatur}`;
-}
+
 </script>
 
 <template>
@@ -150,97 +141,42 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Perangkat Daerah</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-sm font-mono text-gray-500">{{ getUserNip(skpd.user) || 'Tidak tersedia' }}</p>
                     </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Penanggung Jawab</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_operator || 'Tidak tersedia' }}</p>
+                        <p class="text-sm font-mono text-gray-500">{{ skpd.nip_operator || '-' }}</p>
+                    </div>
+
+
                 </div>
             </div>
 
-            <!-- Tugas PD Table -->
-            <div class="mt-6 rounded-lg bg-white p-6 shadow-md">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full table-auto">
-                        <thead>
-                            <tr>
-                                <th class="border px-4 py-2 text-gray-600">Tugas PD</th>
-                                <th class="border px-4 py-2 w-32 text-center text-gray-600">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="!urusanTugas || urusanTugas.length === 0">
-                                <td colspan="2" class="border px-4 py-2 text-center text-gray-600">Tidak ada tugas yang tersedia</td>
-                            </tr>
-                            <tr v-for="tugas in urusanTugas" :key="tugas.id">
-                                <td class="border px-4 py-2 text-gray-500">{{ getTaskLabel(tugas) }}</td>
-                                <td class="border px-4 py-2 w-32">
-                                    <div class="flex justify-center">
-                                        <button
-                                            class="flex items-center gap-1 bg-orange-500 hover:bg-orange-700 text-white text-sm font-medium px-3 py-1 rounded"
-                                            @click="ShowTugas(tugas.id)"
-                                        >
-                                            <Eye class="w-4 h-4 mr-1" />
-                                            Detail  
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <!-- Tabel Tugas PD -->
+            <TabelTugasPD
+                :skpd="props.skpd"
+                :skpd-tugas="props.skpdTugas"
+                :urusan-list="props.urusanList"
+                :bidang-urusan-list="props.bidangUrusanList"
+                :program-list="props.programList"
+                :kegiatan-list="props.kegiatanList"
+                :subkegiatan-list="props.subkegiatanList"
+            ></TabelTugasPD>
 
-            <div class="mt-6 flex justify-end">
-                <Button
-                    type="button"
-                    variant="outline"
-                    class="rounded bg-gray-600 px-6 py-2 text-white hover:bg-gray-700"
-                    @click="router.visit('/triwulan1')"
-                >
-                    Kembali
-                </Button>
-            </div>
         </div>
     </AppLayout>
 </template>
-
-<style scoped>
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th,
-td {
-    padding: 12px;
-    text-align: left;
-    border: 1px solid #e2e8f0;
-}
-button {
-    cursor: pointer;
-}
-.notification {
-    transition: opacity 0.5s ease-in-out;
-}
-.notification-enter-active,
-.notification-leave-active {
-    transition: opacity 0.5s;
-}
-.notification-enter-from,
-.notification-leave-to {
-    opacity: 0;
-}
-</style>

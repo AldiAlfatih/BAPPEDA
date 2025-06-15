@@ -8,10 +8,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\KodeNomenklaturController;
 use App\Http\Controllers\PeriodeController;
-use App\Http\Controllers\Triwulan1Controller;
-use App\Http\Controllers\Triwulan2Controller;
-use App\Http\Controllers\Triwulan3Controller;
-use App\Http\Controllers\Triwulan4Controller;
+use App\Http\Controllers\TriwulanController;
 use App\Http\Controllers\SkpdTugasController;
 use App\Http\Controllers\PerangkatDaerahController;
 use App\Http\Controllers\RencanaAwalController;
@@ -32,41 +29,54 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Resource Routes for various controllers
     Route::resource('kodenomenklatur', KodeNomenklaturController::class)->names('kodenomenklatur');
     Route::resource('bantuan', BantuanController::class)->names('bantuan');
-    Route::resource('monitoring', MonitoringController::class)->names('monitoring');
-    Route::resource('usermanagement', UserManagementController::class)->names('usermanagement');
+    Route::resource('rencana-awal', MonitoringController::class)->names('monitoring');
+    Route::prefix('manajemen-tim')->group(function () {
+        Route::resource('usermanagement', UserManagementController::class)->names('usermanagement');
+        Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
+    });
+
+    Route::prefix('monitoring')->group(function () {
+        Route::resource('periode', PeriodeController::class)->names('periode');
+        Route::put('/periode/{id}/status', [PeriodeController::class, 'updateStatus']);
+        Route::post('/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');
+        Route::post('/periode/lanjutkanKeTahunBerikutnya', [PeriodeController::class, 'lanjutkanKeTahunBerikutnya'])->name('periode.lanjutkanKeTahunBerikutnya');
+        Route::get('/periode-belum-selesai', [PeriodeController::class, 'getPeriodeBelumSelesai'])->name('periode.belum-selesai');
+        Route::get('/periode-belum-selesai-data', [PeriodeController::class, 'getPeriodeBelumSelesaiData'])->name('periode.belum-selesai.data');
+        Route::get('/periode-list', [PeriodeController::class, 'getAllPeriodes'])->name('periode.list');
+        Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif'])->name('periode.aktif');
+    });
+    // Route::resource('periode', PeriodeController::class)->names('periode');
     Route::resource('panduan', PanduanController::class)->names('panduan');
-    Route::resource('periode', PeriodeController::class)->names('periode');
-    Route::resource('manajemenanggaran', ManajemenAnggaranController::class)->names('manajemenanggaran');
-    // Menambahkan rute khusus untuk menyimpan sumber dana
-    Route::post('/monitoring-anggaran-save', [ManajemenAnggaranController::class, 'saveSumberDana'])->name('monitoring-anggaran.save');
     
 
-    Route::resource('triwulan1', Triwulan1Controller::class)->names('triwulan1');
-    Route::get('triwulan1/Detail/{id}', [Triwulan1Controller::class, 'showDetail'])->name('triwulan1.showDetail');
-    Route::post('/triwulan1/save-realisasi', [Triwulan1Controller::class, 'saveRealisasi'])->name('triwulan1.save-realisasi');
-    Route::resource('triwulan2', Triwulan2Controller::class)->names('triwulan2');
-    Route::get('triwulan2/Detail/{id}', [Triwulan2Controller::class, 'showDetail'])->name('triwulan2.showDetail');
-    Route::post('/triwulan2/save-realisasi', [Triwulan2Controller::class, 'saveRealisasi'])->name('triwulan2.save-realisasi');
-    Route::resource('triwulan3', Triwulan3Controller::class)->names('triwulan3');
-    Route::get('triwulan3/Detail/{id}', [Triwulan3Controller::class, 'showDetail'])->name('triwulan3.showDetail');
-    Route::post('/triwulan3/save-realisasi', [Triwulan3Controller::class, 'saveRealisasi'])->name('triwulan3.save-realisasi');
-    Route::resource('triwulan4', Triwulan4Controller::class)->names('triwulan4');
-    Route::get('triwulan4/Detail/{id}', [Triwulan4Controller::class, 'showDetail'])->name('triwulan4.showDetail');
-    Route::post('/triwulan4/save-realisasi', [Triwulan4Controller::class, 'saveRealisasi'])->name('triwulan4.save-realisasi');
+    // Menambahkan rute khusus untuk menyimpan sumber dana
+    Route::post('/rencana-awal-anggaran-save', [ManajemenAnggaranController::class, 'saveSumberDana'])->name('monitoring-anggaran.save');
+    
+    Route::prefix('triwulan')->group(function () {
+        Route::get('/{tid}', [TriwulanController::class, 'index'])->name('triwulan.index');
+        Route::get('/{tid}/{id}', [TriwulanController::class, 'show'])->name('triwulan.show');
+        Route::get('/{tid}/{id}/detail/{taskId}', [TriwulanController::class, 'showDetail'])->name('triwulan.detail');
+        Route::post('/{tid}/save-realisasi', [TriwulanController::class, 'saveRealisasi'])->name('triwulan.save-realisasi');
+        Route::get('/{tid}/{id}/monitoring-target', [TriwulanController::class, 'showMonitoringTarget'])->name('triwulan.monitoring-target');
+        Route::get('/{tid}/{id}/perbandingan/{periode?}', [TriwulanController::class, 'showPerbandingan'])->name('triwulan.perbandingan');
+    });
+
+
     Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
-    Route::resource('perangkatdaerah', PerangkatDaerahController::class)->names('perangkatdaerah');
+    Route::resource('manajemenanggaran', ManajemenAnggaranController::class)->names('manajemenanggaran');
+    
 
-    // Route::get('/usermanagement/{user}/edit', [UserManagementController::class, 'edit'])->name('usermanagement.edit');
-    // Route::put('/usermanagement/{user}', [UserManagementController::class, 'update'])->name('usermanagement.update');
+    // Route::get('/manajemen-tim/usermanagement/{user}/edit', [UserManagementController::class, 'edit'])->name('usermanagement.edit');
+    // Route::put('/manajemen-tim/usermanagement/{user}', [UserManagementController::class, 'update'])->name('usermanagement.update');
 
 
-    Route::put('/periode/{id}/status', [PeriodeController::class, 'updateStatus']);
-    Route::post('/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');
-    Route::post('/periode/lanjutkanKeTahunBerikutnya', [PeriodeController::class, 'lanjutkanKeTahunBerikutnya'])->name('periode.lanjutkanKeTahunBerikutnya');
-    Route::get('/periode-belum-selesai', [PeriodeController::class, 'getPeriodeBelumSelesai'])->name('periode.belum-selesai');
-    Route::get('/periode-belum-selesai-data', [PeriodeController::class, 'getPeriodeBelumSelesaiData'])->name('periode.belum-selesai.data');
-    Route::get('/periode-list', [PeriodeController::class, 'getAllPeriodes'])->name('periode.list');
-    Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif'])->name('periode.aktif');
+    // Route::put('/monitoring/periode/{id}/status', [PeriodeController::class, 'updateStatus']);
+    // Route::post('/monitoring/periode/generate', [PeriodeController::class, 'generate'])->name('periode.generate');
+    // Route::post('/monitoring/periode/lanjutkanKeTahunBerikutnya', [PeriodeController::class, 'lanjutkanKeTahunBerikutnya'])->name('periode.lanjutkanKeTahunBerikutnya');
+    // Route::get('/monitoring/periode-belum-selesai', [PeriodeController::class, 'getPeriodeBelumSelesai'])->name('periode.belum-selesai');
+    // Route::get('/monitoring/periode-belum-selesai-data', [PeriodeController::class, 'getPeriodeBelumSelesaiData'])->name('periode.belum-selesai.data');
+    // Route::get('/monitoring/periode-list', [PeriodeController::class, 'getAllPeriodes'])->name('periode.list');
+    // Route::get('/monitoring/periode-aktif', [PeriodeController::class, 'getPeriodeAktif'])->name('periode.aktif');
 
     // Special routes for chat functionality in Bantuan
     Route::get('/bantuan/{bantuan}/chat', [BantuanController::class, 'chatForm'])->name('bantuan.chat');
@@ -75,9 +85,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bantuan/update-status/{id}', [BantuanController::class, 'updateStatusToDiproses'])->name('bantuan.updateStatusToDiproses');
 
 
-    Route::get('/monitoring/user/{id}', [MonitoringController::class, 'showUserMonitoring']);
-    Route::get('/monitoring/tugas/{id}', [MonitoringController::class, 'showTugas']);
-    Route::get('/monitoring/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('monitoring.rencanaawal');
+    Route::get('/rencana-awal/user/{id}', [MonitoringController::class, 'showUserMonitoring']);
+    Route::get('/rencana-awal/tugas/{id}', [MonitoringController::class, 'showTugas']);
+    Route::get('/rencana-awal/rencanaawal/{id}', [MonitoringController::class, 'showRencanaAwal'])->name('monitoring.rencanaawal');
     Route::post('/rencanaawal', [MonitoringController::class, 'saveMonitoringData'])->name('monitoring.save');
     // Rute dipindahkan di atas bersama dengan resource controller untuk menghindari konflik
 
@@ -87,10 +97,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rencanaawal/finalize-row', [RencanaAwalController::class, 'finalizeRow'])->name('rencanaawal.finalize-row');
     Route::post('/rencanaawal/save-target', [RencanaAwalController::class, 'saveTarget'])->name('rencanaawal.save-target');
 
-    // Tambahkan di dalam middleware auth, misalnya sebelum Route::resource lainnya
-// di routes/web.php
-Route::get('/triwulan1/{id}/monitoring-target', [Triwulan1Controller::class, 'showMonitoringTarget'])->name('triwulan1.monitoring-target');
-Route::get('/triwulan1/{id}/perbandingan/{periode?}', [Triwulan1Controller::class, 'showPerbandingan'])->name('triwulan1.perbandingan');
+
 
 
 

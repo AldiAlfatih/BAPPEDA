@@ -272,7 +272,7 @@ const saveItem = (item: AnggaranItem) => {
   };
 
   // Gunakan Inertia router untuk mengirim data ke server
-  router.post('/monitoring-anggaran-save', dataToSave, {
+  router.post('/rencana-awal-anggaran-save', dataToSave, {
     onSuccess: () => {
       alert(`Data untuk kode ${item.kode} dengan total Rp ${formatCurrency(total)} berhasil disimpan!`);
     },

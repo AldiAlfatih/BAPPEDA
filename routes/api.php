@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
 // Rute untuk mendapatkan periode aktif
-// Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif']);
+// Route::get('/monitoring/periode-aktif', [PeriodeController::class, 'getPeriodeAktif']);
 
 // Routes untuk Nomenklatur (CRUD)
 // Route::middleware(['auth:sanctum'])->group(function () {

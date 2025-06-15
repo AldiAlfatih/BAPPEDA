@@ -51,7 +51,7 @@ class HandleInertiaRequests extends Middleware
                         'email' => $request->user()->email,
                         'role' => $request->user()->getRoleNames()->first(),
                         'nip' => optional($request->user()->userDetail)->nip,
-                        'dinas' => optional($request->user()->skpd)->nama_dinas,
+                        'dinas' => $request->user()->skpd->first() ? $request->user()->skpd->first()->nama_skpd : null,
                     ]
                     : null,
             ],

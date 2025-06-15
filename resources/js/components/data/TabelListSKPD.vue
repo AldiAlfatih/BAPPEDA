@@ -159,7 +159,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 <template>
     <div>
         <!-- Search dan filter -->
-      <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div class="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
         <div class="relative w-full sm:w-96">
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input 
@@ -181,7 +181,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       </div>
 
       <!-- Main Card dengan Table -->
-      <Card class="shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl">
+      <Card class="shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl mb-6">
         <CardContent class="p-0">
           <div class="overflow-x-auto">
             <Table>
@@ -319,7 +319,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       </Card>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex justify-between items-center">
+      <div v-if="totalPages > 1" class="flex justify-between items-center mt-6">
         <div class="text-sm text-gray-500">
           Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai 
           {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 

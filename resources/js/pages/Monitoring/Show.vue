@@ -50,7 +50,7 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Monitoring', href: '/monitoring' },
+    { title: 'Monitoring', href: '/rencana-awal' },
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
@@ -115,7 +115,7 @@ const urusanOptions = computed(() => {
 });
 
 function ShowTugas(tugasId: number) {
-    router.visit(`/monitoring/rencanaawal/${tugasId}`);
+    router.visit(`/rencana-awal/rencanaawal/${tugasId}`);
 }
 
 function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: any } }) {
@@ -228,17 +228,6 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <div class="mt-6 flex justify-end">
-                <Button
-                    type="button"
-                    variant="outline"
-                    class="rounded bg-gray-600 px-6 py-2 text-white hover:bg-gray-700"
-                    @click="router.visit('/monitoring')"
-                >
-                    Kembali
-                </Button>
             </div>
         </div>
     </AppLayout>

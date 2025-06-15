@@ -57,9 +57,9 @@ function submit() {
   isSubmitting.value = true;
 
   // Use PUT method for update
-  form.put(`/usermanagement/${props.user.id}`, {
+  form.put(`/manajemen-tim/usermanagement/${props.user.id}`, {
     onSuccess: () => {
-      router.visit('/usermanagement');
+      router.visit('/manajemen-tim/usermanagement');
     },
     onError: () => {
       isSubmitting.value = false;
@@ -71,12 +71,12 @@ function submit() {
 }
 
 function goBack() {
-  router.visit('/usermanagement');
+  router.visit('/manajemen-tim/usermanagement');
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'User Management', href: '/usermanagement' },
-  { title: 'Edit User', href: `/usermanagement/${props.user.id}/edit` },
+  { title: 'User Management', href: '/manajemen-tim/usermanagement' },
+  { title: 'Edit User', href: `/manajemen-tim/usermanagement/${props.user.id}/edit` },
 ];
 
 </script>

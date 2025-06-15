@@ -5,7 +5,7 @@ import { Head, useForm } from '@inertiajs/vue3'
 import { type BreadcrumbItem } from '@/types'
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Periode', href: '/periode' },
+  { title: 'Periode', href: '/monitoring/periode' },
 ]
 
 const props = defineProps<{
@@ -66,7 +66,7 @@ function toggleStatus(id: number) {
   const newStatus = item.status === 1 ? 0 : 1
   statusForm.status = newStatus
 
-  statusForm.put(`/periode/${id}/status`, {
+  statusForm.put(`/monitoring/periode/${id}/status`, {
     preserveScroll: true,
     onSuccess: () => {
       item.status = newStatus
@@ -106,7 +106,7 @@ function markAsSelesai(id: number) {
   if (confirm('Apakah Anda yakin ingin menandai periode ini sebagai selesai?')) {
     statusForm.status = 2
 
-    statusForm.put(`/periode/${id}/status`, {
+    statusForm.put(`/monitoring/periode/${id}/status`, {
       preserveScroll: true,
       onSuccess: () => {
         item.status = 2
@@ -123,7 +123,7 @@ const allSelesai = computed(() => {
 })
 
 function editItem(id: number) {
-  window.location.href = `/periode/${id}/edit`
+  window.location.href = `/monitoring/periode/${id}/edit`
 }
 
 const searchQuery = ref('')
@@ -146,7 +146,7 @@ const years = computed(() => props.tahuns)
 
 // function deleteItem(id: number) {
 //   if (confirm('Apakah Anda yakin ingin menghapus periode ini?')) {
-//     Inertia.delete(`/periode/${id}`)
+//     Inertia.delete(`/monitoring/periode/${id}`)
 //   }
 // }
 
@@ -163,7 +163,7 @@ function generatePeriode() {
       tahun: yearFilter.value
     })
 
-    form.post('/periode/generate', {
+    form.post('/monitoring/periode/generate', {
       preserveScroll: true,
       onSuccess: () => {
         window.location.reload()
@@ -182,7 +182,7 @@ function handleLanjutTahun() {
   if (confirm('Lanjutkan ke tahun berikutnya dan buat periode baru?')) {
     const form = useForm({})
 
-    form.post('/periode/lanjutkanKeTahunBerikutnya', {
+    form.post('/monitoring/periode/lanjutkanKeTahunBerikutnya', {
       preserveScroll: true,
       onSuccess: (page) => {
         const newYear = page.props.newYear as string | undefined;

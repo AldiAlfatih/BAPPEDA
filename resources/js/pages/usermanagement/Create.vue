@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'User Management', href: '/usermanagement' },
-  { title: 'Tambah User', href: '/usermanagement/create' },
+  { title: 'User Management', href: '/manajemen-tim/usermanagement' },
+  { title: 'Tambah User', href: '/manajemen-tim/usermanagement/create' },
 ];
 
 // form binding
@@ -199,7 +199,7 @@ function submit() {
               <button 
                 type="button" 
                 class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                @click="$inertia.visit('/usermanagement')"
+                @click="router.visit('/manajemen-tim/usermanagement')"
               >
                 Kembali
               </button>

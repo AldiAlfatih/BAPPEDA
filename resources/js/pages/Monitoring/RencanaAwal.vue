@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type User, type ProgramData } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 
 interface Target {
@@ -128,8 +128,8 @@ const successRow = ref<string | null>(null);
 const errorRow = ref<string | null>(null);
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
-    { title: 'Monitoring', href: '/monitoring' },
-    { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/monitoring/${props.user?.id}` },
+    { title: 'Monitoring', href: '/rencana-awal' },
+    { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/rencana-awal/${props.user?.id}` },
     { title: 'Rencana Awal PD', href: '/rencanaawal' },
 ]);
 
@@ -346,12 +346,12 @@ const handlePeriodeChange = (event: Event) => {
     
     // Reload data with the new period
     if (props.tugas?.id) {
-      router.visit(`/monitoring/rencanaawal/${props.tugas.id}?periode_id=${newPeriodeId || ''}`, {
+      router.visit(`/rencana-awal/rencanaawal/${props.tugas.id}?periode_id=${newPeriodeId || ''}`, {
         preserveState: true,
         only: ['dataAnggaranTerakhir', 'subkegiatanTugas']
       });
     } else if (props.user?.id) {
-      router.visit(`/monitoring/${props.user.id}?periode_id=${newPeriodeId || ''}`, {
+      router.visit(`/rencana-awal/${props.user.id}?periode_id=${newPeriodeId || ''}`, {
         preserveState: true,
         only: ['dataAnggaranTerakhir', 'subkegiatanTugas']
       });
@@ -1066,6 +1066,18 @@ function normalizeKey(name: string): string {
     return key;
 }
 
+function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
+  if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
+    return user.user_detail.nip;
+  }
+
+  if (typeof user.nip === 'string' && user.nip.trim() !== '') {
+    return user.nip;
+  }
+
+  return '-';
+}
+
 // Fungsi hapus target
 async function deleteTargets(subKegiatan: any) {
   loadingRow.value = subKegiatan.id;
@@ -1163,7 +1175,7 @@ async function deleteTargets(subKegiatan: any) {
 
 // Function to handle navigation
 function goToMonitoringDetail() {
-    router.visit(`/monitoring/${props.user?.id}`);
+    router.visit(`/rencana-awal/${props.user?.id}`);
 }
 
 function goToCreate() {
@@ -1176,12 +1188,12 @@ function refreshData() {
   const currentPeriodeId = selectedPeriodeId.value;
   
   if (props.tugas?.id) {
-    router.visit(`/monitoring/rencanaawal/${props.tugas.id}?periode_id=${currentPeriodeId || ''}`, {
+    router.visit(`/rencana-awal/rencanaawal/${props.tugas.id}?periode_id=${currentPeriodeId || ''}`, {
       preserveState: false, // Changed to false to force a full refresh
       only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas']
     });
   } else if (props.user?.id) {
-    router.visit(`/monitoring/${props.user.id}?periode_id=${currentPeriodeId || ''}`, {
+    router.visit(`/rencana-awal/${props.user.id}?periode_id=${currentPeriodeId || ''}`, {
       preserveState: false, // Changed to false to force a full refresh
       only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas']
     });
@@ -1266,24 +1278,33 @@ watch([
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">KODE/URUSAN PEMERINTAHAN</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.tugas?.kode_nomenklatur.nomor_kode }} - {{ props.tugas?.kode_nomenklatur.nomenklatur }}</p>
-                    </div>
 
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.tugas?.skpd.nama_dinas || 'Tidak tersedia' }}</p>
-                    </div>
+                  <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                      <h3 class="text-sm font-medium text-gray-500 mb-2">KODE/URUSAN PEMERINTAHAN:</h3>
+                      <p class="text-lg font-semibold text-gray-500">{{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}</p>
+                  </div>
 
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.tugas?.skpd.kode_organisasi || 'Tidak tersedia' }}</p>
-                    </div>
+                  <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                      <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
+                      <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.nama_dinas || 'Tidak tersedia' }}</p>
+                  </div>
 
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+
+                  <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                      <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
+                      <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd.kode_organisasi || 'Tidak tersedia' }}</p>
+                  </div>
+
+                  <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.kepalaSkpd ?? props.tugas?.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-sm font-mono text-gray-500">{{ getUserNip(user) || 'Tidak tersedia' }}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Penanggung Jawab</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ tugas.skpd?.nama_operator || 'Tidak tersedia' }}</p>
+                        <p class="text-sm font-mono text-gray-500">{{ tugas.skpd?.nip_operator || '-' }}</p>
                     </div>
                 </div>
             </div>

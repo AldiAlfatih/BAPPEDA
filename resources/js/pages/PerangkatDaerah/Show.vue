@@ -10,12 +10,19 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     user: {
-        skpd: {
+        id: number;
+        name: string;
+    };
+    skpd: {
+        id: number;
+        nama_skpd: string;
+        nama_dinas: string;
+        no_dpa: string;
+        kode_organisasi: string;
+        kepala_skpd: {
             id: number;
-            nama_skpd: string;
-            nama_dinas: string;
-            no_dpa: string;
-            kode_organisasi: string;
+            name: string;
+            nip: string;
         } | null;
     };
     urusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number }[];
@@ -48,8 +55,8 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Perangkat Daerah', href: '/perangkatdaerah' },
-    { title: `Detail ${props.user.skpd?.nama_skpd}`, href: '' },
+    { title: 'Perangkat Daerah', href: '/manajemen-tim/perangkatdaerah' },
+    { title: `Detail ${props.skpd.nama_skpd}`, href: '' },
 ];
 
 // Modal state
@@ -62,6 +69,7 @@ const kegiatan = ref<number | null>(null);
 const subkegiatan = ref<number | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+let selectedIds: number[] = [];
 
 // Show flash message system
 const showFlash = ref({
@@ -356,7 +364,7 @@ function saveTugas() {
         selectedIds.push(subkegiatan.value);
     }
 
-    if (selectedIds.length === 0 || !props.user.skpd?.id) {
+    if (selectedIds.length === 0 || !props.skpd?.id) {
         error.value = 'Silakan pilih nomenklatur dengan lengkap';
         return;
     }
@@ -366,7 +374,7 @@ function saveTugas() {
     router.post(
         '/skpdtugas',
         {
-            skpd_id: props.user.skpd.id,
+            skpd_id: props.skpd.id,
             nomenklatur_ids: selectedIds,
             is_aktif: 1,
         },
@@ -441,6 +449,32 @@ const pageNumbers = computed(() => {
     
     return pages;
 });
+
+// Function in the methods section
+async function handleSubmit() {
+    if (selectedIds.length === 0 || !props.skpd.id) {
+        error.value = 'Pilih minimal satu item';
+        return;
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+        await router.post('/manajemen-tim/perangkatdaerah/tugas', {
+            skpd_id: props.skpd.id,
+            tugas_ids: selectedIds,
+            jenis_nomenklatur: jenisNomenklatur.value,
+        });
+        
+        isModalOpen.value = false;
+        selectedIds = [];
+    } catch (e) {
+        error.value = 'Terjadi kesalahan. Silakan coba lagi.';
+    } finally {
+        loading.value = false;
+    }
+}
 </script>
 
 <style scoped>
@@ -558,22 +592,22 @@ button {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ props.skpd.nama_skpd || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA / NIP</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kepala_skpd?.nip || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kepala_skpd?.name || 'Tidak tersedia' }}</p>
                     </div>
                 </div>
             </div>

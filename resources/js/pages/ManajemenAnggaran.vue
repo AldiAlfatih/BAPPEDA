@@ -80,14 +80,7 @@ function goToShowPage(id: number) {
           <span v-else>Tambahkan PD</span>
         </Button> -->
       </div>
-<<<<<<< HEAD
       <TabelListSKPD url_detail="monitoring.show" :users="users"></TabelListSKPD>
     </div>
   </AppLayout>
 </template>
-=======
-      <TabelListSKPD url_detail="manajemenanggaran.show" :users="users"></TabelListSKPD>
-    </div>
-  </AppLayout>
-</template>
->>>>>>> 6b3722e955bf271a0ef21b9c0dd0e250eb3afe18

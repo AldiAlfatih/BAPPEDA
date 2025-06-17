@@ -133,12 +133,14 @@ class UserSeeder extends Seeder
                 SkpdKepala::create([
                     'skpd_id' => $skpd->id,
                     'user_id' => $pdUser->id,
+                    'is_aktif' => true,
                 ]);
 
                 // Buat Tim Kerja dengan struktur baru
                 TimKerja::create([
                     'skpd_id' => $skpd->id,
                     'operator_id' => $operatorUser->id,
+                    'is_aktif' => true,
                 ]);
 
                 // Khusus hanya untuk dua dinas berikut, isi tugasnya:

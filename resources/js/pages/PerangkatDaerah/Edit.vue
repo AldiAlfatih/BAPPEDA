@@ -31,7 +31,6 @@ const props = defineProps<{
 const form = useForm({
   user_id: props.skpd.user_id,
   operator_id: props.current_operator_id || '',
-  nama_dinas: props.skpd.nama_dinas,
   no_dpa: props.skpd.no_dpa,
   kode_organisasi: props.skpd.kode_organisasi,
 });
@@ -71,11 +70,11 @@ function goBack() {
           
           <form @submit.prevent="submitForm" class="space-y-6">
             <div class="grid grid-cols-1 gap-6">
-              
+
               <!-- Kepala SKPD Selection -->
               <div class="space-y-2">
-                <Label for="user_id">Kepala SKPD <span class="text-red-500">*</span></Label>
-                <Select v-model="form.user_id" required>
+                <Label for="user_id">Kepala SKPD <span class="text-red-500"></span></Label>
+                <Select v-model="form.user_id" >
                   <SelectTrigger>
                     <SelectValue :placeholder="selectedUserName" />
                   </SelectTrigger>
@@ -90,8 +89,8 @@ function goBack() {
 
               <!-- Operator Selection -->
               <div class="space-y-2">
-                <Label for="operator_id">Operator <span class="text-red-500">*</span></Label>
-                <Select v-model="form.operator_id" required>
+                <Label for="operator_id">Operator <span class="text-red-500"></span></Label>
+                <Select v-model="form.operator_id" >
                   <SelectTrigger>
                     <SelectValue :placeholder="selectedOperatorName" />
                   </SelectTrigger>
@@ -104,58 +103,11 @@ function goBack() {
                 <p v-if="form.errors.operator_id" class="text-sm text-red-500">{{ form.errors.operator_id }}</p>
               </div>
 
-              <!-- Nama Dinas -->
+              <!-- Nama Dinas (Read Only) -->
               <div class="space-y-2">
-                <Label for="nama_dinas">Nama Dinas <span class="text-red-500">*</span></Label>
-                <Input 
-                  v-model="form.nama_dinas" 
-                  id="nama_dinas" 
-                  required 
-                  placeholder="Masukkan nama dinas"
-                />
-                <p v-if="form.errors.nama_dinas" class="text-sm text-red-500">{{ form.errors.nama_dinas }}</p>
-              </div>
-
-              <!-- No DPA -->
-              <div class="space-y-2">
-                <Label for="no_dpa">No DPA <span class="text-red-500">*</span></Label>
-                <Input 
-                  v-model="form.no_dpa" 
-                  id="no_dpa" 
-                  required 
-                  placeholder="Masukkan nomor DPA"
-                />
-                <p v-if="form.errors.no_dpa" class="text-sm text-red-500">{{ form.errors.no_dpa }}</p>
-              </div>
-
-              <!-- Kode Organisasi -->
-              <div class="space-y-2">
-                <Label for="kode_organisasi">Kode Organisasi <span class="text-red-500">*</span></Label>
-                <Input 
-                  v-model="form.kode_organisasi" 
-                  id="kode_organisasi" 
-                  required 
-                  placeholder="Masukkan kode organisasi"
-                />
-                <p v-if="form.errors.kode_organisasi" class="text-sm text-red-500">{{ form.errors.kode_organisasi }}</p>
-              </div>
-
-              <!-- Read-only fields for reference -->
-              <div class="border-t pt-4">
-                <h3 class="text-lg font-medium mb-4 text-gray-700">Informasi Saat Ini</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="space-y-2">
-                    <Label class="text-sm text-gray-600">Nama SKPD Saat Ini</Label>
-                    <div class="text-sm bg-gray-50 p-2 rounded border">
-                      {{ props.skpd.nama_skpd }}
-                    </div>
-                  </div>
-                  <div class="space-y-2">
-                    <Label class="text-sm text-gray-600">Nama Operator Saat Ini</Label>
-                    <div class="text-sm bg-gray-50 p-2 rounded border">
-                      {{ props.skpd.nama_operator }}
-                    </div>
-                  </div>
+                <Label>Nama Dinas</Label>
+                <div class="p-2 bg-gray-50 rounded-md border border-gray-200">
+                  {{ props.skpd.nama_skpd }}
                 </div>
               </div>
 

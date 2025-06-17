@@ -22,15 +22,29 @@ class PerangkatDaerahController extends Controller
             return redirect()->route('perangkatdaerah.show', $user->id);
         }
 
-        $users = User::role('perangkat_daerah')->with(['skpd'])->paginate(1000);
+        $users = User::role('perangkat_daerah')
+            ->with(['skpd.kepalaAktif.user', 'skpd.operatorAktif.operator'])
+            ->paginate(1000);
+
         $users->getCollection()->transform(function ($user) {
             $skpd = $user->skpd->first();
             $operatorName = null;
+            $kepalaName = null;
+            
             if ($skpd) {
-                $timKerja = \App\Models\TimKerja::with('operator')->where('skpd_id', $skpd->id)->first();
-                $operatorName = $timKerja?->operator?->name;
+                // Ambil nama operator yang aktif
+                if ($skpd->operatorAktif && $skpd->operatorAktif->operator) {
+                    $operatorName = $skpd->operatorAktif->operator->name;
+                }
+                
+                // Ambil nama kepala daerah yang aktif
+                if ($skpd->kepalaAktif && $skpd->kepalaAktif->user) {
+                    $kepalaName = $skpd->kepalaAktif->user->name;
+                }
             }
+
             $user->operator_name = $operatorName;
+            $user->kepala_name = $kepalaName;
             return $user;
         });
 
@@ -76,6 +90,7 @@ class PerangkatDaerahController extends Controller
         TimKerja::create([
             'skpd_id' => $skpd->id,
             'operator_id' => $validated['operator_id'],
+            'is_aktif' => 1,
         ]);
 
         return redirect()->route('perangkatdaerah.index')->with('success', 'Data SKPD berhasil disimpan.');
@@ -200,15 +215,20 @@ class PerangkatDaerahController extends Controller
             abort(404, 'SKPD not found for this user');
         }
         
-        $skpd = Skpd::with(['skpdKepala', 'timKerja'])
+        $skpd = Skpd::with(['skpdKepala', 'timKerja.operator'])
             ->findOrFail($skpdKepala->skpd_id);
 
         $users = User::role('perangkat_daerah')->get();
         $operators = User::role('operator')->get();
 
-        // $currentOperator = TimKerja::where('skpd_id', $skpd->id)
-        //     ->where('is_aktif', 1)
-        //     ->first();
+        // Get current operator from TimKerja
+        $timKerja = TimKerja::with('operator')
+            ->where('skpd_id', $skpd->id)
+            ->latest()
+            ->first();
+
+        // Get operator name for display
+        $operatorName = $timKerja?->operator?->name;
 
         return Inertia::render('PerangkatDaerah/Edit', [
             'skpd' => [
@@ -216,13 +236,13 @@ class PerangkatDaerahController extends Controller
                 'user_id' => $skpdKepala->user_id, 
                 'nama_skpd' => $skpd->nama_skpd,
                 'kode_organisasi' => $skpd->kode_organisasi,
-                'nama_operator' => null,
-                'nama_dinas' => null,
-                'no_dpa' => null,
+                'nama_operator' => $operatorName,
+                'nama_dinas' => $skpd->nama_dinas,
+                'no_dpa' => $skpd->no_dpa,
             ],
             'users' => $users,
             'operators' => $operators,
-            // 'current_operator_id' => $currentOperator?->operator_id,
+            'current_operator_id' => $timKerja?->operator_id,
         ]);
     }
 
@@ -234,46 +254,49 @@ class PerangkatDaerahController extends Controller
             'user_id' => 'required|exists:users,id',
             'operator_id' => 'required|exists:users,id',
             'kode_organisasi' => 'required|string|max:255',
-            'nama_dinas' => 'nullable|string|max:255',
             'no_dpa' => 'nullable|string|max:255',
         ]);
 
-        $user = User::find($validated['user_id']);
-
+        // Update SKPD
         $skpd->update([
-            'nama_skpd' => $validated['nama_skpd'] ?? $validated['nama_dinas'],
             'kode_organisasi' => $validated['kode_organisasi'],
         ]);
 
-        $currentKepala = SkpdKepala::where('skpd_id', $skpd->id)
-                               ->where('user_id', $validated['user_id'])
-                               ->first();
-        
-        if (!$currentKepala) {
+        // === SKPD KEPALA ===
+        $currentKepala = SkpdKepala::where('skpd_id', $skpd->id)->where('is_aktif', 1)->first();
+        if (!$currentKepala || $currentKepala->user_id != $validated['user_id']) {
+            // Nonaktifkan kepala lama
+            if ($currentKepala) {
+                $currentKepala->is_aktif = 0;
+                $currentKepala->save();
+            }
+            // Tambah kepala baru
             SkpdKepala::create([
                 'skpd_id' => $skpd->id,
-                'user_id' => $validated['user_id']
+                'user_id' => $validated['user_id'],
+                'is_aktif' => 1,
             ]);
         }
 
-        // Update Operator 
-        // $currentOperator = TimKerja::where('skpd_id', $skpd->id)
-        //                        ->where('is_aktif', 1)
-        //                        ->first();
-        // if (!$currentOperator || $currentOperator->operator_id != $validated['operator_id']) {
-        //     // Deactivate current operator
-        //     if ($currentOperator) {
-        //         $currentOperator->update(['is_aktif' => 0]);
-        //     }
-        //     // Create new operator
-        //     TimKerja::create([
-        //         'skpd_id' => $skpd->id,
-        //         'operator_id' => $validated['operator_id'],
-        //         'is_aktif' => 1,
-        //     ]);
-        // }
+        // === OPERATOR ===
+        $currentOperator = TimKerja::where('skpd_id', $skpd->id)->where('is_aktif', 1)->first();
+        if (!$currentOperator || $currentOperator->operator_id != $validated['operator_id']) {
+            // Nonaktifkan operator lama
+            if ($currentOperator) {
+                $currentOperator->is_aktif = 0;
+                $currentOperator->save();
+            }
+            // Tambah operator baru
+            TimKerja::create([
+                'skpd_id' => $skpd->id,
+                'operator_id' => $validated['operator_id'],
+                'is_aktif' => 1,
+            ]);
+        }
 
-        return redirect()->route('perangkatdaerah.index')->with('success', 'Data SKPD berhasil diperbarui.');
+        return redirect()
+            ->route('perangkatdaerah.index')
+            ->with('success', 'Data SKPD berhasil diperbarui.');
     }
 
     public function destroy(string $id)

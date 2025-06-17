@@ -43,13 +43,13 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
+      kepala_name: string | null;
+      operator_name: string | null;
       skpd: Array<{
         nama_skpd: string;
         kode_organisasi: string;
-        // tambahkan field lain jika perlu
+        no_dpa: string | null;
       }>;
-      operator_name?: string;
-      timKerja?: Array<any>;
     }>;
   };
 }>();
@@ -250,7 +250,6 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         :class="{'opacity-100': sortField === 'name'}" />
                     </div>
                   </TableHead>
-                  <TableHead class="hidden md:table-cell text-gray-600">No DPA</TableHead>
                   <TableHead class="hidden md:table-cell text-gray-600">Kode Organisasi</TableHead>
                   <TableHead class="text-gray-600">Aksi</TableHead>
                 </TableRow>
@@ -281,8 +280,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         </div>
                       </TableCell>
                       <TableCell class="text-gray-500">{{ user.operator_name || '-' }}</TableCell>
-                      <TableCell class="text-gray-500">{{ user.name || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
+                      <TableCell class="text-gray-500">{{ user.kepala_name || '-' }}</TableCell>
                       <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.[0]?.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
@@ -312,7 +310,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               </div>
                               <div>
                                 <p class="text-sm text-gray-600">Kepala Daerah:</p>
-                                <p class="font-medium text- text-gray-500">{{ user.name || '-' }}</p>
+                                <p class="font-medium text-gray-500">{{ user.kepala_name || '-' }}</p>
                               </div>
                             </div>
                             <div>

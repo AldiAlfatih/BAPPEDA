@@ -48,4 +48,14 @@ class Skpd extends Model
     {
         return $this->hasMany(TimKerja::class, 'skpd_id');
     }
+
+    public function kepalaAktif()
+    {
+        return $this->hasOne(SkpdKepala::class, 'skpd_id')->where('is_aktif', 1);
+    }
+
+    public function operatorAktif()
+    {
+        return $this->hasOne(TimKerja::class, 'skpd_id')->where('is_aktif', 1);
+    }
 }

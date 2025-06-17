@@ -14,11 +14,11 @@ const props = defineProps<{
             nip?: string;
         } | null;
         skpd?: {
-            nama_dinas: string;
-            nama_operator: string;
+            nama_skpd: string;
+            operator_name: string | null;
+            kepala_name: string | null;
             no_dpa: string;
             kode_organisasi: string;
-            nama_skpd?: string; // jika ada
         } | null;
     };
     urusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number }[];
@@ -189,7 +189,7 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Penanggung Jawab</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_operator || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.operator_name || 'Tidak tersedia' }}</p>
                         <p class="text-sm font-mono text-gray-500">{{ user.skpd?.nip_operator || '-' }}</p>
                     </div>
 

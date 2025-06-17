@@ -9,6 +9,7 @@ use App\Models\KodeNomenklatur;
 use App\Models\SkpdTugas;
 use App\Models\SkpdKepala;
 use App\Models\Skpd;
+use App\Models\TimKerja;
 use App\Models\MonitoringTarget;
 use App\Models\MonitoringAnggaran;
 use App\Models\MonitoringPagu;
@@ -28,19 +29,57 @@ class ManajemenAnggaranController extends Controller
             return redirect()->route('ManajemenAnggaran.show', $user->id);
         }
 
-        if ($user->hasRole('operator')) {
-            $skpdUserIds = Skpd::where('nama_operator', $user->name)->pluck('user_id');
-            $users = User::whereIn('id', $skpdUserIds)
-                ->role('perangkat_daerah')
-                ->with('skpd')
-                ->paginate(1000);
+        $query = User::role('perangkat_daerah')
+            ->with(['skpd' => function($q) {
+                $q->with(['kepalaAktif.user', 'operatorAktif.operator']);
+            }]);
 
-            return Inertia::render('ManajemenAnggaran', [
-                'users' => $users,
-            ]);
+        if ($user->hasRole('operator')) {
+            // Get SKPD IDs where the user is an operator
+            $skpdIds = TimKerja::where('operator_id', $user->id)
+                ->where('is_aktif', 1)
+                ->pluck('skpd_id');
+
+            $query->whereHas('skpd', function($q) use ($skpdIds) {
+                $q->whereIn('skpd.id', $skpdIds);
+            });
         }
 
-        $users = User::role('perangkat_daerah')->with('skpd')->paginate(1000);
+        $users = $query->paginate(1000);
+
+        // Transform the data to include all required information
+        $users->getCollection()->transform(function ($user) {
+            $skpd = $user->skpd->first();
+            $operatorName = null;
+            $kepalaName = null;
+            $namaDinas = null;
+            $kodeOrganisasi = null;
+
+            if ($skpd) {
+                // Get operator name from operatorAktif relation
+                if ($skpd->operatorAktif && $skpd->operatorAktif->operator) {
+                    $operatorName = $skpd->operatorAktif->operator->name;
+                }
+                
+                // Get kepala name from kepalaAktif relation
+                if ($skpd->kepalaAktif && $skpd->kepalaAktif->user) {
+                    $kepalaName = $skpd->kepalaAktif->user->name;
+                }
+
+                // Get SKPD details
+                $namaDinas = $skpd->nama_skpd;
+                $kodeOrganisasi = $skpd->kode_organisasi;
+            }
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'nama_dinas' => $namaDinas,
+                'operator_name' => $operatorName,
+                'kepala_name' => $kepalaName,
+                'kode_organisasi' => $kodeOrganisasi
+            ];
+        });
 
         return Inertia::render('ManajemenAnggaran', [
             'users' => $users,
@@ -76,7 +115,25 @@ class ManajemenAnggaranController extends Controller
 
     public function show(string $id, Request $request)
     {
-        $user = User::with(['skpd', 'userDetail'])->findOrFail($id);
+        $user = User::with([
+            'skpd' => function($q) {
+                $q->with(['kepalaAktif.user', 'operatorAktif.operator']);
+            },
+            'userDetail'
+        ])->findOrFail($id);
+
+        $skpd = $user->skpd->first();
+        $operatorName = null;
+        $kepalaName = null;
+        
+        if ($skpd) {
+            if ($skpd->operatorAktif && $skpd->operatorAktif->operator) {
+                $operatorName = $skpd->operatorAktif->operator->name;
+            }
+            if ($skpd->kepalaAktif && $skpd->kepalaAktif->user) {
+                $kepalaName = $skpd->kepalaAktif->user->name;
+            }
+        }
 
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
@@ -95,157 +152,28 @@ class ManajemenAnggaranController extends Controller
                 ];
             });
 
-        $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
-            ->with(['details' => function($query) {
-                $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
-            }])
-            ->get()
-            ->map(function($item) {
-                return [
-                    'id' => $item->id,
-                    'nomor_kode' => $item->nomor_kode,
-                    'nomenklatur' => $item->nomenklatur,
-                    'jenis_nomenklatur' => $item->jenis_nomenklatur,
-                    'bidang_urusan_id' => $item->details->first()?->id_bidang_urusan
-                ];
-            });
-
-        $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
-            ->with(['details' => function($query) {
-                $query->select('id', 'id_nomenklatur', 'id_program');
-            }])
-            ->get()
-            ->map(function($item) {
-                return [
-                    'id' => $item->id,
-                    'nomor_kode' => $item->nomor_kode,
-                    'nomenklatur' => $item->nomenklatur,
-                    'jenis_nomenklatur' => $item->jenis_nomenklatur,
-                    'program_id' => $item->details->first()?->id_program
-                ];
-            });
-
-        $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
-            ->with(['details' => function($query) {
-                $query->select('id', 'id_nomenklatur', 'id_kegiatan');
-            }])
-            ->get()
-            ->map(function($item) {
-                return [
-                    'id' => $item->id,
-                    'nomor_kode' => $item->nomor_kode,
-                    'nomenklatur' => $item->nomenklatur,
-                    'jenis_nomenklatur' => $item->jenis_nomenklatur,
-                    'kegiatan_id' => $item->details->first()?->id_kegiatan
-                ];
-            });
-
-        $skpdTugas = SkpdTugas::where('skpd_id', $user->skpd->id)
-            ->where('is_aktif', 1)
-            ->with('kodeNomenklatur')
-            ->get();
-
-        // Dapatkan periode aktif (status 1 = aktif/buka) yang tahapnya adalah "Rencana"
-        $periodeAktif = Periode::with(['tahap', 'tahun'])
-            ->where('status', 1)
-            ->whereHas('tahap', function($query) {
-                $query->where('tahap', 'Rencana');
-            })
-            ->get();
-
-        // Dapatkan semua periode aktif untuk informasi tambahan
-        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
-            ->where('status', 1)
-            ->get();
-
-        // Dapatkan tahun dari periode aktif
-        $tahunAktif = null;
-        if ($semuaPeriodeAktif->isNotEmpty()) {
-            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
+        // Format skpd data
+        $skpdData = null;
+        if ($skpd) {
+            $skpdData = [
+                'id' => $skpd->id,
+                'nama_skpd' => $skpd->nama_skpd,
+                'kode_organisasi' => $skpd->kode_organisasi,
+                'operator_name' => $operatorName,
+                'kepala_name' => $kepalaName
+            ];
         }
 
-        // Ambil data sumber dana terakhir untuk setiap SKPD tugas berdasarkan periode aktif
-        $dataAnggaranTerakhir = [];
-        $periodeId = null;
-
-        // Check if a specific period was requested
-        if ($request->has('periode_id') && $request->periode_id) {
-            $periodeId = $request->periode_id;
-        }
-        // Otherwise use Rencana period ID if active
-        elseif ($periodeAktif->isNotEmpty()) {
-            $periodeId = $periodeAktif->first()->id;
-        }
-
-        foreach ($skpdTugas as $tugas) {
-            if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Hanya ambil sub kegiatan
-                // Cari monitoring yang terkait dengan SKPD tugas
-                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
-                    ->latest()
-                    ->first();
-
-                if ($monitoring) {
-                    // Ambil data anggaran untuk monitoring ini berdasarkan periode
-                    $sumberAnggaranData = [];
-
-                    $monitoringAnggaranQuery = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
-                        ->with(['sumberAnggaran']);
-
-                    if ($periodeId) {
-                        $monitoringAnggaranQuery->with(['pagu' => function($query) use ($periodeId) {
-                            $query->where('kategori', 1) // Kategori 1 = pokok
-                                  ->where('periode_id', $periodeId); // Filter berdasarkan periode
-                        }]);
-                    } else {
-                        $monitoringAnggaranQuery->with(['pagu' => function($query) {
-                            $query->where('kategori', 1); // Kategori 1 = pokok
-                        }]);
-                    }
-
-                    $monitoringAnggaran = $monitoringAnggaranQuery->get();
-
-                    foreach ($monitoringAnggaran as $anggaran) {
-                        if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
-                            $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
-                            if ($key) {
-                                $sumberAnggaranData[$key] = $anggaran->pagu->first()->dana ?? 0;
-                            }
-                        }
-                    }
-
-                    // Simpan data per SKPD tugas
-                    $dataAnggaranTerakhir[$tugas->id] = [
-                        'sumber_anggaran' => [
-                            'dak' => isset($sumberAnggaranData['dak']),
-                            'dak_peruntukan' => isset($sumberAnggaranData['dak_peruntukan']),
-                            'dak_fisik' => isset($sumberAnggaranData['dak_fisik']),
-                            'dak_non_fisik' => isset($sumberAnggaranData['dak_non_fisik']),
-                            'blud' => isset($sumberAnggaranData['blud']),
-                        ],
-                        'values' => [
-                            'dak' => $sumberAnggaranData['dak'] ?? 0,
-                            'dak_peruntukan' => $sumberAnggaranData['dak_peruntukan'] ?? 0,
-                            'dak_fisik' => $sumberAnggaranData['dak_fisik'] ?? 0,
-                            'dak_non_fisik' => $sumberAnggaranData['dak_non_fisik'] ?? 0,
-                            'blud' => $sumberAnggaranData['blud'] ?? 0,
-                        ]
-                    ];
-                }
-            }
-        }
-
-        return Inertia::render('MonitoringAnggaran/Sumberdana', [
-            'user' => $user,
-            'skpdTugas' => $skpdTugas,
+        return Inertia::render('ManajemenAnggaran/Show', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'nip' => $user->userDetail?->nip
+            ],
+            'skpd' => $skpdData,
             'urusanList' => $urusanList,
             'bidangUrusanList' => $bidangUrusanList,
-            'programList' => $programList,
-            'kegiatanList' => $kegiatanList,
-            'subkegiatanList' => $subkegiatanList,
-            'periodeAktif' => $periodeAktif,
-            'tahunAktif' => $tahunAktif,
-            'semuaPeriodeAktif' => $semuaPeriodeAktif,
-            'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
+            // ...rest of your data
         ]);
     }
 

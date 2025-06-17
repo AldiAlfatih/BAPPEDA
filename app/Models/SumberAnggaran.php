@@ -10,10 +10,41 @@ class SumberAnggaran extends Model
 
     protected $table = 'sumber_anggaran';
 
-    protected $fillable = ['nama'];
+    protected $fillable = [
+        'skpd_tugas_id',
+        'periode_id',
+        'dak',
+        'dak_peruntukan',
+        'dak_fisik',
+        'dak_non_fisik',
+        'blud',
+        'nilai_dak',
+        'nilai_dak_peruntukan',
+        'nilai_dak_fisik',
+        'nilai_dak_non_fisik',
+        'nilai_blud'
+    ];
 
-    public function monitoringAnggaran()
+    protected $casts = [
+        'dak' => 'boolean',
+        'dak_peruntukan' => 'boolean',
+        'dak_fisik' => 'boolean',
+        'dak_non_fisik' => 'boolean',
+        'blud' => 'boolean',
+        'nilai_dak' => 'double',
+        'nilai_dak_peruntukan' => 'double',
+        'nilai_dak_fisik' => 'double',
+        'nilai_dak_non_fisik' => 'double',
+        'nilai_blud' => 'double'
+    ];
+
+    public function skpdTugas()
     {
-        return $this->hasMany(MonitoringAnggaran::class);
+        return $this->belongsTo(SkpdTugas::class);
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(Periode::class);
     }
 }

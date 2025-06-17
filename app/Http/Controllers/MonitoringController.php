@@ -9,6 +9,7 @@ use App\Models\KodeNomenklatur;
 use App\Models\SkpdTugas;
 use App\Models\SkpdKepala;
 use App\Models\Skpd;
+use App\Models\TimKerja;
 use App\Models\MonitoringTarget;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,56 +27,35 @@ class MonitoringController extends Controller
             return redirect()->route('monitoring.show', $user->id);
         }
 
-        if ($user->hasRole('operator')) {
-            $user->load('userDetail');
-
-            $skpdUserIds = Skpd::where('nama_operator', $user->name)->pluck('user_id');
-            $users = User::whereIn('id', $skpdUserIds)
-                ->role('perangkat_daerah')
-                ->withwith(['skpd', 'userDetail'])
-                ->paginate(1000);
-
-            $users->getCollection()->transform(function($userData) use ($user) {
-                // Since the current user is the operator, use their NIP
-                if ($userData->skpd) {
-                    $userData->skpd->nip_operator = $user->userDetail->nip ?? null;
-                }
-                
-                return $userData;
-            });
-
-            return Inertia::render('Monitoring', [
-                'users' => $users,
+        $query = User::role('perangkat_daerah')
+            ->with([
+                'skpd' => function($q) {
+                    $q->with(['kepalaAktif.user', 'operatorAktif.operator']);
+                },
+                'userDetail'
             ]);
+
+        if ($user->hasRole('operator')) {
+            // Get SKPD IDs where the user is an operator
+            $skpdIds = TimKerja::where('operator_id', $user->id)
+                ->where('is_aktif', 1)
+                ->pluck('skpd_id');
+
+            $query->whereHas('skpd', function($q) use ($skpdIds) {
+                $q->whereIn('skpd.id', $skpdIds);
+            });
         }
 
-            $usersQuery = User::role('perangkat_daerah')
-            ->with(['skpd', 'userDetail']);
-        
-        $users = $usersQuery->paginate(1000);
-        
-        // Process each user to add operator NIP information
-        $users->getCollection()->transform(function($user) {
-            // Find the operator's user record to get their NIP
-            $operatorName = $user->skpd->nama_operator ?? null;
-            $operatorUser = null;
-            $operatorNip = null;
-            
-            if ($operatorName) {
-                $operatorUser = User::where('name', $operatorName)->first();
-                if ($operatorUser) {
-                    $operatorDetail = UserDetail::where('user_id', $operatorUser->id)->first();
-                    $operatorNip = $operatorDetail->nip ?? null;
-                }
-            }
-            
-            // Add the operator's NIP to the user's skpd data
-            if ($user->skpd) {
-                $user->skpd->nip_operator = $operatorNip;
-            }
-            
-            return $user;
-        });
+        $users = $query->paginate(1000);
+
+        // Transform the data but keep the original model instance
+        foreach ($users as $user) {
+            $skpd = $user->skpd->first();
+            $user->nama_dinas = $skpd?->nama_skpd;
+            $user->operator_name = $skpd?->operatorAktif?->operator?->name;
+            $user->kepala_name = $skpd?->kepalaAktif?->user?->name;
+            $user->kode_organisasi = $skpd?->kode_organisasi;
+        }
 
         return Inertia::render('Monitoring', [
             'users' => $users,
@@ -111,27 +91,49 @@ class MonitoringController extends Controller
 
     public function show(string $id)
     {
-        $user = User::with(['skpd', 'userDetail'])->findOrFail($id);
+        $user = User::with([
+            'skpd' => function($q) {
+                $q->with(['kepalaAktif.user', 'operatorAktif.operator']);
+            },
+            'userDetail'
+        ])->findOrFail($id);
 
-        // Find the operator's user record to get their NIP
-        $operatorName = $user->skpd->nama_operator ?? null;
-        $operatorUser = null;
-        $operatorNip = null;
+        $skpd = $user->skpd->first();
 
-        if ($operatorName) {
-            $operatorUser = User::where('name', $operatorName)->first();
-            if ($operatorUser) {
-                $operatorDetail = UserDetail::where('user_id', $operatorUser->id)->first();
-                $operatorNip = $operatorDetail->nip ?? null;
-            }
-        }
+        // Format data sesuai dengan interface props yang diharapkan
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'user_detail' => $user->userDetail,
+            'skpd' => $skpd ? [
+                'nama_skpd' => $skpd->nama_skpd,
+                'operator_name' => $skpd->operatorAktif?->operator?->name,
+                'kepala_name' => $skpd->kepalaAktif?->user?->name,
+                'no_dpa' => $skpd->no_dpa,
+                'kode_organisasi' => $skpd->kode_organisasi
+            ] : null
+        ];
 
-        // Add the operator's NIP to the user's skpd data
-        if ($user->skpd) {
-            $user->skpd->nip_operator = $operatorNip;
-        }
+        // Get SKPD Tugas with its relations
+        $skpdTugas = SkpdTugas::where('skpd_id', $skpd?->id)
+            ->with(['kodeNomenklatur'])
+            ->get()
+            ->map(function($tugas) {
+                return [
+                    'id' => $tugas->id,
+                    'kode_nomenklatur' => [
+                        'id' => $tugas->kodeNomenklatur->id,
+                        'nomor_kode' => $tugas->kodeNomenklatur->nomor_kode,
+                        'nomenklatur' => $tugas->kodeNomenklatur->nomenklatur,
+                        'jenis_nomenklatur' => $tugas->kodeNomenklatur->jenis_nomenklatur,
+                    ]
+                ];
+            });
+
+        // Get Urusan List
         $urusanList = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
 
+        // Get Bidang Urusan List with details
         $bidangUrusanList = KodeNomenklatur::where('jenis_nomenklatur', 1)
             ->with(['details' => function($query) {
                 $query->select('id', 'id_nomenklatur', 'id_urusan');
@@ -147,6 +149,7 @@ class MonitoringController extends Controller
                 ];
             });
 
+        // Get Program List with details
         $programList = KodeNomenklatur::where('jenis_nomenklatur', 2)
             ->with(['details' => function($query) {
                 $query->select('id', 'id_nomenklatur', 'id_urusan', 'id_bidang_urusan');
@@ -162,6 +165,7 @@ class MonitoringController extends Controller
                 ];
             });
 
+        // Get Kegiatan List with details
         $kegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 3)
             ->with(['details' => function($query) {
                 $query->select('id', 'id_nomenklatur', 'id_program');
@@ -177,6 +181,7 @@ class MonitoringController extends Controller
                 ];
             });
 
+        // Get Subkegiatan List with details
         $subkegiatanList = KodeNomenklatur::where('jenis_nomenklatur', 4)
             ->with(['details' => function($query) {
                 $query->select('id', 'id_nomenklatur', 'id_kegiatan');
@@ -192,19 +197,14 @@ class MonitoringController extends Controller
                 ];
             });
 
-        $skpdTugas = SkpdTugas::where('skpd_id', $user->skpd->id)
-            ->where('is_aktif', 1)
-            ->with('kodeNomenklatur')
-            ->get();
-
         return Inertia::render('Monitoring/Show', [
-            'user' => $user,
-            'skpdTugas' => $skpdTugas,
+            'user' => $userData,
             'urusanList' => $urusanList,
             'bidangUrusanList' => $bidangUrusanList,
             'programList' => $programList,
             'kegiatanList' => $kegiatanList,
             'subkegiatanList' => $subkegiatanList,
+            'skpdTugas' => $skpdTugas
         ]);
     }
 

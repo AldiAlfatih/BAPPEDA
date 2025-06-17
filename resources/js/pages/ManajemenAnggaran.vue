@@ -38,11 +38,10 @@ const props = defineProps<{
       user_detail?: {
         nip?: string;
       } | null;
-      skpd: {
-        nama_dinas: string;
-        nama_operator: string;
-        kode_organisasi: string;
-      } | null;
+      nama_dinas: string | null;
+      operator_name: string | null;
+      kepala_name: string | null;
+      kode_organisasi: string | null;
     }>;
   };
 }>();
@@ -80,7 +79,7 @@ function goToShowPage(id: number) {
           <span v-else>Tambahkan PD</span>
         </Button> -->
       </div>
-      <TabelListSKPD url_detail="monitoring.show" :users="users"></TabelListSKPD>
+      <TabelListSKPD url_detail="manajemenanggaran.show" :users="users"></TabelListSKPD>
     </div>
   </AppLayout>
 </template>

@@ -301,10 +301,7 @@ const saveItem = (item: AnggaranItem) => {
   // Gunakan Inertia router untuk mengirim data ke server
   router.post('/rencana-awal-anggaran-save', dataToSave, {
     onSuccess: () => {
-      alert(`Data untuk kode ${item.kode} dengan total Rp ${formatCurrency(total)} berhasil disimpan!`);
-      
-      // Langsung update data item di anggaranItems tanpa reload
-      // Item yang sudah diupdate akan tetap terlihat setelah penyimpanan berhasil
+      // Update UI silently without displaying any JSON data
       const updatedItem = anggaranItems.value.find(i => i.id === item.id);
       if (updatedItem) {
         updatedItem.sumber_anggaran = { ...item.sumber_anggaran };
@@ -318,7 +315,7 @@ const saveItem = (item: AnggaranItem) => {
         anggaranItems.value = [...anggaranItems.value];
       }
       
-      // Tetap reload data dari server untuk memastikan konsistensi data
+      // Reload data untuk konsistensi tanpa menampilkan alert atau JSON
       const skpdId = props.user?.skpd?.id;
       if (skpdId) {
         router.visit(`/manajemenanggaran/${skpdId}`, {

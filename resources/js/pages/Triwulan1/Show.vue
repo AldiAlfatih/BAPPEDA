@@ -57,6 +57,65 @@ const showFlash = ref({
     info: false,
 });
 
+// State untuk tabel
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const sortField = ref('name');
+const sortDirection = ref('asc');
+const showDetailId = ref<number | null>(null);
+const loadingCreate = ref(false);
+
+function getFieldValue(item: any, field: string) {
+  switch(field) {
+    case 'nama_dinas':
+      return item.nama_dinas || '';
+    case 'nama_operator':
+      return item.nama_operator || '';
+    case 'nama_skpd':
+      return item.nama_dinas || '';
+    case 'kode_organisasi':
+      return item.kode_organisasi || '';
+    default:
+      return item[field] || '';
+  }
+}
+
+const filteredData = computed(() => {
+  const query = searchQuery.value.toLowerCase();
+  const data = [props.skpd];
+  
+  if (query) {
+    return data.filter(item => 
+      (item.nama_dinas || '').toLowerCase().includes(query) ||
+      (item.nama_operator || '').toLowerCase().includes(query) ||
+      (item.nama_skpd || '').toLowerCase().includes(query) ||
+      (item.kode_organisasi || '').toLowerCase().includes(query)
+    );
+  }
+
+  if (sortField.value) {
+    data.sort((a, b) => {
+      const aVal = getFieldValue(a, sortField.value);
+      const bVal = getFieldValue(b, sortField.value);
+      
+      // Numeric comparison
+      if (!isNaN(aVal) && !isNaN(bVal)) {
+        return sortDirection.value === 'asc'
+          ? Number(aVal) - Number(bVal)
+          : Number(bVal) - Number(aVal);
+      }
+      
+      // String comparison
+      return sortDirection.value === 'asc'
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    });
+  }
+  
+  return data;
+});
+
 onMounted(() => {
     if (flashMessage.value.success) {
         showFlash.value.success = true;
@@ -77,18 +136,21 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: `Monitoring Detail ${props.skpd.nama_skpd}`, href: '' },
 ];
 
-function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
-  if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
-    return user.user_detail.nip;
-  }
+// function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
+//   if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
+//     return user.user_detail.nip;
+//   }
 
-  if (typeof user.nip === 'string' && user.nip.trim() !== '') {
-    return user.nip;
-  }
+//   if (typeof user.nip === 'string' && user.nip.trim() !== '') {
+//     return user.nip;
+//   }
 
-  return '-';
-}
+//   return '-';
+// }
 
+// function getUserNip(user: any): string {
+//   return user.user_detail?.nip || user.nip || '';
+// }
 
 </script>
 
@@ -153,7 +215,7 @@ function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_skpd || 'Tidak tersedia' }}</p>
-                        <p class="text-sm font-mono text-gray-500">{{ getUserNip(skpd.user) || 'Tidak tersedia' }}</p>
+                        <p class="text-sm font-mono text-gray-500">{{ skpd.nip_skpd || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">

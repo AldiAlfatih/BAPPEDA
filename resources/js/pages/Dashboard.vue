@@ -254,7 +254,7 @@ const stepStates = computed(() => {
           📢 Tidak ada periode monitoring yang sedang berlangsung.
         </div> -->
         <div class="marquee-text text-orange-800 font-black">
-          "Setiap langkah kecil hari ini adalah pijakan kuat menuju kesuksesan besar di masa depan. Ayo mulai dengan penuh semangat!"
+          "NUGE CAYANG PINKYY DAN ALDI NGEJAR KIA"
         </div>
       </div>
     </div>

@@ -82,7 +82,7 @@ class TriwulanController extends Controller
         }
 
         $skpd = Skpd::with('skpdKepala.user','skpdKepala.user.userDetail','timKerja.user','timKerja.user.userDetail')->findOrFail($id);
-        dd($skpd);
+        // dd($skpd);
 
         $periode = $this->getPeriodeByTriwulan($tid, $tahun);
 

@@ -47,6 +47,7 @@ const props = defineProps<{
   url_detail: string;
 }>();
 
+
 // State untuk tabel
 const searchQuery = ref('');
 const currentPage = ref(1);

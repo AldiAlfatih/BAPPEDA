@@ -159,36 +159,104 @@ class ManajemenAnggaranController extends Controller
 
         \Log::debug('Subkegiatan IDs:', ['ids' => $subkegiatanIds->toArray()]);
 
+        // $dataAnggaranTerakhir = [];
+        // if ($subkegiatanIds->isNotEmpty()) {
+        //     $anggaranData = SumberAnggaran::whereIn('skpd_tugas_id', $subkegiatanIds)
+        //         ->latest()
+        //         ->get()
+        //         ->groupBy('skpd_tugas_id');
+
+        //     \Log::debug('Anggaran data:', ['data' => $anggaranData->toArray()]);
+
+        //     foreach ($anggaranData as $tugasId => $data) {
+        //         $latestData = $data->first();
+        //         $dataAnggaranTerakhir[$tugasId] = [
+        //             'sumber_anggaran' => [
+        //                 'dak' => $latestData->dak,
+        //                 'dak_peruntukan' => $latestData->dak_peruntukan,
+        //                 'dak_fisik' => $latestData->dak_fisik,
+        //                 'dak_non_fisik' => $latestData->dak_non_fisik,
+        //                 'blud' => $latestData->blud,
+        //             ],
+        //             'values' => [
+        //                 'dak' => $latestData->nilai_dak ?? 0,
+        //                 'dak_peruntukan' => $latestData->nilai_dak_peruntukan ?? 0,
+        //                 'dak_fisik' => $latestData->nilai_dak_fisik ?? 0,
+        //                 'dak_non_fisik' => $latestData->nilai_dak_non_fisik ?? 0,
+        //                 'blud' => $latestData->nilai_blud ?? 0,
+        //             ]
+        //         ];
+        //     }
+        // }
+
         $dataAnggaranTerakhir = [];
-        if ($subkegiatanIds->isNotEmpty()) {
-            $anggaranData = SumberAnggaran::whereIn('skpd_tugas_id', $subkegiatanIds)
-                ->latest()
-                ->get()
-                ->groupBy('skpd_tugas_id');
+        $periodeId = null;
 
-            \Log::debug('Anggaran data:', ['data' => $anggaranData->toArray()]);
-
-            foreach ($anggaranData as $tugasId => $data) {
-                $latestData = $data->first();
-                $dataAnggaranTerakhir[$tugasId] = [
-                    'sumber_anggaran' => [
-                        'dak' => $latestData->dak,
-                        'dak_peruntukan' => $latestData->dak_peruntukan,
-                        'dak_fisik' => $latestData->dak_fisik,
-                        'dak_non_fisik' => $latestData->dak_non_fisik,
-                        'blud' => $latestData->blud,
-                    ],
-                    'values' => [
-                        'dak' => $latestData->nilai_dak ?? 0,
-                        'dak_peruntukan' => $latestData->nilai_dak_peruntukan ?? 0,
-                        'dak_fisik' => $latestData->nilai_dak_fisik ?? 0,
-                        'dak_non_fisik' => $latestData->nilai_dak_non_fisik ?? 0,
-                        'blud' => $latestData->nilai_blud ?? 0,
-                    ]
-                ];
-            }
+        // Check if a specific period was requested
+        if ($request->has('periode_id') && $request->periode_id) {
+            $periodeId = $request->periode_id;
+        }
+        // Otherwise use Rencana period ID if active
+        elseif ($periodeAktif->isNotEmpty()) {
+            $periodeId = $periodeAktif->first()->id;
         }
 
+        foreach ($skpdTugas as $tugas) {
+            if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Hanya ambil sub kegiatan
+                // Cari monitoring yang terkait dengan SKPD tugas
+                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->latest()
+                    ->first();
+
+                if ($monitoring) {
+                    // Ambil data anggaran untuk monitoring ini berdasarkan periode
+                    $sumberAnggaranData = [];
+
+                    $monitoringAnggaranQuery = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                        ->with(['sumberAnggaran']);
+
+                    if ($periodeId) {
+                        $monitoringAnggaranQuery->with(['pagu' => function($query) use ($periodeId) {
+                            $query->where('kategori', 1) // Kategori 1 = pokok
+                                  ->where('periode_id', $periodeId); // Filter berdasarkan periode
+                        }]);
+                    } else {
+                        $monitoringAnggaranQuery->with(['pagu' => function($query) {
+                            $query->where('kategori', 1); // Kategori 1 = pokok
+                        }]);
+                    }
+
+                    $monitoringAnggaran = $monitoringAnggaranQuery->get();
+
+                    foreach ($monitoringAnggaran as $anggaran) {
+                        if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
+                            $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
+                            if ($key) {
+                                $sumberAnggaranData[$key] = $anggaran->pagu->first()->dana ?? 0;
+                            }
+                        }
+                    }
+
+                    // Simpan data per SKPD tugas
+                    $dataAnggaranTerakhir[$tugas->id] = [
+                        'sumber_anggaran' => [
+                            'dak' => isset($sumberAnggaranData['dak']),
+                            'dak_peruntukan' => isset($sumberAnggaranData['dak_peruntukan']),
+                            'dak_fisik' => isset($sumberAnggaranData['dak_fisik']),
+                            'dak_non_fisik' => isset($sumberAnggaranData['dak_non_fisik']),
+                            'blud' => isset($sumberAnggaranData['blud']),
+                        ],
+                        'values' => [
+                            'dak' => $sumberAnggaranData['dak'] ?? 0,
+                            'dak_peruntukan' => $sumberAnggaranData['dak_peruntukan'] ?? 0,
+                            'dak_fisik' => $sumberAnggaranData['dak_fisik'] ?? 0,
+                            'dak_non_fisik' => $sumberAnggaranData['dak_non_fisik'] ?? 0,
+                            'blud' => $sumberAnggaranData['blud'] ?? 0,
+                        ]
+                    ];
+                }
+            }
+        }
         \Log::debug('Data anggaran terakhir:', ['data' => $dataAnggaranTerakhir]);
 
         return Inertia::render('MonitoringAnggaran/Sumberdana', [
@@ -568,10 +636,7 @@ class ManajemenAnggaranController extends Controller
         }
     }
 
-    /**
-     * Mapping key sumber_anggaran dari input ke nama di database sumber_anggaran
-     * Contoh: 'dak' => 'DAK Fisik', dsb.
-     */
+
     private function mapNamaSumberAnggaran(string $key): string
     {
         $mapping = [
@@ -585,9 +650,6 @@ class ManajemenAnggaranController extends Controller
         return $mapping[$key] ?? $key;
     }
 
-    /**
-     * Kebalikan dari fungsi mapNamaSumberAnggaran untuk validasi penghapusan
-     */
     private function reverseMapNamaSumberAnggaran(string $nama): string
     {
         $reverseMapping = [

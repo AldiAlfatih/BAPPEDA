@@ -210,7 +210,6 @@ function truncateText(text: string | null | undefined, length: number = 30): str
         </Button> -->
       </div>
 
-<<<<<<< HEAD
       <!-- Search dan filter -->
       <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div class="relative w-full sm:w-96">
@@ -436,9 +435,6 @@ function truncateText(text: string | null | undefined, length: number = 30): str
           </Button>
         </div>
       </div>
-=======
-      <TabelListSKPD url_detail=" triwulan.show" :users="users"></TabelListSKPD>
->>>>>>> 1653c22a8692dd307d928021242200888c562522
     </div>
   </AppLayout>
 </template>

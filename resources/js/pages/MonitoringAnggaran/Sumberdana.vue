@@ -331,11 +331,7 @@ const saveItem = (item: AnggaranItem) => {
       }
       
       // Reload data untuk konsistensi tanpa menampilkan alert atau JSON
-<<<<<<< HEAD
       const skpdId = getSkpdId.value;
-=======
-      const skpdId = props.user?.skpd?.id;
->>>>>>> 1653c22a8692dd307d928021242200888c562522
       if (skpdId) {
         router.visit(`/manajemenanggaran/${skpdId}`, {
           preserveState: true,

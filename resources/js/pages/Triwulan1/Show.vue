@@ -139,19 +139,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: `Monitoring Detail ${props.skpd.nama_dinas || props.skpd.nama_skpd || 'SKPD'}`, href: '' },
 ];
 
-<<<<<<< HEAD
 function getUserNip(user: any): string {
   if (!user) return '-';
   
   if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
     return user.user_detail.nip;
   }
-=======
-// function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
-//   if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
-//     return user.user_detail.nip;
-//   }
->>>>>>> 1653c22a8692dd307d928021242200888c562522
 
 //   if (typeof user.nip === 'string' && user.nip.trim() !== '') {
 //     return user.nip;
@@ -226,13 +219,8 @@ function getUserNip(user: any): string {
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-<<<<<<< HEAD
                         <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_kepala_skpd || 'Tidak tersedia' }}</p>
                         <p class="text-sm font-mono text-gray-500">NIP: {{ skpd.nip_kepala_skpd || '-' }}</p>
-=======
-                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_skpd || 'Tidak tersedia' }}</p>
-                        <p class="text-sm font-mono text-gray-500">{{ skpd.nip_skpd || 'Tidak tersedia' }}</p>
->>>>>>> 1653c22a8692dd307d928021242200888c562522
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">

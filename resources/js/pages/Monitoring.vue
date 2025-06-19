@@ -9,6 +9,7 @@ import TabelListSKPD from '@/components/data/TabelListSKPD.vue';
 // Or, if the file is named differently or in another folder, adjust accordingly:
 // import { TabelListSKPD } from '@/components/data/TabelListSkpd.vue';
 // import { TabelListSKPD } from '@/components/TabelListSKPD.vue';
+<<<<<<< HEAD
 import {
   Plus,
   Pencil,
@@ -16,6 +17,15 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+=======
+import { 
+  Plus, 
+  Pencil, 
+  Eye, 
+  Search, 
+  ChevronLeft, 
+  ChevronRight, 
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
   ArrowUpDown,
   FileText,
   Info,
@@ -67,6 +77,18 @@ const breadcrumbs: BreadcrumbItem[] = [
           <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Perangkat Daerah</h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Monitoring Perangkat Daerah</p>
         </div>
+<<<<<<< HEAD
+=======
+        <!-- <Button 
+          class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105" 
+          @click="goToCreatePage"
+          :disabled="loadingCreate"
+        >
+          <Plus class="w-4 h-4" />
+          <span v-if="loadingCreate">Membuka...</span>
+          <span v-else>Tambahkan PD</span>
+        </Button> -->
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
       </div>
       <TabelListSKPD url_detail="monitoring.show" :users="users"></TabelListSKPD>
     </div>

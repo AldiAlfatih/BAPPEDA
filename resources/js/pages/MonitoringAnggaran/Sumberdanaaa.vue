@@ -29,20 +29,13 @@ interface AnggaranItem {
 
 const props = defineProps<{
     user: {
-        id?: number;
-        name?: string;
-        email?: string;
         skpd: {
             id: number;
             nama_skpd: string;
             nama_dinas: string;
             no_dpa: string;
             kode_organisasi: string;
-        }[] | null;
-        nama_dinas?: string;
-        operator_name?: string;
-        kepala_name?: string;
-        kode_organisasi?: string;
+        } | null;
     };
     skpdTugas?: Array<{
         id: number;
@@ -111,24 +104,11 @@ const errorMessage = ref('');
 // Add reactive state for selected period
 const selectedPeriodeId = ref<number | null>(null);
 
-// Helper function to get the skpdId safely
-const getSkpdId = computed(() => {
-  if (props.user?.skpd && Array.isArray(props.user.skpd) && props.user.skpd.length > 0) {
-    return props.user.skpd[0].id;
-  }
-  return null;
-});
-
 // Computed untuk cek apakah periode aktif
 const isPeriodeAktif = computed(() => props.periodeAktif && props.periodeAktif.length > 0);
 
 // Initialize with the active period if available
 onMounted(() => {
-  console.log('Props received:', {
-    skpdTugas: props.skpdTugas,
-    dataAnggaranTerakhir: props.dataAnggaranTerakhir
-  });
-
   if (props.periodeAktif && props.periodeAktif.length > 0) {
     selectedPeriodeId.value = props.periodeAktif[0].id;
   } else if (props.semuaPeriodeAktif && props.semuaPeriodeAktif.length > 0) {
@@ -136,23 +116,14 @@ onMounted(() => {
   }
 
   if (props.skpdTugas?.length) {
-    console.log('Processing skpdTugas:', props.skpdTugas);
-    
     // Filter only sub-kegiatan items (jenis_nomenklatur = 4)
-    const subKegiatanTasks = props.skpdTugas.filter(task => {
-      const isSubKegiatan = task.kode_nomenklatur.jenis_nomenklatur === 4;
-      if (!isSubKegiatan) {
-        console.log('Skipping non-subkegiatan:', task);
-      }
-      return isSubKegiatan;
-    });
-
-    console.log('Filtered subKegiatanTasks:', subKegiatanTasks);
+    const subKegiatanTasks = props.skpdTugas.filter(task =>
+      task.kode_nomenklatur.jenis_nomenklatur === 4
+    );
 
     anggaranItems.value = subKegiatanTasks.map(task => {
       // Cek apakah ada data terakhir untuk tugas ini
       const lastData = props.dataAnggaranTerakhir?.[task.id];
-      console.log(`Processing task ${task.id}, lastData:`, lastData);
 
       if (lastData) {
         // Gunakan data terakhir yang sudah pernah disimpan
@@ -194,10 +165,6 @@ onMounted(() => {
         };
       }
     });
-
-    console.log('Initialized anggaranItems:', anggaranItems.value);
-  } else {
-    console.log('No skpdTugas data available');
   }
 });
 
@@ -291,18 +258,9 @@ const saveItem = (item: AnggaranItem) => {
 
   const total = calculateTotal(item);
 
-  // Get the active period ID
-  const periodeId = selectedPeriodeId.value || props.periodeAktif?.[0]?.id;
-  
-  if (!periodeId) {
-    alert('Tidak ada periode aktif yang dipilih!');
-    return;
-  }
-
   // Siapkan data untuk disimpan ke database
   const dataToSave = {
     skpd_tugas_id: item.id,
-    periode_id: periodeId,
     sumber_anggaran: item.sumber_anggaran,
     values: {
       dak: item.dak,
@@ -314,35 +272,9 @@ const saveItem = (item: AnggaranItem) => {
   };
 
   // Gunakan Inertia router untuk mengirim data ke server
-  router.post('/rencana-awal-anggaran-save', dataToSave, {
+  router.post('/monitoring-anggaran-save', dataToSave, {
     onSuccess: () => {
-      // Update UI silently without displaying any JSON data
-      const updatedItem = anggaranItems.value.find(i => i.id === item.id);
-      if (updatedItem) {
-        updatedItem.sumber_anggaran = { ...item.sumber_anggaran };
-        updatedItem.dak = item.dak;
-        updatedItem.dak_peruntukan = item.dak_peruntukan;
-        updatedItem.dak_fisik = item.dak_fisik;
-        updatedItem.dak_non_fisik = item.dak_non_fisik;
-        updatedItem.blud = item.blud;
-        
-        // Untuk memastikan perubahan dirender dengan benar
-        anggaranItems.value = [...anggaranItems.value];
-      }
-      
-      // Reload data untuk konsistensi tanpa menampilkan alert atau JSON
-<<<<<<< HEAD
-      const skpdId = getSkpdId.value;
-=======
-      const skpdId = props.user?.skpd?.id;
->>>>>>> 1653c22a8692dd307d928021242200888c562522
-      if (skpdId) {
-        router.visit(`/manajemenanggaran/${skpdId}`, {
-          preserveState: true,
-          preserveScroll: true,
-          only: ['dataAnggaranTerakhir']
-        });
-      }
+      alert(`Data untuk kode ${item.kode} dengan total Rp ${formatCurrency(total)} berhasil disimpan!`);
     },
     onError: (errors) => {
       errorMessage.value = Object.values(errors).join('\n');
@@ -378,7 +310,7 @@ const handlePeriodeChange = (event: Event) => {
     selectedPeriodeId.value = newPeriodeId;
 
     // Reload data with the new period
-    const skpdId = getSkpdId.value;
+    const skpdId = props.user?.skpd?.id;
     if (skpdId) {
       router.visit(`/manajemenanggaran/${skpdId}?periode_id=${newPeriodeId || ''}`, {
         preserveState: true,
@@ -489,18 +421,23 @@ const periodeMessage = computed(() => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Perangkat Daerah</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.nama_dinas || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.kode_organisasi || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Operator</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.operator_name || 'Tidak tersedia' }}</p>
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
                     </div>
+<!--
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ getUserNip(user) || 'Tidak tersedia' }}</p>
+                    </div> -->
 
                     <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
                       <h3 class="text-xs font-medium text-emerald-700 mb-1">Total Anggaran</h3>

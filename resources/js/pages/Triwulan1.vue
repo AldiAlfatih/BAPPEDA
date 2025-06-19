@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
+import TabelListSKPD from '@/components/data/TabelListSKPD.vue';
 import {
   Plus,
   Pencil,
@@ -209,6 +210,7 @@ function truncateText(text: string | null | undefined, length: number = 30): str
         </Button> -->
       </div>
 
+<<<<<<< HEAD
       <!-- Search dan filter -->
       <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div class="relative w-full sm:w-96">
@@ -434,6 +436,9 @@ function truncateText(text: string | null | undefined, length: number = 30): str
           </Button>
         </div>
       </div>
+=======
+      <TabelListSKPD url_detail=" triwulan.show" :users="users"></TabelListSKPD>
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
     </div>
   </AppLayout>
 </template>

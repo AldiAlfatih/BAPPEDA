@@ -170,6 +170,36 @@ class ManajemenAnggaranController extends Controller
 
         \Log::debug('Subkegiatan IDs:', ['ids' => $subkegiatanIds->toArray()]);
 
+        // $dataAnggaranTerakhir = [];
+        // if ($subkegiatanIds->isNotEmpty()) {
+        //     $anggaranData = SumberAnggaran::whereIn('skpd_tugas_id', $subkegiatanIds)
+        //         ->latest()
+        //         ->get()
+        //         ->groupBy('skpd_tugas_id');
+
+        //     \Log::debug('Anggaran data:', ['data' => $anggaranData->toArray()]);
+
+        //     foreach ($anggaranData as $tugasId => $data) {
+        //         $latestData = $data->first();
+        //         $dataAnggaranTerakhir[$tugasId] = [
+        //             'sumber_anggaran' => [
+        //                 'dak' => $latestData->dak,
+        //                 'dak_peruntukan' => $latestData->dak_peruntukan,
+        //                 'dak_fisik' => $latestData->dak_fisik,
+        //                 'dak_non_fisik' => $latestData->dak_non_fisik,
+        //                 'blud' => $latestData->blud,
+        //             ],
+        //             'values' => [
+        //                 'dak' => $latestData->nilai_dak ?? 0,
+        //                 'dak_peruntukan' => $latestData->nilai_dak_peruntukan ?? 0,
+        //                 'dak_fisik' => $latestData->nilai_dak_fisik ?? 0,
+        //                 'dak_non_fisik' => $latestData->nilai_dak_non_fisik ?? 0,
+        //                 'blud' => $latestData->nilai_blud ?? 0,
+        //             ]
+        //         ];
+        //     }
+        // }
+
         $dataAnggaranTerakhir = [];
         $periodeId = null;
 

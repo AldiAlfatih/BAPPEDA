@@ -244,8 +244,8 @@ const stepStates = computed(() => {
   <Head title="Dashboard" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="marquee-wrapper">
-      <div class="marquee-box">
+    <!-- <div class="marquee-wrapper">
+      <div class="marquee-box"> -->
         <!-- <div
           v-if="periodeBelumSelesai.length"
           class="marquee-text text-yellow-800 font-semibold"
@@ -259,10 +259,15 @@ const stepStates = computed(() => {
           📢 Tidak ada periode monitoring yang sedang berlangsung.
         </div> -->
         <!-- <div class="marquee-text text-orange-800 font-black">
+<<<<<<< HEAD
           "Setiap langkah kecil hari ini adalah pijakan kuat menuju kesuksesan besar di masa depan. Ayo mulai dengan penuh semangat!"
         </div> -->
+=======
+          "NUGE CAYANG PINKYY DAN ALDI NGEJAR KIA"
+        </div>
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
       </div>
-    </div>
+    </div> -->
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
       <!-- Grid untuk Selamat Datang dan Progres Monitoring -->
       <div class="grid auto-rows-min gap-4 md:grid-cols-3">

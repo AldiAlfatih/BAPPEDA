@@ -1058,12 +1058,29 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
     finalSumberDana = subKegiatan.sumberDana || '';
     if (!finalSumberDana) {
       const matchingItem = formattedSubKegiatanData.value.find(item => item.subKegiatan.id === subKegiatan.id);
+<<<<<<< HEAD
       finalSumberDana = matchingItem?.sumberDana || 'DAU';
     }
   }
 
   cachedSumberDana.value[subKegiatan.id] = finalSumberDana;
 
+=======
+      if (matchingItem) {
+        finalSumberDana = matchingItem.sumberDana;
+      } else {
+        // Default fallback jika tidak ditemukan
+        finalSumberDana = 'DAU'; // Gunakan DAU sebagai default
+      }
+    }
+  }
+  
+  // Simpan sumber dana secara agresif di berbagai lokasi penyimpanan
+  // 1. Di cache lokal komponen
+  cachedSumberDana.value[subKegiatan.id] = finalSumberDana;
+  
+  // 2. Di localStorage untuk persistensi antar sesi
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
   try {
     const savedCache = JSON.parse(localStorage.getItem('rencanaawal_sumberdana_cache') || '{}');
     savedCache[subKegiatan.id] = finalSumberDana;
@@ -1071,8 +1088,15 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
   } catch (e) {
     console.error('Error saving to localStorage:', e);
   }
+<<<<<<< HEAD
 
   skipNextRefresh.value = true;
+=======
+  
+  // 3. Set flag untuk menghindari refresh otomatis
+  skipNextRefresh.value = true;
+  
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
   const uniqueKey = getUniqueKey(subKegiatan, finalSumberDana);
   loadingRow.value = uniqueKey;
   errorRow.value = null;
@@ -1082,6 +1106,11 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
     if (!editingTargets.value[uniqueKey]) {
       editingTargets.value[uniqueKey] = getInitialTargets(subKegiatan);
     }
+<<<<<<< HEAD
+=======
+    
+    // Simpan nilai input manual untuk dipertahankan setelah respons
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
     manualInputValues.value[uniqueKey] = JSON.parse(JSON.stringify(editingTargets.value[uniqueKey]));
 
     const rawTargets = editingTargets.value[uniqueKey];
@@ -1098,10 +1127,19 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
         throw new Error(`Keuangan triwulan ${index + 1} harus berupa angka positif`);
       }
 
+<<<<<<< HEAD
       return { kinerja_fisik: kinerjaFisik, keuangan, triwulan: index + 1 };
+=======
+      return {
+        kinerja_fisik: kinerjaFisik,
+        keuangan: keuangan,
+        triwulan: index + 1
+      };
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
     });
 
     const sumberAnggaranId = getSumberAnggaranId(finalSumberDana);
+<<<<<<< HEAD
     let paguValue = 0;
     const paguData = props.dataAnggaranTerakhir?.[subKegiatan.id]?.values || {};
     const key = normalizeKey(finalSumberDana);
@@ -1112,6 +1150,26 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
     if (existingItem?.pokok > 0) {
       paguValue = existingItem.pokok;
     } else if (paguData) {
+=======
+    
+    // PERBAIKAN: Ambil nilai pokok (pagu) dengan lebih akurat dan konsisten
+    // Get pagu data from props.dataAnggaranTerakhir or formattedSubKegiatanData
+    let paguValue = 0;
+    
+    // 1. Cari nilai pagu dari dataAnggaranTerakhir
+    const paguData = props.dataAnggaranTerakhir?.[subKegiatan.id]?.values || {};
+    const key = normalizeKey(finalSumberDana);
+    
+    // 2. Cari nilai pagu dari formattedSubKegiatanData untuk mempertahankan nilai sebelumnya
+    const existingItem = formattedSubKegiatanData.value.find(
+      item => item.subKegiatan.id === subKegiatan.id && item.sumberDana === finalSumberDana
+    );
+    
+    if (existingItem && existingItem.pokok > 0) {
+      paguValue = existingItem.pokok;
+    } else if (paguData) {
+      // Use type assertion to make TypeScript happy
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
       type PaguDataType = {
         dau?: number;
         dau_peruntukan?: number;
@@ -1120,6 +1178,7 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
         blud?: number;
       };
       const typedPaguData = paguData as PaguDataType;
+<<<<<<< HEAD
       if (key === 'dak' && typedPaguData.dau !== undefined) paguValue = typedPaguData.dau;
       else if (key === 'dak_peruntukan' && typedPaguData.dau_peruntukan !== undefined) paguValue = typedPaguData.dau_peruntukan;
       else if (key === 'dak_fisik' && typedPaguData.dak_fisik !== undefined) paguValue = typedPaguData.dak_fisik;
@@ -1135,6 +1194,35 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
 
     const nama_pptk = props.tugas?.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nama || props.kepalaSkpd || 'Belum diisi';
 
+=======
+      
+      if (key === 'dak' && typedPaguData.dau !== undefined) {
+        paguValue = typedPaguData.dau;
+      } else if (key === 'dak_peruntukan' && typedPaguData.dau_peruntukan !== undefined) {
+        paguValue = typedPaguData.dau_peruntukan;
+      } else if (key === 'dak_fisik' && typedPaguData.dak_fisik !== undefined) {
+        paguValue = typedPaguData.dak_fisik;
+      } else if (key === 'dak_non_fisik' && typedPaguData.dak_non_fisik !== undefined) {
+        paguValue = typedPaguData.dak_non_fisik;
+      } else if (key === 'blud' && typedPaguData.blud !== undefined) {
+        paguValue = typedPaguData.blud;
+      }
+    }
+    
+    // Cache nilai pagu pokok untuk digunakan nantinya
+    const paguCacheKey = `pagu:${subKegiatan.id}:${finalSumberDana}`;
+    try {
+      localStorage.setItem(paguCacheKey, paguValue.toString());
+    } catch (e) {
+      console.error('Error caching pagu value:', e);
+    }
+    
+    // Pastikan nama_pptk ada (ini sering menjadi masalah jika required di backend)
+    const nama_pptk = props.tugas?.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nama || 
+                      props.kepalaSkpd || 
+                      'Belum diisi';
+    
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
     const payload = {
       skpd_tugas_id: subKegiatan.id,
       tahun: props.tahunAktif?.tahun || new Date().getFullYear(),
@@ -1143,14 +1231,28 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
       sumber_anggaran_id: sumberAnggaranId,
       sumber_dana: finalSumberDana,
       periode_id: selectedPeriodeId.value,
+<<<<<<< HEAD
       nama_pptk,
       pagu: { pokok: paguValue, parsial: 0, perubahan: 0 }
     };
 
+=======
+      nama_pptk: nama_pptk,
+      pagu: {
+        pokok: paguValue,  // Gunakan nilai pokok yang kita ambil
+        parsial: 0,
+        perubahan: 0
+      }
+    };
+    
+    console.log('Sending payload with pagu value:', paguValue);
+    
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
     const response = await router.post('/rencanaawal/save-target', payload, {
       preserveScroll: true,
       preserveState: true,
       onSuccess: (response: any) => {
+<<<<<<< HEAD
         successRow.value = uniqueKey;
 
         const updatedTargets = Array(4).fill({ kinerja_fisik: 0, keuangan: 0 });
@@ -1197,6 +1299,111 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
           subKegiatan.monitoring.monitoringAnggaran.push(monitoringAnggaran);
         } else {
           monitoringAnggaran.pagu_pokok = paguValue;
+=======
+        console.log('Success response:', response);
+        successRow.value = uniqueKey;
+        
+        // STRATEGI BARU: Daripada mengandalkan refresh data dari server,
+        // kita update data lokal secara langsung
+        
+        // 1. Temukan item yang sesuai di formattedSubKegiatanData
+        const itemIndex = formattedSubKegiatanData.value.findIndex(
+          item => item.subKegiatan.id === subKegiatan.id && 
+                 (item.sumberDana === finalSumberDana || !item.sumberDana)
+        );
+        
+        if (itemIndex !== -1) {
+          // Force update the sumberDana in the item
+          formattedSubKegiatanData.value[itemIndex].sumberDana = finalSumberDana;
+          
+          // PENTING: Pertahankan nilai pokok yang sudah disimpan
+          formattedSubKegiatanData.value[itemIndex].pokok = paguValue;
+          
+          // Create updated normalized targets
+          const updatedTargets = [
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 }
+          ];
+          
+          // Update with the server response data
+          if (response.data && response.data.targets) {
+            response.data.targets.forEach((target: any) => {
+              const index = target.periode_id - 1;
+              if (index >= 0 && index < 4) {
+                updatedTargets[index] = {
+                  kinerja_fisik: target.kinerja_fisik || 0,
+                  keuangan: target.keuangan || 0
+                };
+              }
+            });
+          } else {
+            // If no targets in response, use our processed targets
+            processedTargets.forEach((target: any, index: number) => {
+              if (index < 4) {
+                updatedTargets[index] = {
+                  kinerja_fisik: target.kinerja_fisik || 0,
+                  keuangan: target.keuangan || 0
+                };
+              }
+            });
+          }
+          
+          // Update normalizedTargets in the item
+          formattedSubKegiatanData.value[itemIndex].normalizedTargets = updatedTargets;
+        } else {
+          console.warn('No matching item found in formattedSubKegiatanData');
+          
+          // Jika tidak ditemukan, tambahkan baru dengan nilai pokok yang benar
+          const targets = [
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 },
+            { kinerja_fisik: 0, keuangan: 0 }
+          ];
+          
+          if (response.data && response.data.targets) {
+            response.data.targets.forEach((target: any) => {
+              const index = target.periode_id - 1;
+              if (index >= 0 && index < 4) {
+                targets[index] = {
+                  kinerja_fisik: target.kinerja_fisik || 0,
+                  keuangan: target.keuangan || 0
+                };
+              }
+            });
+          }
+          
+          // Cari parent kegiatan, program, dan bidang urusan
+          const parentKegiatan = props.kegiatanTugas?.find(k =>
+            k.kode_nomenklatur.id === subKegiatan.kode_nomenklatur.details[0]?.id_kegiatan
+          );
+          
+          const parentProgram = props.programTugas?.find(p =>
+            p.kode_nomenklatur.id === parentKegiatan?.kode_nomenklatur.details[0]?.id_program
+          );
+          
+          const parentBidangUrusan = props.bidangurusanTugas?.find(bu =>
+            bu.kode_nomenklatur.id === parentProgram?.kode_nomenklatur.details[0]?.id_bidang_urusan
+          );
+          
+          // Tambahkan item baru ke formattedSubKegiatanData jika semua parent berhasil ditemukan
+          if (parentKegiatan && parentProgram && parentBidangUrusan) {
+            formattedSubKegiatanData.value.push({
+              id: `${subKegiatan.id}-${finalSumberDana.replace(/\s+/g, '-')}`,
+              subKegiatan: subKegiatan,
+              kegiatan: parentKegiatan,
+              program: parentProgram, 
+              bidangUrusan: parentBidangUrusan,
+              sumberDana: finalSumberDana,
+              pokok: paguValue,
+              parsial: 0,
+              perubahan: 0,
+              normalizedTargets: targets
+            });
+          }
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
         }
         monitoringAnggaran.sumber_dana = finalSumberDana;
         monitoringAnggaran.targets = response.data?.targets || [];
@@ -1212,8 +1419,66 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
         }
 
         
+<<<<<<< HEAD
 
         recalculateAllTargets();
+=======
+        // 2. Update monitoring data directly in the subKegiatan object
+        if (!subKegiatan.monitoring) {
+          subKegiatan.monitoring = {
+            monitoringAnggaran: []
+          };
+        }
+        
+        if (!subKegiatan.monitoring.monitoringAnggaran) {
+          subKegiatan.monitoring.monitoringAnggaran = [];
+        }
+        
+        // 3. Update or create monitoring anggaran entry for this source
+        let monitoringAnggaran = subKegiatan.monitoring.monitoringAnggaran.find(
+          (anggaran: any) => anggaran.sumber_anggaran_id === sumberAnggaranId
+        );
+        
+        if (!monitoringAnggaran) {
+          monitoringAnggaran = {
+            id: response.data?.monitoring_anggaran_id || Date.now(),
+            sumber_anggaran_id: sumberAnggaranId,
+            sumber_dana: finalSumberDana,
+            targets: [],
+            pagu_pokok: paguValue  // Tambahkan nilai pokok di sini
+          };
+          subKegiatan.monitoring.monitoringAnggaran.push(monitoringAnggaran);
+        } else {
+          // Update nilai pokok yang sudah ada
+          monitoringAnggaran.pagu_pokok = paguValue;
+        }
+        
+        // Set sumber dana explicitly
+        monitoringAnggaran.sumber_dana = finalSumberDana;
+        
+        // Update targets for this monitoring anggaran
+        if (response.data && response.data.targets) {
+          monitoringAnggaran.targets = response.data.targets;
+        }
+        
+        // 4. Restore original input values to prevent form reset
+        // But merge with server values for consistency
+        if (editingTargets.value[uniqueKey] && manualInputValues.value[uniqueKey]) {
+          // Combine manual inputs with server response
+          editingTargets.value[uniqueKey] = editingTargets.value[uniqueKey].map((target: any, index: number) => {
+            const savedInput = manualInputValues.value[uniqueKey][index];
+            return {
+              kinerja_fisik: savedInput?.kinerja_fisik || target.kinerja_fisik,
+              keuangan: savedInput?.keuangan || target.keuangan
+            };
+          });
+        }
+        
+        // 5. Force recalculation of computed properties
+        recalculateAllTargets();
+        
+        // 6. Show success message
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
         setTimeout(() => {
           if (successRow.value === uniqueKey) {
             successRow.value = null;
@@ -1223,9 +1488,18 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
       onError: (err: any) => {
         console.error('Error saving targets:', err);
         errorRow.value = uniqueKey;
+<<<<<<< HEAD
         alert(err.message?.includes('Tidak ada periode yang aktif') ?
           'Tidak ada periode yang aktif saat ini. Data Rencana Awal tidak dapat disimpan. Silakan tunggu hingga periode dibuka oleh admin.' :
           err.message || 'Terjadi kesalahan saat menyimpan target');
+=======
+        
+        if (err.message && err.message.includes('Tidak ada periode yang aktif')) {
+          alert('Tidak ada periode yang aktif saat ini. Data Rencana Awal tidak dapat disimpan. Silakan tunggu hingga periode dibuka oleh admin.');
+        } else {
+          alert(err.message || 'Terjadi kesalahan saat menyimpan target');
+        }
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
       },
       onFinish: () => {
         loadingRow.value = null;
@@ -1236,6 +1510,11 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
             }
           }, 3000);
         }
+<<<<<<< HEAD
+=======
+        
+        // Setelah selesai proses, jangan lakukan refresh otomatis
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
         skipNextRefresh.value = false;
       }
     });
@@ -1249,6 +1528,7 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
   }
 }
 
+<<<<<<< HEAD
 function restoreOtherSumberDana(subKegiatan: any, currentSumberDana: string, allMonitoringData: any[]) {
   const existingEntries = formattedSubKegiatanData.value.filter(
     item => item.subKegiatan.id === subKegiatan.id
@@ -1310,6 +1590,24 @@ function normalizeKey(name: string): string {
     return 'dau';
 }
 
+=======
+// Helper function untuk normalisasi key sumber anggaran
+function normalizeKey(name: string): string {
+    // Pastikan key yang dihasilkan konsisten dengan ID
+    const normalizedName = name.toLowerCase().trim();
+    
+    // Mapping sesuai dengan getSumberAnggaranId
+    if (normalizedName === 'dau' || normalizedName === 'dak') return 'dau';
+    if (normalizedName === 'dau peruntukan') return 'dau_peruntukan';
+    if (normalizedName === 'dak fisik') return 'dak_fisik';
+    if (normalizedName === 'dak non fisik') return 'dak_non_fisik';
+    if (normalizedName === 'blud') return 'blud';
+    
+    // Default ke DAU jika tidak match
+    return 'dau';
+}
+
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
 function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string } | undefined): string {
   if (!user) return '-';
   

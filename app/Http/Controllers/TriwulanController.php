@@ -125,6 +125,7 @@ class TriwulanController extends Controller
             return redirect()->back()->with('error', 'Invalid triwulan ID.');
         }
 
+<<<<<<< HEAD
         // Find the user first, then get their SKPD
         $user = User::findOrFail($id);
         
@@ -195,6 +196,10 @@ class TriwulanController extends Controller
         // Tim kerja (operator/penanggung jawab) info
         $skpdArray['nama_operator'] = $skpdArray['tim_kerja_aktif']['operator']['name'] ?? 'Tidak tersedia';
         $skpdArray['nip_operator'] = $skpdArray['tim_kerja_aktif']['operator']['user_detail']['nip'] ?? '-';
+=======
+        $skpd = Skpd::with('skpdKepala.user','skpdKepala.user.userDetail','timKerja.user','timKerja.user.userDetail')->findOrFail($id);
+        // dd($skpd);
+>>>>>>> 1653c22a8692dd307d928021242200888c562522
 
         $periode = $this->getPeriodeByTriwulan($tid, $tahun);
 

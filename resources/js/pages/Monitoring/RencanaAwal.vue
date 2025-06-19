@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem, type User, type ProgramData } from '@/types';
+import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 
 interface Target {
@@ -35,6 +35,10 @@ interface User {
     nama_skpd: string;
     skpd_id?: number;
     nip: string;
+    user_detail?: {
+        nip?: string;
+        nama?: string;
+    } | null;
 }
 
 interface ItemWithKodeNomenklatur {
@@ -127,6 +131,12 @@ const loadingRow = ref<string | null>(null);
 const successRow = ref<string | null>(null);
 const errorRow = ref<string | null>(null);
 
+// Tambahkan state untuk cache data dengan persistent storage
+const cachedSumberDana = ref<Record<string, string>>({});
+const manualInputValues = ref<Record<string, Record<number, {kinerja_fisik: number, keuangan: number}>>>({});
+const isDataRefreshing = ref(false);
+const skipNextRefresh = ref(false);
+
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: 'Monitoring', href: '/rencana-awal' },
     { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/rencana-awal/${props.user?.id}` },
@@ -140,6 +150,19 @@ onMounted(() => {
     } else if (props.semuaPeriodeAktif && props.semuaPeriodeAktif.length > 0) {
         selectedPeriodeId.value = props.semuaPeriodeAktif[0].id;
     }
+    
+    // Initialize cached values from localStorage if available
+    try {
+        const storedCache = localStorage.getItem('rencanaawal_sumberdana_cache');
+        if (storedCache) {
+            cachedSumberDana.value = JSON.parse(storedCache);
+        }
+    } catch (e) {
+        console.error('Failed to restore cache:', e);
+    }
+    
+    // Ensure editing targets
+    ensureEditingTargets();
 });
 
 // Modal and target editing states
@@ -265,8 +288,11 @@ const modalSaveTargets = (item: ItemWithKodeNomenklatur) => {
   const itemType = item.kode_nomenklatur.jenis_nomenklatur;
   const route = getRouteBasedOnItemType(itemType);
   
-  // Send to server
-  router.post(route, {
+  // Get the funding data for this item (important for connecting targets with saved funding sources)
+  const fundingData = props.dataAnggaranTerakhir?.[item.id];
+  
+  // Create payload with all necessary data
+  const payload: Record<string, any> = {
     tugas_id: item.id,
     skpd_id: props.user?.skpd_id || props.tugas?.skpd_id,
     sumber_dana: 'APBD', // Default sumber dana
@@ -277,11 +303,36 @@ const modalSaveTargets = (item: ItemWithKodeNomenklatur) => {
     pagu_parsial: 0,
     pagu_perubahan: 0,
     targets: targets
-  }, {
+  };
+  
+  // Add funding data if available
+  if (fundingData) {
+    payload.sumber_anggaran = fundingData.sumber_anggaran;
+    payload.funding_values = fundingData.values;
+  }
+  
+  // Send to server with preserveState to maintain data continuity
+  router.post(route, payload, {
+    preserveState: true, // Preserve state to prevent data reset
     onSuccess: () => {
       alert('Target berhasil disimpan');
       showModal.value = false;
       currentItem.value = null;
+      
+      // Reload data if necessary, but maintain state
+      if (props.tugas?.id) {
+        router.visit(`/rencana-awal/rencanaawal/${props.tugas.id}`, {
+          preserveState: true,
+          preserveScroll: true,
+          only: ['subkegiatanTugas']
+        });
+      } else if (props.user?.id) {
+        router.visit(`/rencana-awal/${props.user.id}`, {
+          preserveState: true,
+          preserveScroll: true,
+          only: ['subkegiatanTugas']
+        });
+      }
     },
     onError: (errors) => {
       alert('Gagal menyimpan target: ' + Object.values(errors).join('\n'));
@@ -313,7 +364,7 @@ const calculateItemTotal = (item: ItemWithKodeNomenklatur) => {
 // Helper to determine the API endpoint based on item type
 const getRouteBasedOnItemType = (itemType: number) => {
   // Using the same endpoint for all types for simplicity
-  return '/rencana-awal/save-monitoring-data';
+  return '/rencanaawal';
 };
 
 // Delete item action
@@ -342,18 +393,31 @@ const handlePeriodeChange = (event: Event) => {
   const newPeriodeId = target.value ? parseInt(target.value) : null;
 
   if (selectedPeriodeId.value !== newPeriodeId) {
+    // Save current state before period change
+    saveStateToLocalStorage();
+    
     selectedPeriodeId.value = newPeriodeId;
 
     // Reload data with the new period
     if (props.tugas?.id) {
       router.visit(`/rencana-awal/rencanaawal/${props.tugas.id}?periode_id=${newPeriodeId || ''}`, {
         preserveState: true,
-        only: ['dataAnggaranTerakhir', 'subkegiatanTugas']
+        preserveScroll: true,
+        only: ['dataAnggaranTerakhir', 'subkegiatanTugas'],
+        onSuccess: () => {
+          // Restore state after period change
+          restoreStateFromCache();
+        }
       });
     } else if (props.user?.id) {
       router.visit(`/rencana-awal/${props.user.id}?periode_id=${newPeriodeId || ''}`, {
         preserveState: true,
-        only: ['dataAnggaranTerakhir', 'subkegiatanTugas']
+        preserveScroll: true,
+        only: ['dataAnggaranTerakhir', 'subkegiatanTugas'],
+        onSuccess: () => {
+          // Restore state after period change
+          restoreStateFromCache();
+        }
       });
     }
   }
@@ -382,13 +446,17 @@ watch(() => props.dataAnggaranTerakhir, () => {
   recalculateAllTargets();
 }, { deep: true });
 
-// Add a computed property to transform subkegiatan data to include bidang urusan and multiple rows per sumber dana
+// Computed property untuk formattedSubKegiatanData harus memastikan sumberDana selalu dipertahankan
 const formattedSubKegiatanData = computed(() => {
   const result: any[] = [];
 
   if (!props.subkegiatanTugas) {
     return result;
   }
+
+  // Coba ambil data cache terlebih dahulu
+  const storedCache = localStorage.getItem('rencanaawal_sumberdana_cache');
+  const cachedData = storedCache ? JSON.parse(storedCache) : {};
 
   // For each subkegiatan
   props.subkegiatanTugas.forEach(subKegiatan => {
@@ -415,6 +483,24 @@ const formattedSubKegiatanData = computed(() => {
 
     // Get the funding data for this subkegiatan
     const fundingData = props.dataAnggaranTerakhir?.[subKegiatan.id];
+    
+    // CRITICAL IMPROVEMENT: Cari nilai sumber dana dari monitoring data dan cache
+    const retrieveCachedSumberDana = (id: number | string): string | null => {
+      // 1. Cek cache lokal dulu
+      if (cachedSumberDana.value[id]) return cachedSumberDana.value[id];
+      
+      // 2. Cek localStorage
+      if (cachedData[id]) return cachedData[id];
+      
+      // 3. Cek dari monitoring data
+      if (subKegiatan.monitoring?.sumber_dana) return subKegiatan.monitoring.sumber_dana;
+      
+      if (subKegiatan.monitoring?.monitoringAnggaran?.length > 0) {
+        return subKegiatan.monitoring.monitoringAnggaran[0].sumber_dana || 'DAU';
+      }
+      
+      return 'DAU'; // Selalu kembalikan DAU (bukan null) sebagai fallback
+    };
     
     // Process monitoring data to extract targets more safely
     const processMonitoringData = (subKegiatan: any) => {
@@ -463,6 +549,11 @@ const formattedSubKegiatanData = computed(() => {
       return normalizedTargets;
     };
 
+    // Tambahkan data sumber dana yang sudah disimpan ke cache
+    // CRITICAL: Pastikan ini selalu dijalankan, bahkan jika tidak ada fundingData
+    const savedSumberDana = retrieveCachedSumberDana(subKegiatan.id);
+    
+    // PERBAIKAN PENTING: Ubah logika formattedSubKegiatanData untuk menampilkan multiple sumber dana
     if (fundingData) {
       // Check each funding source
       const sources = [
@@ -479,12 +570,20 @@ const formattedSubKegiatanData = computed(() => {
         const sourceKey = source.key as keyof typeof fundingData.sumber_anggaran;
         const valueKey = source.key as keyof typeof fundingData.values;
 
-        if (fundingData.sumber_anggaran[sourceKey] && fundingData.values[valueKey] > 0) {
+        // CRITICAL FIX: Tampilkan baris untuk setiap sumber dana yang aktif
+        // Ubah kondisi untuk mengecek apakah sumbernya aktif
+        if (fundingData.sumber_anggaran[sourceKey]) {
           hasActiveSource = true;
           
           // Get normalized targets
           const targets = processMonitoringData(subKegiatan);
           
+          // IMPROVEMENT: save source dana to cache - tapi jangan override yang lain
+          // Cache dengan key khusus untuk source tertentu
+          const sourceSpecificKey = `${subKegiatan.id}-${source.key}`;
+          cachedSumberDana.value[sourceSpecificKey] = source.name;
+          
+          // Buat row khusus untuk source ini
           result.push({
             id: `${subKegiatan.id}-${source.key}`,
             subKegiatan: subKegiatan,
@@ -492,10 +591,11 @@ const formattedSubKegiatanData = computed(() => {
             program: parentProgram,
             bidangUrusan: parentBidangUrusan,
             sumberDana: source.name,
-            pokok: fundingData.values[valueKey],
+            pokok: fundingData.values[valueKey] || 0,
             parsial: 0,
             perubahan: 0,
-            normalizedTargets: targets
+            normalizedTargets: targets,
+            source: source.key // Tambahkan identifier source
           });
         }
       });
@@ -505,17 +605,22 @@ const formattedSubKegiatanData = computed(() => {
         // Get normalized targets
         const targets = processMonitoringData(subKegiatan);
         
+        // IMPROVEMENT: default source dana
+        const defaultSumberDana = 'DAU';
+        cachedSumberDana.value[subKegiatan.id] = defaultSumberDana;
+        
         result.push({
           id: `${subKegiatan.id}-default`,
           subKegiatan: subKegiatan,
           kegiatan: parentKegiatan,
           program: parentProgram,
           bidangUrusan: parentBidangUrusan,
-          sumberDana: 'Belum diisi',
+          sumberDana: defaultSumberDana,
           pokok: 0,
           parsial: 0,
           perubahan: 0,
-          normalizedTargets: targets
+          normalizedTargets: targets,
+          source: 'dak' // Default source
         });
       }
     }
@@ -524,28 +629,80 @@ const formattedSubKegiatanData = computed(() => {
       // Get normalized targets
       const targets = processMonitoringData(subKegiatan);
       
-      result.push({
-        id: `${subKegiatan.id}-default`,
-        subKegiatan: subKegiatan,
-        kegiatan: parentKegiatan,
-        program: parentProgram,
-        bidangUrusan: parentBidangUrusan,
-        sumberDana: subKegiatan.monitoring.sumber_dana || 'Multiple',
-        pokok: subKegiatan.monitoring.pagu_pokok || 0,
-        parsial: subKegiatan.monitoring.pagu_parsial || 0,
-        perubahan: subKegiatan.monitoring.pagu_perubahan || 0,
-        normalizedTargets: targets
-      });
+      // Display all monitoring anggaran jika ada
+      if (subKegiatan.monitoring.monitoringAnggaran?.length > 0) {
+        // Untuk setiap monitoring anggaran, buat baris terpisah
+        subKegiatan.monitoring.monitoringAnggaran.forEach((anggaran: any) => {
+          // Tentukan nama sumber dana
+          let displaySumberDana = 'DAU'; // Default ke DAU
+          
+          // Coba definisikan sumber dana dari anggaran
+          if (anggaran.sumber_anggaran_id) {
+            // Map ID ke nama sumber dana
+            switch(anggaran.sumber_anggaran_id) {
+              case 1: displaySumberDana = 'DAU'; break;
+              case 2: displaySumberDana = 'DAK Fisik'; break;
+              case 3: displaySumberDana = 'DAK Non Fisik'; break;
+              case 4: displaySumberDana = 'BLUD'; break;
+              case 5: displaySumberDana = 'DAU Peruntukan'; break;
+            }
+          } else if (anggaran.sumber_dana) {
+            displaySumberDana = anggaran.sumber_dana;
+          }
+          
+          // Save to cache dengan key khusus
+          const anggaranKey = `${subKegiatan.id}-${anggaran.sumber_anggaran_id || 'default'}`;
+          cachedSumberDana.value[anggaranKey] = displaySumberDana;
+          
+          // Tambahkan baris untuk monitoring anggaran ini
+          result.push({
+            id: `${subKegiatan.id}-${anggaran.sumber_anggaran_id || 'default'}`,
+            subKegiatan: subKegiatan,
+            kegiatan: parentKegiatan,
+            program: parentProgram,
+            bidangUrusan: parentBidangUrusan,
+            sumberDana: displaySumberDana,
+            pokok: subKegiatan.monitoring.pagu_pokok || anggaran.pagu_pokok || 0,
+            parsial: subKegiatan.monitoring.pagu_parsial || anggaran.pagu_parsial || 0,
+            perubahan: subKegiatan.monitoring.pagu_perubahan || anggaran.pagu_perubahan || 0,
+            normalizedTargets: anggaran.targets?.length ? processMonitoringTargets(anggaran.targets) : targets,
+            source: anggaran.sumber_anggaran_id ? `source-${anggaran.sumber_anggaran_id}` : 'dak' // Tambahkan identifier source
+          });
+        });
+      } else {
+        // Jika tidak ada monitoring anggaran, gunakan monitoring default
+        const displaySumberDana = subKegiatan.monitoring.sumber_dana || 'DAU';
+        
+        // Save to cache
+        cachedSumberDana.value[subKegiatan.id] = displaySumberDana;
+        
+        result.push({
+          id: `${subKegiatan.id}-default`,
+          subKegiatan: subKegiatan,
+          kegiatan: parentKegiatan,
+          program: parentProgram,
+          bidangUrusan: parentBidangUrusan,
+          sumberDana: displaySumberDana,
+          pokok: subKegiatan.monitoring.pagu_pokok || 0,
+          parsial: subKegiatan.monitoring.pagu_parsial || 0,
+          perubahan: subKegiatan.monitoring.pagu_perubahan || 0,
+          normalizedTargets: targets,
+          source: 'dak' // Default source
+        });
+      }
     }
     // If no funding data and no monitoring, still show the row with zero values
     else {
+      const defaultSumberDana = 'DAU';
+      cachedSumberDana.value[subKegiatan.id] = defaultSumberDana;
+      
       result.push({
         id: `${subKegiatan.id}-default`,
         subKegiatan: subKegiatan,
         kegiatan: parentKegiatan,
         program: parentProgram,
         bidangUrusan: parentBidangUrusan,
-        sumberDana: 'Belum diisi',
+        sumberDana: defaultSumberDana,
         pokok: 0,
         parsial: 0,
         perubahan: 0,
@@ -554,10 +711,18 @@ const formattedSubKegiatanData = computed(() => {
           { kinerja_fisik: 0, keuangan: 0 },
           { kinerja_fisik: 0, keuangan: 0 },
           { kinerja_fisik: 0, keuangan: 0 }
-        ]
+        ],
+        source: 'dak' // Default source
       });
     }
   });
+  
+  // Setelah data dimuat, simpan semua sumber dana yang kita gunakan
+  try {
+    localStorage.setItem('rencanaawal_sumberdana_cache', JSON.stringify(cachedSumberDana.value));
+  } catch (e) {
+    console.error('Error caching sources:', e);
+  }
 
   return result;
 });
@@ -861,19 +1026,23 @@ function getSumberAnggaranId(sumberDanaNama: string): number {
   const sumberDanaMapping: Record<string, number> = {
     // Original mappings
     'dau': 1,
-    'dau peruntukan': 2,
-    'dak fisik': 3,
-    'dak non fisik': 4,
-    'blud': 5,
+    'dak fisik': 2,
+    'dak non fisik': 3,
+    'blud': 4,
+    'dau peruntukan': 5,
     
-    // Tambahan alternatif untuk kecocokan lebih baik
-    'dak': 1,
-    'dak peruntukan': 2,
-    'dak non-fisik': 4,
-    'apbd': 1,
-    'apbn': 2,
-    'multiple': 1,
-    'belum diisi': 1,
+    // Variations
+    'dak': 1, // kalau nama masih DAK tapi maksudnya DAU
+    'd.a.u': 1,
+    'd.a.u.': 1,
+    'dau.': 1,
+    'dana alokasi umum': 1,
+    'dana alokasi khusus fisik': 2,
+    'dana alokasi khusus non fisik': 3,
+    'badan layanan umum daerah': 4,
+    'b.l.u.d': 4,
+    'b.l.u.d.': 4,
+    'blud.': 4
   };
   
   const result = sumberDanaMapping[normalizedName] || 1;
@@ -883,69 +1052,66 @@ function getSumberAnggaranId(sumberDanaNama: string): number {
 
 // Fungsi simpan target
 async function saveTargets(subKegiatan: any, sumberDana?: string) {
-  // Cari sumberDana dari formattedSubKegiatanData jika tidak ada di parameter
   let finalSumberDana: string = sumberDana || '';
-  
+
   if (!finalSumberDana) {
-    // Jika sumberDana tidak ada di parameter, cari dari subKegiatan atau formattedSubKegiatanData
     finalSumberDana = subKegiatan.sumberDana || '';
-    
     if (!finalSumberDana) {
       const matchingItem = formattedSubKegiatanData.value.find(item => item.subKegiatan.id === subKegiatan.id);
-      if (matchingItem) {
-        finalSumberDana = matchingItem.sumberDana;
-      } else {
-        // Default fallback jika tidak ditemukan
-        finalSumberDana = 'APBD';
-      }
+      finalSumberDana = matchingItem?.sumberDana || 'DAU';
     }
   }
-  
+
+  cachedSumberDana.value[subKegiatan.id] = finalSumberDana;
+
+  try {
+    const savedCache = JSON.parse(localStorage.getItem('rencanaawal_sumberdana_cache') || '{}');
+    savedCache[subKegiatan.id] = finalSumberDana;
+    localStorage.setItem('rencanaawal_sumberdana_cache', JSON.stringify(savedCache));
+  } catch (e) {
+    console.error('Error saving to localStorage:', e);
+  }
+
+  skipNextRefresh.value = true;
   const uniqueKey = getUniqueKey(subKegiatan, finalSumberDana);
-  loadingRow.value = uniqueKey; // Gunakan uniqueKey, bukan subKegiatan.id
+  loadingRow.value = uniqueKey;
   errorRow.value = null;
   successRow.value = null;
-  
+
   try {
-    // Periksa jika editingTargets untuk key ini sudah ada
     if (!editingTargets.value[uniqueKey]) {
       editingTargets.value[uniqueKey] = getInitialTargets(subKegiatan);
-}
+    }
+    manualInputValues.value[uniqueKey] = JSON.parse(JSON.stringify(editingTargets.value[uniqueKey]));
 
     const rawTargets = editingTargets.value[uniqueKey];
-        
-    // Validate and format targets data
     const processedTargets = rawTargets.map((target: any, index: number) => {
       const kinerjaFisik = parseFloat(String(target.kinerja_fisik).replace(',', '.'));
       const keuangan = typeof target.keuangan === 'string' 
         ? parseInt(target.keuangan.replace(/[^\d]/g, '')) 
         : (target.keuangan || 0);
-            
+
       if (isNaN(kinerjaFisik) || kinerjaFisik < 0 || kinerjaFisik > 100) {
         throw new Error(`Kinerja fisik triwulan ${index + 1} harus berupa angka antara 0-100`);
       }
-            
       if (isNaN(keuangan) || keuangan < 0) {
         throw new Error(`Keuangan triwulan ${index + 1} harus berupa angka positif`);
       }
 
-    return {
-        kinerja_fisik: kinerjaFisik,
-        keuangan: keuangan,
-        triwulan: index + 1
-    };
+      return { kinerja_fisik: kinerjaFisik, keuangan, triwulan: index + 1 };
     });
-    
+
     const sumberAnggaranId = getSumberAnggaranId(finalSumberDana);
-    
-    // Get pagu data from props.dataAnggaranTerakhir
+    let paguValue = 0;
     const paguData = props.dataAnggaranTerakhir?.[subKegiatan.id]?.values || {};
     const key = normalizeKey(finalSumberDana);
-    
-    // We need to ensure type safety here - create a safer version of the key lookup
-    let paguValue = 0;
-    if (paguData) {
-      // Use type assertion to make TypeScript happy
+    const existingItem = formattedSubKegiatanData.value.find(
+      item => item.subKegiatan.id === subKegiatan.id && item.sumberDana === finalSumberDana
+    );
+
+    if (existingItem?.pokok > 0) {
+      paguValue = existingItem.pokok;
+    } else if (paguData) {
       type PaguDataType = {
         dau?: number;
         dau_peruntukan?: number;
@@ -953,137 +1119,113 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
         dak_non_fisik?: number;
         blud?: number;
       };
-      
       const typedPaguData = paguData as PaguDataType;
-      
-      if (key === 'dau' && typedPaguData.dau !== undefined) {
-        paguValue = typedPaguData.dau;
-      } else if (key === 'dau_peruntukan' && typedPaguData.dau_peruntukan !== undefined) {
-        paguValue = typedPaguData.dau_peruntukan;
-      } else if (key === 'dak_fisik' && typedPaguData.dak_fisik !== undefined) {
-        paguValue = typedPaguData.dak_fisik;
-      } else if (key === 'dak_non_fisik' && typedPaguData.dak_non_fisik !== undefined) {
-        paguValue = typedPaguData.dak_non_fisik;
-      } else if (key === 'blud' && typedPaguData.blud !== undefined) {
-        paguValue = typedPaguData.blud;
-      }
+      if (key === 'dak' && typedPaguData.dau !== undefined) paguValue = typedPaguData.dau;
+      else if (key === 'dak_peruntukan' && typedPaguData.dau_peruntukan !== undefined) paguValue = typedPaguData.dau_peruntukan;
+      else if (key === 'dak_fisik' && typedPaguData.dak_fisik !== undefined) paguValue = typedPaguData.dak_fisik;
+      else if (key === 'dak_non_fisik' && typedPaguData.dak_non_fisik !== undefined) paguValue = typedPaguData.dak_non_fisik;
+      else if (key === 'blud' && typedPaguData.blud !== undefined) paguValue = typedPaguData.blud;
     }
-    
-    // Pastikan nama_pptk ada (ini sering menjadi masalah jika required di backend)
-    const nama_pptk = props.tugas?.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nama || 
-                      props.kepalaSkpd || 
-                      'Belum diisi';
-    
+
+    try {
+      localStorage.setItem(`pagu:${subKegiatan.id}:${finalSumberDana}`, paguValue.toString());
+    } catch (e) {
+      console.error('Error caching pagu value:', e);
+    }
+
+    const nama_pptk = props.tugas?.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nama || props.kepalaSkpd || 'Belum diisi';
+
     const payload = {
       skpd_tugas_id: subKegiatan.id,
       tahun: props.tahunAktif?.tahun || new Date().getFullYear(),
       deskripsi: 'Rencana Awal',
       targets: processedTargets,
       sumber_anggaran_id: sumberAnggaranId,
-      sumber_dana: finalSumberDana, // Tambahkan sumber_dana ke payload
+      sumber_dana: finalSumberDana,
       periode_id: selectedPeriodeId.value,
-      nama_pptk: nama_pptk,
-      pagu: {
-        pokok: paguValue,
-        parsial: 0,
-        perubahan: 0
-      }
+      nama_pptk,
+      pagu: { pokok: paguValue, parsial: 0, perubahan: 0 }
     };
-    
-    console.log('Sending payload:', payload);
-    
+
     const response = await router.post('/rencanaawal/save-target', payload, {
       preserveScroll: true,
       preserveState: true,
       onSuccess: (response: any) => {
-        console.log('Success response:', response);
-        successRow.value = uniqueKey; // Gunakan uniqueKey, bukan subKegiatan.id
-        
-        // Update the UI with the new data
-        // Find the corresponding item in formattedSubKegiatanData
-        const itemToUpdate = formattedSubKegiatanData.value.find(
-          item => item.subKegiatan.id === subKegiatan.id && 
-                 item.sumberDana === finalSumberDana
+        successRow.value = uniqueKey;
+
+        const updatedTargets = Array(4).fill({ kinerja_fisik: 0, keuangan: 0 });
+        (response.data?.targets || processedTargets).forEach((target: any) => {
+          const index = target.periode_id - 1;
+          if (index >= 0 && index < 4) {
+            updatedTargets[index] = {
+              kinerja_fisik: target.kinerja_fisik || 0,
+              keuangan: target.keuangan || 0
+            };
+          }
+        });
+
+        const newItem = {
+          id: `${subKegiatan.id}-${finalSumberDana.replace(/\s+/g, '-')}`,
+          subKegiatan,
+          kegiatan: props.kegiatanTugas?.find(k => k.kode_nomenklatur.id === subKegiatan.kode_nomenklatur.details[0]?.id_kegiatan),
+          program: props.programTugas?.find(p => p.kode_nomenklatur.id === subKegiatan.kode_nomenklatur.details[0]?.id_program),
+          bidangUrusan: props.bidangurusanTugas?.find(bu => bu.kode_nomenklatur.id === subKegiatan.kode_nomenklatur.details[0]?.id_bidang_urusan),
+          sumberDana: finalSumberDana,
+          pokok: paguValue,
+          parsial: 0,
+          perubahan: 0,
+          normalizedTargets: updatedTargets
+        };
+
+        const remainingItems = formattedSubKegiatanData.value.filter(item =>
+          !(item.subKegiatan.id === subKegiatan.id && item.sumberDana === finalSumberDana)
         );
-        
-        if (itemToUpdate && response.data && response.data.targets) {
-          // Create updated normalized targets
-          const updatedTargets = [
-            { kinerja_fisik: 0, keuangan: 0 },
-            { kinerja_fisik: 0, keuangan: 0 },
-            { kinerja_fisik: 0, keuangan: 0 },
-            { kinerja_fisik: 0, keuangan: 0 }
-          ];
-          
-          // Update with the new target values
-          response.data.targets.forEach((target: any) => {
-            const index = target.periode_id - 1;
-            if (index >= 0 && index < 4) {
-              updatedTargets[index] = {
-                kinerja_fisik: target.kinerja_fisik || 0,
-                keuangan: target.keuangan || 0
-              };
-            }
-          });
-          
-          // Update the item with new targets
-          itemToUpdate.normalizedTargets = updatedTargets;
-          
-          // Update monitoring data in the subKegiatan object to reflect the changes
-          if (!subKegiatan.monitoring) {
-            subKegiatan.monitoring = {
-              monitoringAnggaran: []
-            };
-          }
-          
-          if (!subKegiatan.monitoring.monitoringAnggaran) {
-            subKegiatan.monitoring.monitoringAnggaran = [];
-          }
-          
-          // Find or create the monitoring anggaran for this source
-          let monitoringAnggaran = subKegiatan.monitoring.monitoringAnggaran.find(
-            (anggaran: any) => anggaran.sumber_anggaran_id === sumberAnggaranId
-          );
-          
-          if (!monitoringAnggaran) {
-            monitoringAnggaran = {
-              id: response.data.monitoring_anggaran_id,
-              sumber_anggaran_id: sumberAnggaranId,
-              targets: []
-            };
-            subKegiatan.monitoring.monitoringAnggaran.push(monitoringAnggaran);
-          }
-          
-          // Update the targets for this specific monitoring anggaran
-          monitoringAnggaran.targets = response.data.targets;
-          
-          console.log('Updated monitoring data for subKegiatan:', subKegiatan.id, 'sumber dana:', finalSumberDana);
+        formattedSubKegiatanData.value = [...remainingItems, newItem];
+
+        if (!subKegiatan.monitoring) subKegiatan.monitoring = { monitoringAnggaran: [] };
+        if (!subKegiatan.monitoring.monitoringAnggaran) subKegiatan.monitoring.monitoringAnggaran = [];
+
+        let monitoringAnggaran = subKegiatan.monitoring.monitoringAnggaran.find((anggaran: any) => anggaran.sumber_anggaran_id === sumberAnggaranId);
+        if (!monitoringAnggaran) {
+          monitoringAnggaran = {
+            id: response.data?.monitoring_anggaran_id || Date.now(),
+            sumber_anggaran_id: sumberAnggaranId,
+            sumber_dana: finalSumberDana,
+            targets: [],
+            pagu_pokok: paguValue
+          };
+          subKegiatan.monitoring.monitoringAnggaran.push(monitoringAnggaran);
+        } else {
+          monitoringAnggaran.pagu_pokok = paguValue;
         }
+        monitoringAnggaran.sumber_dana = finalSumberDana;
+        monitoringAnggaran.targets = response.data?.targets || [];
+
+        if (editingTargets.value[uniqueKey] && manualInputValues.value[uniqueKey]) {
+          editingTargets.value[uniqueKey] = editingTargets.value[uniqueKey].map((target: any, index: number) => {
+            const savedInput = manualInputValues.value[uniqueKey][index];
+            return {
+              kinerja_fisik: savedInput?.kinerja_fisik || target.kinerja_fisik,
+              keuangan: savedInput?.keuangan || target.keuangan
+            };
+          });
+        }
+
         
-        delete editingTargets.value[uniqueKey];
-        
-        // Show success message temporarily
+
+        recalculateAllTargets();
         setTimeout(() => {
           if (successRow.value === uniqueKey) {
             successRow.value = null;
           }
         }, 3000);
-        
-        // Refresh data from server after success to update all calculations
-        setTimeout(() => {
-          refreshData();
-        }, 500);
       },
       onError: (err: any) => {
         console.error('Error saving targets:', err);
-        errorRow.value = uniqueKey; // Gunakan uniqueKey, bukan subKegiatan.id
-        
-        // Check for the specific error about period not being active
-        if (err.message && err.message.includes('Tidak ada periode yang aktif')) {
-          alert('Tidak ada periode yang aktif saat ini. Data Rencana Awal tidak dapat disimpan. Silakan tunggu hingga periode dibuka oleh admin.');
-        } else {
-          alert(err.message || 'Terjadi kesalahan saat menyimpan target');
-        }
+        errorRow.value = uniqueKey;
+        alert(err.message?.includes('Tidak ada periode yang aktif') ?
+          'Tidak ada periode yang aktif saat ini. Data Rencana Awal tidak dapat disimpan. Silakan tunggu hingga periode dibuka oleh admin.' :
+          err.message || 'Terjadi kesalahan saat menyimpan target');
       },
       onFinish: () => {
         loadingRow.value = null;
@@ -1094,27 +1236,83 @@ async function saveTargets(subKegiatan: any, sumberDana?: string) {
             }
           }, 3000);
         }
+        skipNextRefresh.value = false;
       }
     });
 
     return response;
   } catch (e: any) {
     console.error('Exception:', e);
-    errorRow.value = uniqueKey; // Gunakan uniqueKey, bukan subKegiatan.id
+    errorRow.value = uniqueKey;
     loadingRow.value = null;
     alert(e.message || 'Terjadi kesalahan saat memproses data');
   }
 }
 
-// Helper function untuk normalisasi key sumber anggaran
-function normalizeKey(name: string): string {
-    const key = name.toLowerCase().replace(/\s+/g, '_');
-    if (key === 'dau') return 'dak';
-    if (key === 'dau_peruntukan') return 'dak_peruntukan';
-    return key;
+function restoreOtherSumberDana(subKegiatan: any, currentSumberDana: string, allMonitoringData: any[]) {
+  const existingEntries = formattedSubKegiatanData.value.filter(
+    item => item.subKegiatan.id === subKegiatan.id
+  );
+
+  // Cari semua sumber dana untuk subKegiatan ini dari monitoring yang lain
+  const otherSources = allMonitoringData
+    .filter(m => m.skpd_tugas_id === subKegiatan.id && m.sumber_dana !== currentSumberDana)
+    .map(m => ({
+      sumberDana: m.sumber_dana,
+      pagu: m.pagu_pokok || 0,
+      targets: m.targets || []
+    }));
+
+  otherSources.forEach(source => {
+    const alreadyExists = existingEntries.find(e => e.sumberDana === source.sumberDana);
+    if (!alreadyExists) {
+      const uniqueKey = getUniqueKey(subKegiatan, source.sumberDana);
+      const targets = [0, 1, 2, 3].map(index => {
+        const data = source.targets.find((t: any) => t.periode_id === index + 1);
+        return {
+          kinerja_fisik: data?.kinerja_fisik || 0,
+          keuangan: data?.keuangan || 0,
+        };
+      });
+
+      formattedSubKegiatanData.value.push({
+        id: `${subKegiatan.id}-${source.sumberDana.replace(/\s+/g, '-')}`,
+        subKegiatan: subKegiatan,
+        kegiatan: null, // Bisa kamu isi dengan data program/kegiatan jika dibutuhkan
+        program: null,
+        bidangUrusan: null,
+        sumberDana: source.sumberDana,
+        pokok: source.pagu,
+        parsial: 0,
+        perubahan: 0,
+        normalizedTargets: targets
+      });
+
+      editingTargets.value[uniqueKey] = targets;
+    }
+  });
 }
 
-function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
+
+// Helper function untuk normalisasi key sumber anggaran
+function normalizeKey(name: string): string {
+    // Pastikan key yang dihasilkan konsisten dengan ID
+    const normalizedName = name.toLowerCase().trim();
+    
+    // Mapping sesuai dengan getSumberAnggaranId
+    if (normalizedName === 'dau' || normalizedName === 'dak') return 'dau';
+    if (normalizedName === 'dau peruntukan') return 'dau_peruntukan';
+    if (normalizedName === 'dak fisik') return 'dak_fisik';
+    if (normalizedName === 'dak non fisik') return 'dak_non_fisik';
+    if (normalizedName === 'blud') return 'blud';
+    
+    // Default ke DAU jika tidak match
+    return 'dau';
+}
+
+function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string } | undefined): string {
+  if (!user) return '-';
+  
   if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
     return user.user_detail.nip;
   }
@@ -1139,9 +1337,6 @@ async function deleteTargets(subKegiatan: any, sumberDana?: string) {
       const matchingItem = formattedSubKegiatanData.value.find(item => item.subKegiatan.id === subKegiatan.id);
       if (matchingItem) {
         finalSumberDana = matchingItem.sumberDana;
-      } else {
-        // Default fallback jika tidak ditemukan
-        finalSumberDana = 'APBD';
       }
     }
   }
@@ -1212,10 +1407,8 @@ async function deleteTargets(subKegiatan: any, sumberDana?: string) {
           }
         }, 3000);
         
-        // Reload the page after a slight delay to refresh data
-        setTimeout(() => {
-          refreshData();
-        }, 500);
+        // Call refreshData directly without delay for more immediate update
+        refreshData();
       },
       onError: (err: any) => {
         console.error('Error saat hapus:', err);
@@ -1247,44 +1440,331 @@ function goToCreate() {
   router.visit('/rencanaawal/create');
 }
 
-// Add a function to refresh the data from the server
+// Add a function to refresh the data from the server - pastikan pagu dipertahankan
 function refreshData() {
+  // Skip if flag is set
+  if (skipNextRefresh.value) {
+    console.log('Skipping refresh as requested');
+    skipNextRefresh.value = false;
+    return;
+  }
+  
+  // Prevent multiple simultaneous refreshes
+  if (isDataRefreshing.value) return;
+  
+  // Set flag to indicate refresh in progress
+  isDataRefreshing.value = true;
+  
+  // Store all current values before refresh
+  const currentEditingTargets = JSON.parse(JSON.stringify(editingTargets.value));
+  const currentSumberDana = JSON.parse(JSON.stringify(cachedSumberDana.value));
+  
+  // PERBAIKAN: Simpan nilai pokok untuk setiap item
+  const paguValues: Record<string, number> = {};
+  
+  // Store all formatted data with pagu values
+  const currentFormattedData = formattedSubKegiatanData.value.map(item => {
+    const uniqueKey = `${item.subKegiatan.id}-${item.sumberDana}`;
+    // Save pagu value
+    paguValues[uniqueKey] = item.pokok || 0;
+    
+    return {
+      id: item.subKegiatan.id,
+      subKegiatan: item.subKegiatan.id,
+      sumberDana: item.sumberDana,
+      pokok: item.pokok,
+      normalizedTargets: item.normalizedTargets,
+      uniqueKey: getUniqueKey(item.subKegiatan, item.sumberDana)
+    };
+  });
+  
+  // Save to localStorage for extra safety
+  try {
+    localStorage.setItem('rencanaawal_full_state', JSON.stringify({
+      editingTargets: currentEditingTargets,
+      cachedSumberDana: currentSumberDana,
+      formattedData: currentFormattedData,
+      paguValues: paguValues,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.error('Failed to save full state to localStorage:', e);
+  }
+  
   // Reload data with the current period
   const currentPeriodeId = selectedPeriodeId.value;
   
+  const options = {
+    preserveState: true,
+    preserveScroll: true,
+    only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas'],
+    onSuccess: () => {
+      console.log('Data refreshed, restoring cached values...');
+      
+      // After data is loaded, we need to restore our cached values
+      // First wait for the component to update with new data
+      nextTick(() => {
+        restoreFullState(currentEditingTargets, currentSumberDana, currentFormattedData);
+        isDataRefreshing.value = false;
+      });
+    },
+    onError: () => {
+      console.error('Error refreshing data');
+      isDataRefreshing.value = false;
+    }
+  };
+  
   if (props.tugas?.id) {
-    router.visit(`/rencana-awal/rencanaawal/${props.tugas.id}?periode_id=${currentPeriodeId || ''}`, {
-      preserveState: false, // Changed to false to force a full refresh
-      only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas']
-    });
+    router.visit(`/rencana-awal/rencanaawal/${props.tugas.id}?periode_id=${currentPeriodeId || ''}`, options);
   } else if (props.user?.id) {
-    router.visit(`/rencana-awal/${props.user.id}?periode_id=${currentPeriodeId || ''}`, {
-      preserveState: false, // Changed to false to force a full refresh
-      only: ['dataAnggaranTerakhir', 'subkegiatanTugas', 'programTugas', 'kegiatanTugas', 'bidangurusanTugas']
+    router.visit(`/rencana-awal/${props.user.id}?periode_id=${currentPeriodeId || ''}`, options);
+  } else {
+    isDataRefreshing.value = false;
+  }
+}
+
+// Function to restore full state after refresh
+function restoreFullState(savedEditingTargets: any, savedSumberDana: any, savedFormattedData: any[]) {
+  console.log('Restoring full state...');
+  
+  try {
+    // Try to load pagu values
+    let savedPaguValues: Record<string, number> = {};
+    try {
+      const fullState = localStorage.getItem('rencanaawal_full_state');
+      if (fullState) {
+        const parsedState = JSON.parse(fullState);
+        savedPaguValues = parsedState.paguValues || {};
+      }
+    } catch (e) {
+      console.error('Failed to load pagu values:', e);
+    }
+    
+    // Restore editing targets
+    if (savedEditingTargets) {
+      // We merge instead of replace to keep any new data
+      Object.keys(savedEditingTargets).forEach(key => {
+        editingTargets.value[key] = savedEditingTargets[key];
+      });
+    }
+    
+    // Restore cached sumber dana
+    if (savedSumberDana) {
+      // Merge saved values with current values
+      cachedSumberDana.value = { ...cachedSumberDana.value, ...savedSumberDana };
+    }
+    
+    // Apply sumber dana values to formatted data
+    if (formattedSubKegiatanData.value) {
+      formattedSubKegiatanData.value.forEach(item => {
+        // Match by subKegiatan.id to restore sumberDana
+        const savedItem = savedFormattedData.find(saved => 
+          saved.subKegiatan === item.subKegiatan.id
+        );
+        
+        if (savedItem && savedItem.sumberDana) {
+          item.sumberDana = savedItem.sumberDana;
+        }
+        
+        // Also check cached values
+        if (savedSumberDana[item.subKegiatan.id]) {
+          item.sumberDana = savedSumberDana[item.subKegiatan.id];
+        }
+        
+        // PERBAIKAN: Restore nilai pokok
+        const uniqueKey = `${item.subKegiatan.id}-${item.sumberDana}`;
+        if (savedPaguValues[uniqueKey] && savedPaguValues[uniqueKey] > 0) {
+          item.pokok = savedPaguValues[uniqueKey];
+        } else if (savedItem && savedItem.pokok && savedItem.pokok > 0) {
+          item.pokok = savedItem.pokok;
+        }
+        
+        // Ensure editing targets exist for this item
+        const uniqueKey2 = getUniqueKey(item.subKegiatan, item.sumberDana);
+        if (!editingTargets.value[uniqueKey2]) {
+          // If we have saved targets, use those
+          const savedKey = Object.keys(savedEditingTargets).find(key => 
+            key.startsWith(`${item.subKegiatan.id}-`)
+          );
+          
+          if (savedKey) {
+            editingTargets.value[uniqueKey2] = savedEditingTargets[savedKey];
+          } else {
+            editingTargets.value[uniqueKey2] = getInitialTargets(item.subKegiatan);
+          }
+        }
+      });
+    }
+    
+    // Force recalculation
+    recalculateAllTargets();
+    
+    console.log('State restored successfully');
+  } catch (e) {
+    console.error('Error restoring state:', e);
+  }
+}
+
+// Handle mounted event to restore state from localStorage if needed
+onMounted(() => {
+  if (props.periodeAktif && props.periodeAktif.length > 0) {
+    selectedPeriodeId.value = props.periodeAktif[0].id;
+  } else if (props.semuaPeriodeAktif && props.semuaPeriodeAktif.length > 0) {
+    selectedPeriodeId.value = props.semuaPeriodeAktif[0].id;
+  }
+  
+  // Load cached values from localStorage
+  try {
+    // Try to load the full state first
+    const fullState = localStorage.getItem('rencanaawal_full_state');
+    if (fullState) {
+      const parsedState = JSON.parse(fullState);
+      // Check if state is recent (less than 1 hour old)
+      if (Date.now() - parsedState.timestamp < 3600000) {
+        cachedSumberDana.value = parsedState.cachedSumberDana || {};
+        // We'll apply the rest after initial render
+        nextTick(() => {
+          restoreFullState(
+            parsedState.editingTargets || {},
+            parsedState.cachedSumberDana || {},
+            parsedState.formattedData || []
+          );
+        });
+      } else {
+        console.log('Cached state is too old, loading minimal cache');
+        const storedCache = localStorage.getItem('rencanaawal_sumberdana_cache');
+        if (storedCache) {
+          cachedSumberDana.value = JSON.parse(storedCache);
+        }
+      }
+    } else {
+      // Fallback to just the sumber dana cache
+      const storedCache = localStorage.getItem('rencanaawal_sumberdana_cache');
+      if (storedCache) {
+        cachedSumberDana.value = JSON.parse(storedCache);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to restore cache:', e);
+  }
+});
+
+// Monitor component unmounting to save state
+onUnmounted(() => {
+  saveStateToLocalStorage();
+});
+
+// Watch for changes in formatted data to update caches
+watch(formattedSubKegiatanData, () => {
+  // Ensure all rows have correct sumber dana
+  formattedSubKegiatanData.value.forEach(item => {
+    const uniqueKey = getUniqueKey(item.subKegiatan, item.sumberDana);
+    
+    // Apply cached value if available
+    if (cachedSumberDana.value[uniqueKey]) {
+      item.sumberDana = cachedSumberDana.value[uniqueKey];
+    } else if (cachedSumberDana.value[item.subKegiatan.id]) {
+      item.sumberDana = cachedSumberDana.value[item.subKegiatan.id];
+      // Update uniqueKey cache too
+      cachedSumberDana.value[uniqueKey] = item.sumberDana;
+    }
+    
+    // Ensure editing targets exist
+    if (!editingTargets.value[uniqueKey]) {
+      editingTargets.value[uniqueKey] = getInitialTargets(item.subKegiatan);
+    }
+  });
+}, { deep: true });
+
+// Update ensureEditingTargets function definition yang telah dihapus sebelumnya
+function ensureEditingTargets() {
+  const allRows = new Set<string>();
+  if (formattedSubKegiatanData.value) {
+    formattedSubKegiatanData.value.forEach((item: any) => {
+      // Apply cached sumber dana if available
+      if (cachedSumberDana.value[item.subKegiatan.id]) {
+        item.sumberDana = cachedSumberDana.value[item.subKegiatan.id];
+      }
+      
+      const uniqueKey = getUniqueKey(item.subKegiatan, item.sumberDana);
+      allRows.add(uniqueKey);
+      if (!editingTargets.value[uniqueKey]) {
+        editingTargets.value[uniqueKey] = getInitialTargets(item.subKegiatan);
+      }
     });
   }
 }
 
-// Update ensureEditingTargets agar pakai key unik
-function ensureEditingTargets() {
-    const allRows = new Set<string>();
-    if (formattedSubKegiatanData.value) {
-        formattedSubKegiatanData.value.forEach((item: any) => {
-            const uniqueKey = getUniqueKey(item.subKegiatan, item.sumberDana);
-            allRows.add(uniqueKey);
-            if (!editingTargets.value[uniqueKey]) {
-        editingTargets.value[uniqueKey] = getInitialTargets(item.subKegiatan);
-            }
-        });
-    }
+// Save state to localStorage function
+function saveStateToLocalStorage() {
+  try {
+    // Save editing targets
+    localStorage.setItem('rencanaawal_editing_targets', JSON.stringify(editingTargets.value));
+    
+    // Save cached sumber dana
+    localStorage.setItem('rencanaawal_sumberdana_cache', JSON.stringify(cachedSumberDana.value));
+  } catch (e) {
+    console.error('Failed to save state to localStorage:', e);
+  }
 }
 
+// Legacy function for compatibility
+function restoreStateFromCache() {
+  try {
+    // Load from localStorage
+    const storedTargets = localStorage.getItem('rencanaawal_editing_targets');
+    if (storedTargets) {
+      const parsedTargets = JSON.parse(storedTargets);
+      // Merge with current targets rather than replace
+      editingTargets.value = { ...editingTargets.value, ...parsedTargets };
+    }
+    
+    // Apply cached sumber dana to formatted data
+    if (formattedSubKegiatanData.value) {
+      formattedSubKegiatanData.value.forEach(item => {
+        const itemKey = getUniqueKey(item.subKegiatan, item.sumberDana);
+        if (cachedSumberDana.value[itemKey]) {
+          item.sumberDana = cachedSumberDana.value[itemKey];
+        }
+      });
+    }
+    
+    console.log('State restored from cache');
+  } catch (e) {
+    console.error('Failed to restore state from cache:', e);
+  }
+}
+
+// Make sure ensureEditingTargets is called on mount and watch
 onMounted(ensureEditingTargets);
 
 watch([
   () => props.subkegiatanTugas,
   () => formattedSubKegiatanData.value
 ], ensureEditingTargets, { immediate: true, deep: true });
+
+// Tambahkan helper function untuk memproses targets dari monitoring anggaran
+function processMonitoringTargets(targets: any[]) {
+  const normalizedTargets = [
+    { kinerja_fisik: 0, keuangan: 0 },
+    { kinerja_fisik: 0, keuangan: 0 },
+    { kinerja_fisik: 0, keuangan: 0 },
+    { kinerja_fisik: 0, keuangan: 0 }
+  ];
+  
+  // Process each target
+  targets.forEach((target: any) => {
+    const index = (target.triwulan || target.periode_id || 1) - 1;
+    if (index >= 0 && index < 4) {
+      normalizedTargets[index] = {
+        kinerja_fisik: target.kinerja_fisik || 0,
+        keuangan: target.keuangan || 0
+      };
+    }
+  });
+  
+  return normalizedTargets;
+}
 </script>
 
 

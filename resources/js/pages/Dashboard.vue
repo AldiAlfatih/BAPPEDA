@@ -102,8 +102,13 @@ const logByDate: Record<string, string[]> = {
     'Dinas Sosial menambah data penerima bantuan',
     'Dinas Pertanian mengirim laporan akhir',
   ],
-  '2025-05-25': [
-    'Dinas Lingkungan Hidup mengajukan proposal baru',
+  '2025-06-19': [
+    'Dinas Pendidikan Telah mengisi rencana awal',
+    'Dinas Kesehatan Telah Mengisi Triwulan 1',
+    'Rumah Sakit A.Makkasau Telah Mengisi Triwulan 1',
+    'Dinas PUPR Telah Mengisi Triwulan 1',
+    'Dinas Perdagangan Telah Mengisi Triwulan 1',
+    'Dinas PUPR Telah Mengisi Triwulan 3',
   ],
 };
 
@@ -253,9 +258,9 @@ const stepStates = computed(() => {
         >
           📢 Tidak ada periode monitoring yang sedang berlangsung.
         </div> -->
-        <div class="marquee-text text-orange-800 font-black">
+        <!-- <div class="marquee-text text-orange-800 font-black">
           "Setiap langkah kecil hari ini adalah pijakan kuat menuju kesuksesan besar di masa depan. Ayo mulai dengan penuh semangat!"
-        </div>
+        </div> -->
       </div>
     </div>
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">

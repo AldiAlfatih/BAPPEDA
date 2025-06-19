@@ -64,17 +64,17 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Skpd::class, 'skpd_kepala', 'user_id', 'skpd_id');
     }
-    
+
     public function skpdKepala()
     {
         return $this->hasMany(SkpdKepala::class);
     }
-    
+
     public function skpdTugas()
     {
         return $this->hasMany(SkpdTugas::class);
     }
-    
+
     public function timKerja()
     {
         return $this->hasMany(TimKerja::class, 'operator_id');

@@ -16,6 +16,8 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use App\Models\MonitoringAnggaran;
 use App\Models\Periode;
+use App\Models\SumberAnggaran;
+use App\Models\MonitoringPagu;
 
 class MonitoringController extends Controller
 {
@@ -55,6 +57,8 @@ class MonitoringController extends Controller
             $user->operator_name = $skpd?->operatorAktif?->operator?->name;
             $user->kepala_name = $skpd?->kepalaAktif?->user?->name;
             $user->kode_organisasi = $skpd?->kode_organisasi;
+            $user->operator_nip = $skpd?->operatorAktif?->operator?->userDetail?->nip;
+            $user->kepala_nip = $skpd?->kepalaAktif?->user?->userDetail?->nip;
         }
 
         return Inertia::render('Monitoring', [
@@ -108,6 +112,7 @@ class MonitoringController extends Controller
             'skpd' => $skpd ? [
                 'nama_skpd' => $skpd->nama_skpd,
                 'operator_name' => $skpd->operatorAktif?->operator?->name,
+                'operator_nip' => $skpd->operatorAktif?->operator?->userDetail?->nip,
                 'kepala_name' => $skpd->kepalaAktif?->user?->name,
                 'no_dpa' => $skpd->no_dpa,
                 'kode_organisasi' => $skpd->kode_organisasi
@@ -437,14 +442,86 @@ class MonitoringController extends Controller
             'pagu_pokok' => 'required|integer',
             'pagu_parsial' => 'nullable|integer',
             'pagu_perubahan' => 'nullable|integer',
-            'pokok' => 'required|string',
-            'parsial' => 'required|string',
+            'pokok' => 'nullable|string',
+            'parsial' => 'nullable|string',
             'perubahan' => 'nullable|string',
             'targets' => 'required|array',
             'targets.*.kinerja_fisik' => 'required|numeric',
             'targets.*.keuangan' => 'required|numeric',
+            'tugas_id' => 'nullable|exists:skpd_tugas,id',
+            'sumber_anggaran' => 'nullable|array',
+            'funding_values' => 'nullable|array',
         ]);
 
+        // Check for existing monitoring if tugas_id is provided
+        if (isset($validated['tugas_id'])) {
+            $existingMonitoring = Monitoring::where('skpd_tugas_id', $validated['tugas_id'])
+                ->where('tahun', $validated['tahun'])
+                ->first();
+            
+            if ($existingMonitoring) {
+                // Update existing monitoring
+                $existingMonitoring->sumber_dana = $validated['sumber_dana'];
+                $existingMonitoring->periode_id = $validated['periode_id'];
+                $existingMonitoring->deskripsi = $validated['deskripsi'];
+                $existingMonitoring->pagu_pokok = $validated['pagu_pokok'];
+                $existingMonitoring->pagu_parsial = $validated['pagu_parsial'] ?? 0;
+                $existingMonitoring->pagu_perubahan = $validated['pagu_perubahan'] ?? 0;
+                $existingMonitoring->pokok = $validated['pokok'] ?? '';
+                $existingMonitoring->parsial = $validated['parsial'] ?? '';
+                $existingMonitoring->perubahan = $validated['perubahan'] ?? null;
+                $existingMonitoring->save();
+                
+                // Clear and recreate targets
+                $existingMonitoring->targets()->delete();
+                foreach ($validated['targets'] as $target) {
+                    $existingMonitoring->targets()->create([
+                        'kinerja_fisik' => $target['kinerja_fisik'],
+                        'keuangan' => $target['keuangan'],
+                    ]);
+                }
+                
+                // If funding data is provided, update the connections
+                if (isset($validated['sumber_anggaran']) && isset($validated['funding_values'])) {
+                    $this->updateFundingConnections($existingMonitoring, $validated);
+                }
+                
+                return back()->with('success', 'Data monitoring berhasil diperbarui.');
+            }
+            
+            // Create new monitoring with skpd_tugas_id
+            $monitoring = new Monitoring();
+            $monitoring->skpd_id = $validated['skpd_id'];
+            $monitoring->skpd_tugas_id = $validated['tugas_id'];
+            $monitoring->sumber_dana = $validated['sumber_dana'];
+            $monitoring->periode_id = $validated['periode_id'];
+            $monitoring->tahun = $validated['tahun'];
+            $monitoring->deskripsi = $validated['deskripsi'];
+            $monitoring->pagu_pokok = $validated['pagu_pokok'];
+            $monitoring->pagu_parsial = $validated['pagu_parsial'] ?? 0;
+            $monitoring->pagu_perubahan = $validated['pagu_perubahan'] ?? 0;
+            $monitoring->pokok = $validated['pokok'] ?? '';
+            $monitoring->parsial = $validated['parsial'] ?? '';
+            $monitoring->perubahan = $validated['perubahan'] ?? null;
+            $monitoring->save();
+            
+            // Create targets
+            foreach ($validated['targets'] as $target) {
+                $monitoring->targets()->create([
+                    'kinerja_fisik' => $target['kinerja_fisik'],
+                    'keuangan' => $target['keuangan'],
+                ]);
+            }
+            
+            // If funding data is provided, update the connections
+            if (isset($validated['sumber_anggaran']) && isset($validated['funding_values'])) {
+                $this->updateFundingConnections($monitoring, $validated);
+            }
+            
+            return back()->with('success', 'Data monitoring berhasil disimpan.');
+        }
+
+        // Create regular monitoring (without tugas_id)
         $monitoring = Monitoring::create([
             'skpd_id' => $validated['skpd_id'],
             'sumber_dana' => $validated['sumber_dana'],
@@ -452,10 +529,10 @@ class MonitoringController extends Controller
             'tahun' => $validated['tahun'],
             'deskripsi' => $validated['deskripsi'],
             'pagu_pokok' => $validated['pagu_pokok'],
-            'pagu_parsial' => $validated['pagu_parsial'],
-            'pagu_perubahan' => $validated['pagu_perubahan'],
-            'pokok' => $validated['pokok'],
-            'parsial' => $validated['parsial'],
+            'pagu_parsial' => $validated['pagu_parsial'] ?? 0,
+            'pagu_perubahan' => $validated['pagu_perubahan'] ?? 0,
+            'pokok' => $validated['pokok'] ?? '',
+            'parsial' => $validated['parsial'] ?? '',
             'perubahan' => $validated['perubahan'] ?? null,
         ]);
 
@@ -467,6 +544,65 @@ class MonitoringController extends Controller
         }
 
         return back()->with('success', 'Data monitoring berhasil disimpan.');
+    }
+
+    /**
+     * Update funding connections for a monitoring
+     */
+    private function updateFundingConnections($monitoring, $validated)
+    {
+        // Get the active period
+        $aktivPeriode = Periode::find($validated['periode_id']);
+        
+        if (!$aktivPeriode) {
+            return;
+        }
+        
+        foreach ($validated['sumber_anggaran'] as $key => $value) {
+            if ($value) {
+                // Find source
+                $sumberAnggaran = SumberAnggaran::where('nama', $this->mapNamaSumberAnggaran($key))->first();
+                
+                if (!$sumberAnggaran) continue;
+                
+                // Create or find monitoring_anggaran
+                $monitoringAnggaran = MonitoringAnggaran::firstOrCreate([
+                    'monitoring_id' => $monitoring->id,
+                    'sumber_anggaran_id' => $sumberAnggaran->id,
+                ]);
+                
+                // Save or update pagu data
+                $monitoringPagu = MonitoringPagu::firstOrCreate([
+                    'monitoring_anggaran_id' => $monitoringAnggaran->id,
+                    'periode_id' => $aktivPeriode->id,
+                    'kategori' => 1
+                ], [
+                    'dana' => $validated['funding_values'][$key]
+                ]);
+                
+                // Update if it already existed
+                if (!$monitoringPagu->wasRecentlyCreated) {
+                    $monitoringPagu->dana = $validated['funding_values'][$key];
+                    $monitoringPagu->save();
+                }
+            }
+        }
+    }
+    
+    /**
+     * Map source funding key to display name
+     */
+    private function mapNamaSumberAnggaran(string $key): string
+    {
+        $mapping = [
+            'dak' => 'DAU',
+            'dak_peruntukan' => 'DAU Peruntukan',
+            'dak_fisik' => 'DAK Fisik',
+            'dak_non_fisik' => 'DAK Non Fisik',
+            'blud' => 'BLUD',
+        ];
+
+        return $mapping[$key] ?? $key;
     }
 
     public function showMonitoringDetails($id)

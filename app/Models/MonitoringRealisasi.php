@@ -15,8 +15,6 @@ class MonitoringRealisasi extends Model
         'periode_id',
         'kinerja_fisik',
         'keuangan',
-        'deskripsi',
-        'nama_pptk',
     ];
 
     public function monitoringAnggaran()

@@ -12,13 +12,22 @@ class Skpd extends Model
     protected $table = 'skpd';
     protected $fillable = [
         'nama_skpd',
+        'nama_dinas',
         'kode_organisasi',
+        'no_dpa',
+        'user_id',
     ];
 
     public function user()
     {
         // The relationship is through skpd_kepala, not direct
         return $this->belongsToMany(User::class, 'skpd_kepala', 'skpd_id', 'user_id');
+    }
+    
+    public function userPenanggungJawab()
+    {
+        // Direct relationship to the main user (penanggung jawab)
+        return $this->belongsTo(User::class, 'user_id');
     }
     
     public function userDetail()

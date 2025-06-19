@@ -57,9 +57,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{tid}/{id}', [TriwulanController::class, 'show'])->name('triwulan.show');
         Route::get('/{tid}/{id}/detail/{taskId}', [TriwulanController::class, 'showDetail'])->name('triwulan.detail');
         Route::post('/{tid}/save-realisasi', [TriwulanController::class, 'saveRealisasi'])->name('triwulan.save-realisasi');
+        Route::get('/akumulasi-kinerja/{skpdTugasId}/{tahun?}', [TriwulanController::class, 'getAkumulasiKinerjaTahunan'])->name('triwulan.akumulasi-kinerja');
         Route::get('/{tid}/{id}/monitoring-target', [TriwulanController::class, 'showMonitoringTarget'])->name('triwulan.monitoring-target');
         Route::get('/{tid}/{id}/perbandingan/{periode?}', [TriwulanController::class, 'showPerbandingan'])->name('triwulan.perbandingan');
     });
+
+    // Legacy routes redirected to unified TriwulanController
+    Route::redirect('/triwulan1', '/triwulan/1');
+    Route::redirect('/triwulan2', '/triwulan/2');
+    Route::redirect('/triwulan3', '/triwulan/3');
+    Route::redirect('/triwulan4', '/triwulan/4');
 
 
     Route::resource('skpdtugas', SkpdTugasController::class)->names('skpdtugas');
@@ -98,9 +105,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rencanaawal/save-target', [RencanaAwalController::class, 'saveTarget'])->name('rencanaawal.save-target');
 
 
+});
 
-
-
+// Debug route untuk cek data anggaran
+Route::get('/debug-data/{skpd_tugas_id}', function($skpd_tugas_id) {
+    $monitoring = \App\Models\Monitoring::where('skpd_tugas_id', $skpd_tugas_id)
+        ->where('tahun', date('Y'))
+        ->first();
+    
+    if (!$monitoring) {
+        return "No monitoring found for skpd_tugas_id: $skpd_tugas_id";
+    }
+    
+    $monitoringAnggaran = \App\Models\MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+        ->with(['sumberAnggaran', 'pagu'])
+        ->get();
+    
+    $result = "<h1>Debug Data for SKPD Tugas ID: $skpd_tugas_id</h1>";
+    $result .= "<h2>Monitoring ID: {$monitoring->id}</h2>";
+    $result .= "<h3>Monitoring Anggaran:</h3>";
+    
+    foreach ($monitoringAnggaran as $ma) {
+        $result .= "<div style='border:1px solid #ccc; margin:10px; padding:10px;'>";
+        $result .= "<h4>Sumber: {$ma->sumberAnggaran->nama}</h4>";
+        $result .= "<p>Monitoring Anggaran ID: {$ma->id}</p>";
+        
+        foreach ($ma->pagu as $pagu) {
+            $result .= "<p>- Pagu ID: {$pagu->id}, Periode: {$pagu->periode_id}, Kategori: {$pagu->kategori}, Dana: {$pagu->dana}</p>";
+        }
+        
+        if ($ma->pagu->isEmpty()) {
+            $result .= "<p><strong>No pagu data found!</strong></p>";
+        }
+        
+        $result .= "</div>";
+    }
+    
+    return $result;
 });
 
 require __DIR__.'/settings.php';

@@ -12,10 +12,13 @@ const props = defineProps<{
         id: number;
         nama_dinas: string;
         nama_operator: string;
+        nama_kepala_skpd?: string;
+        nip_kepala_skpd?: string;
+        nip_operator?: string;
         no_dpa: string;
         kode_organisasi: string;
         nama_skpd?: string;
-        user: {
+        user?: {
             id: number;
             name: string;
             user_detail?: {
@@ -74,10 +77,12 @@ onMounted(() => {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Monitoring', href: '/Triwulan1' },
-    { title: `Monitoring Detail ${props.skpd.nama_skpd}`, href: '' },
+    { title: `Monitoring Detail ${props.skpd.nama_dinas || props.skpd.nama_skpd || 'SKPD'}`, href: '' },
 ];
 
-function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string }): string {
+function getUserNip(user: any): string {
+  if (!user) return '-';
+  
   if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
     return user.user_detail.nip;
   }
@@ -152,14 +157,14 @@ function getUserNip(user: { user_detail?: { nip?: string } | null; nip?: string 
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_skpd || 'Tidak tersedia' }}</p>
-                        <p class="text-sm font-mono text-gray-500">{{ getUserNip(skpd.user) || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_kepala_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-sm font-mono text-gray-500">NIP: {{ skpd.nip_kepala_skpd || '-' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Penanggung Jawab</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_operator || 'Tidak tersedia' }}</p>
-                        <p class="text-sm font-mono text-gray-500">{{ skpd.nip_operator || '-' }}</p>
+                        <p class="text-sm font-mono text-gray-500">NIP: {{ skpd.nip_operator || '-' }}</p>
                     </div>
 
 

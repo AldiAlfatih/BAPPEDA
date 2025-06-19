@@ -29,13 +29,20 @@ interface AnggaranItem {
 
 const props = defineProps<{
     user: {
+        id?: number;
+        name?: string;
+        email?: string;
         skpd: {
             id: number;
             nama_skpd: string;
             nama_dinas: string;
             no_dpa: string;
             kode_organisasi: string;
-        } | null;
+        }[] | null;
+        nama_dinas?: string;
+        operator_name?: string;
+        kepala_name?: string;
+        kode_organisasi?: string;
     };
     skpdTugas?: Array<{
         id: number;
@@ -103,6 +110,14 @@ const errorMessage = ref('');
 
 // Add reactive state for selected period
 const selectedPeriodeId = ref<number | null>(null);
+
+// Helper function to get the skpdId safely
+const getSkpdId = computed(() => {
+  if (props.user?.skpd && Array.isArray(props.user.skpd) && props.user.skpd.length > 0) {
+    return props.user.skpd[0].id;
+  }
+  return null;
+});
 
 // Computed untuk cek apakah periode aktif
 const isPeriodeAktif = computed(() => props.periodeAktif && props.periodeAktif.length > 0);
@@ -301,10 +316,7 @@ const saveItem = (item: AnggaranItem) => {
   // Gunakan Inertia router untuk mengirim data ke server
   router.post('/rencana-awal-anggaran-save', dataToSave, {
     onSuccess: () => {
-      alert(`Data untuk kode ${item.kode} dengan total Rp ${formatCurrency(total)} berhasil disimpan!`);
-      
-      // Langsung update data item di anggaranItems tanpa reload
-      // Item yang sudah diupdate akan tetap terlihat setelah penyimpanan berhasil
+      // Update UI silently without displaying any JSON data
       const updatedItem = anggaranItems.value.find(i => i.id === item.id);
       if (updatedItem) {
         updatedItem.sumber_anggaran = { ...item.sumber_anggaran };
@@ -318,8 +330,8 @@ const saveItem = (item: AnggaranItem) => {
         anggaranItems.value = [...anggaranItems.value];
       }
       
-      // Tetap reload data dari server untuk memastikan konsistensi data
-      const skpdId = props.user?.skpd?.id;
+      // Reload data untuk konsistensi tanpa menampilkan alert atau JSON
+      const skpdId = getSkpdId.value;
       if (skpdId) {
         router.visit(`/manajemenanggaran/${skpdId}`, {
           preserveState: true,
@@ -362,7 +374,7 @@ const handlePeriodeChange = (event: Event) => {
     selectedPeriodeId.value = newPeriodeId;
 
     // Reload data with the new period
-    const skpdId = props.user?.skpd?.id;
+    const skpdId = getSkpdId.value;
     if (skpdId) {
       router.visit(`/manajemenanggaran/${skpdId}?periode_id=${newPeriodeId || ''}`, {
         preserveState: true,
@@ -473,23 +485,18 @@ const periodeMessage = computed(() => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Perangkat Daerah</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
+                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Operator</h3>
+                        <p class="text-lg font-semibold text-gray-500">{{ props.user?.operator_name || 'Tidak tersedia' }}</p>
                     </div>
-<!--
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No NIP</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ getUserNip(user) || 'Tidak tersedia' }}</p>
-                    </div> -->
 
                     <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
                       <h3 class="text-xs font-medium text-emerald-700 mb-1">Total Anggaran</h3>

@@ -503,7 +503,9 @@ class RencanaAwalController extends Controller
             $monitoring = Monitoring::where('skpd_tugas_id', $validated['tugas_id'])
                 ->where('deskripsi', $validated['deskripsi'])
                 ->where('tahun', $validated['tahun'])
+                ->where('sumber_dana', $validated['sumber_dana']) // penting!
                 ->first();
+
 
             if (!$monitoring) {
                 $monitoring = Monitoring::create([
@@ -525,8 +527,8 @@ class RencanaAwalController extends Controller
                     'pagu_perubahan' => $validated['pagu_perubahan'],
                 ]);
 
-                // Hapus target lama
-                $monitoring->targets()->delete();
+                // // Hapus target lama
+                // $monitoring->targets()->delete();
             } else {
                 DB::rollBack();
                 return back()->with('error', 'Data monitoring sudah difinalisasi dan tidak dapat diubah');

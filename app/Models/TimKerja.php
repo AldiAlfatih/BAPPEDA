@@ -13,9 +13,8 @@ class TimKerja extends Model
 
     protected $fillable = [
         'skpd_id',
-        // 'user_id',
         'operator_id',
-        // 'is_aktif',
+        'is_aktif',
     ];
 
     public function skpd()

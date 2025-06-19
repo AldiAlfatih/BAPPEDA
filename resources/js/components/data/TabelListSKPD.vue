@@ -42,10 +42,13 @@ const props = defineProps<{
       user_detail?: {
         nip?: string;
       } | null;
+      operator_nip?: string | null;
+      kepala_nip?: string | null;
     }>;
   };
   url_detail: string;
 }>();
+
 
 // State untuk tabel
 const searchQuery = ref('');
@@ -61,6 +64,16 @@ function getUserNip(user: any): string {
   return user.user_detail?.nip || user.nip || '';
 }
 
+// Helper function to get operator NIP
+function getOperatorNip(user: any): string {
+  return user.operator_nip || '-';
+}
+
+// Helper function to get kepala NIP
+function getKepalaNip(user: any): string {
+  return user.kepala_nip || '-';
+}
+
 // Filter dan Sorting
 const filteredData = computed(() => {
   const query = searchQuery.value.toLowerCase();
@@ -71,7 +84,9 @@ const filteredData = computed(() => {
       (item.nama_dinas || '').toLowerCase().includes(query) ||
       (item.operator_name || '').toLowerCase().includes(query) ||
       (item.kepala_name || '').toLowerCase().includes(query) ||
-      (item.kode_organisasi || '').toLowerCase().includes(query)
+      (item.kode_organisasi || '').toLowerCase().includes(query) ||
+      (item.operator_nip || '').toLowerCase().includes(query) ||
+      (item.kepala_nip || '').toLowerCase().includes(query)
     );
   }
 
@@ -236,8 +251,16 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                      <TableCell class="text-gray-500">{{ user.operator_name || '-' }}</TableCell>
-                      <TableCell class="text-gray-500">{{ user.kepala_name || '-' }}</TableCell>
+                      <TableCell class="text-gray-500">
+                        <div>
+                          <div>{{ user.operator_name || '-' }}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell class="text-gray-500">
+                        <div>
+                          <div>{{ user.kepala_name || '-' }}</div>
+                        </div>
+                      </TableCell>
                       <TableCell class="hidden lg:table-cell font-mono text-gray-500">{{ user.kode_organisasi || '-' }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
@@ -269,10 +292,12 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               <div>
                                 <p class="text-sm text-gray-600">Nama Penanggung Jawab:</p>
                                 <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.operator_name || '-' }}</p>
+                                <p class="text-sm font-mono text-gray-400 dark:text-gray-300">NIP: {{ getOperatorNip(user) }}</p>
                               </div>
                               <div>
                                 <p class="text-sm text-gray-600">Nama Kepala Daerah:</p>
                                 <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.kepala_name || '-' }}</p>
+                                <p class="text-sm font-mono text-gray-400 dark:text-gray-300">NIP: {{ getKepalaNip(user) }}</p>
                               </div>
                               <div>
                                 <p class="text-sm text-gray-600">Kode Organisasi:</p>

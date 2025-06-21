@@ -261,7 +261,7 @@ const stepStates = computed(() => {
         <!-- <div class="marquee-text text-orange-800 font-black">
           "Setiap langkah kecil hari ini adalah pijakan kuat menuju kesuksesan besar di masa depan. Ayo mulai dengan penuh semangat!"
         </div> -->
-      </div>
+      <!-- </div>
     </div> -->
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
       <!-- Grid untuk Selamat Datang dan Progres Monitoring -->

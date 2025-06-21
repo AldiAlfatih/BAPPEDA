@@ -33,6 +33,7 @@ const props = defineProps<{
             jenis_nomenklatur: number;
         };
     }[];
+    tid?: number; // Tambah parameter triwulan ID
     errors?: Record<string, string>;
     flash?: {
         success?: string;
@@ -76,7 +77,12 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
 }
 
 function ShowTugas(tugasId: number) {
-    router.visit(route('triwulan.detail', { tid: 1, id: props.skpd.id, taskId: tugasId }));
+    const triwulanId = props.tid || 1; // Default ke 1 jika tidak ada
+    // Ambil user ID dari URL saat ini dengan cara yang aman
+    const currentPath = window.location.pathname;
+    const pathParts = currentPath.split('/');
+    const userId = pathParts[3] || props.skpd.user?.id || props.skpd.id;
+    router.visit(route('triwulan.detail', { tid: triwulanId, id: userId, taskId: tugasId }));
 }
 
 </script>

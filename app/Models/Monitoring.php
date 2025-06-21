@@ -12,23 +12,11 @@ class Monitoring extends Model
 
     protected $fillable = [
         'skpd_tugas_id',
-        'sumber_dana',
         'periode_id',
         'tahun',
         'deskripsi',
         'nama_pptk',
-        'pagu_anggaran',
-        'pagu_pokok',
-        'pagu_parsial',
-        'pagu_perubahan',
-        'is_finalized',
     ];
-
-    public function skpdTugas()
-    {
-        return $this->belongsTo(SkpdTugas::class, 'skpd_tugas_id');
-    }
-
     public function tugas()
     {
         return $this->belongsTo(SkpdTugas::class, 'skpd_tugas_id');
@@ -39,13 +27,11 @@ class Monitoring extends Model
         return $this->belongsTo(Periode::class);
     }
 
-    public function monitoringAnggaran()
+    public function anggaran()
     {
         return $this->hasMany(MonitoringAnggaran::class);
     }
-
-    // Relasi ke targets melalui monitoring_anggaran
-    public function targets()
+    public function target()
     {
         return $this->hasManyThrough(
             MonitoringTarget::class,
@@ -54,7 +40,7 @@ class Monitoring extends Model
             'monitoring_anggaran_id', // Foreign key di monitoring_target
             'id', // Local key di monitoring
             'id' // Local key di monitoring_anggaran
-        );
-    }
-    
+);
+}
+
 }

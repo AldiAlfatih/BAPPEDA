@@ -40,6 +40,14 @@ const props = defineProps<{
             jenis_nomenklatur: number;
         };
     }[];
+    tid?: number;
+    tahun?: number;
+    periode?: {
+        id: number;
+        nama: string;
+        status: number;
+    };
+    triwulanName?: string;
     errors?: Record<string, string>;
     flash?: {
         success?: string;
@@ -145,6 +153,7 @@ function getUserNip(user: any): string {
   if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
     return user.user_detail.nip;
   }
+}
 
 //   if (typeof user.nip === 'string' && user.nip.trim() !== '') {
 //     return user.nip;
@@ -242,6 +251,7 @@ function getUserNip(user: any): string {
                 :program-list="props.programList"
                 :kegiatan-list="props.kegiatanList"
                 :subkegiatan-list="props.subkegiatanList"
+                :tid="props.tid || 1"
             ></TabelTugasPD>
 
         </div>

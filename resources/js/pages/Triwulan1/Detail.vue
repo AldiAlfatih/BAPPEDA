@@ -130,12 +130,20 @@ const props = defineProps<{
     deskripsi?: string;
     nama_pptk?: string;
   }>;
+  periode: {
+    id: number;
+    nama: string;
+    status: number;
+  };
+  tid: number;
+  tahun: number;
+  triwulanName: string;
 }>();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
-  { title: 'Monitoring Triwulan 1', href: '/triwulan1' },
-  { title: `Monitoring Detail ${props.user.nama_skpd}`, href: '/triwulan1/show' },
-  { title: 'Rencana Awal PD', href: '/triwulan1/detail' },
+  { title: `Monitoring ${props.triwulanName}`, href: `/triwulan/${props.tid}` },
+  { title: `Monitoring Detail ${props.user.nama_skpd}`, href: route('triwulan.show', { tid: props.tid, id: props.user.id }) },
+  { title: `Rencana Awal PD`, href: '' },
 ]);
 
 // Function to get Tim Kerja operator name
@@ -421,15 +429,15 @@ onMounted(() => {
   // =================================================================
   
   // Filter semua target yang HANYA memiliki periode_id = 2 (strict equality)
-  const strictPeriodeIdFilter = props.monitoringTargets.filter(t => t.periode_id === 2);
-  console.log('STRICT FILTER: TARGETS WITH PERIODE_ID = 2 ONLY:', strictPeriodeIdFilter);
+  const strictPeriodeIdFilter = props.monitoringTargets.filter(t => t.periode_id === props.periode.id);
+      console.log(`STRICT FILTER: TARGETS WITH PERIODE_ID = ${props.periode.id} ONLY:`, strictPeriodeIdFilter);
   
   // Untuk masing-masing subkegiatan, cari target dengan periode_id = 2
   props.subkegiatanTugas.forEach(subkegiatan => {
     const targetsForSubkegiatan = props.monitoringTargets.filter(t => 
-      t.task_id === subkegiatan.id && t.periode_id === 2
+              t.task_id === subkegiatan.id && t.periode_id === props.periode.id
     );
-    console.log(`TARGETS FOR SUBKEGIATAN ${subkegiatan.id} WITH STRICT PERIODE_ID = 2:`, targetsForSubkegiatan);
+          console.log(`TARGETS FOR SUBKEGIATAN ${subkegiatan.id} WITH STRICT PERIODE_ID = ${props.periode.id}:`, targetsForSubkegiatan);
     
     if (targetsForSubkegiatan.length > 0) {
       console.log(`DATA TARGET SUBKEGIATAN ${subkegiatan.id}:`, {
@@ -443,10 +451,10 @@ onMounted(() => {
   // Cek apakah ada target dengan periode_id = 2 untuk subkegiatan manapun
   const subkegiatanIds = props.subkegiatanTugas.map(sk => sk.id);
   const strictSubkegiatanTargets = props.monitoringTargets.filter(t => 
-    subkegiatanIds.includes(t.task_id) && t.periode_id === 2
+          subkegiatanIds.includes(t.task_id) && t.periode_id === props.periode.id
   );
   
-  console.log('STRICT FILTER: SUBKEGIATAN TARGETS WITH PERIODE_ID = 2:', strictSubkegiatanTargets);
+        console.log(`STRICT FILTER: SUBKEGIATAN TARGETS WITH PERIODE_ID = ${props.periode.id}:`, strictSubkegiatanTargets);
   
   if (strictSubkegiatanTargets.length === 0) {
     console.warn('PERINGATAN: Tidak ada target dengan periode_id = 2 untuk subkegiatan manapun (filter ketat)');
@@ -472,18 +480,18 @@ onMounted(() => {
     console.log('TARGETS GROUPED BY PERIODE_ID:', targetsByPeriod);
     
     // Cek khusus untuk periode_id = 2 (Triwulan 1)
-    const triwulan1Targets = props.monitoringTargets.filter(t => t.periode_id === 2);
-    console.log('STRICT PERIODE_ID === 2 TARGETS ONLY:', triwulan1Targets);
+    const currentTriwulanTargets = props.monitoringTargets.filter(t => t.periode_id === props.periode.id);
+console.log(`STRICT PERIODE_ID === ${props.periode.id} TARGETS ONLY:`, currentTriwulanTargets);
     
     // Periksa apakah ada target untuk subkegiatan dengan periode_id = 2
     const subkegiatanIds = props.subkegiatanTugas.map(sk => sk.id);
-    const subkegiatanTriwulan1Targets = props.monitoringTargets.filter(t => 
-      subkegiatanIds.includes(t.task_id) && t.periode_id === 2
+    const subkegiatanCurrentTriwulanTargets = props.monitoringTargets.filter(t => 
+      subkegiatanIds.includes(t.task_id) && t.periode_id === props.periode.id
     );
-    console.log('SUBKEGIATAN TARGETS WITH STRICT PERIODE_ID === 2:', subkegiatanTriwulan1Targets);
+    console.log(`SUBKEGIATAN TARGETS WITH STRICT PERIODE_ID === ${props.periode.id}:`, subkegiatanCurrentTriwulanTargets);
     
-    if (subkegiatanTriwulan1Targets.length === 0) {
-      console.warn('PERINGATAN: Tidak ada target periode Triwulan 1 untuk subkegiatan manapun!');
+    if (subkegiatanCurrentTriwulanTargets.length === 0) {
+      console.warn(`PERINGATAN: Tidak ada target periode ${props.triwulanName} untuk subkegiatan manapun!`);
     }
   }
   
@@ -1274,7 +1282,7 @@ const getPaguTerakhirDariRencanaAwal = (item: any): {value: number, type: string
   // LANGKAH 6: Cek di monitoringTargets jika tersedia
   if (props.monitoringTargets && Array.isArray(props.monitoringTargets)) {
     const targetForItem = props.monitoringTargets.find((t: any) => 
-      t.task_id === item.id && t.periode_id === 2 && t.keuangan > 0
+              t.task_id === item.id && t.periode_id === props.periode.id && t.keuangan > 0
     );
     
     if (targetForItem) {
@@ -1345,9 +1353,9 @@ const programData = computed(() => {
   props.programTugas.forEach(program => {
     // Find targets directly associated with this task by task_id AND strict periode_id = 2
     const targetsForTask = props.monitoringTargets.filter(t => 
-      t.task_id === program.id && t.periode_id === 2
+              t.task_id === program.id && t.periode_id === props.periode.id
     );
-    console.log(`Program ${program.id} has ${targetsForTask.length} targets with strict periode_id = 2:`, targetsForTask);
+          console.log(`Program ${program.id} has ${targetsForTask.length} targets with strict periode_id = ${props.periode.id}:`, targetsForTask);
     
     // We initially set empty values. These will be calculated later based on kegiatan values
     let kinerjaFisik = '-';
@@ -1418,15 +1426,15 @@ const programData = computed(() => {
           if (subkegiatan.kode_nomenklatur?.nomor_kode?.startsWith(kegiatan.kode_nomenklatur?.nomor_kode)) {
             // Find targets directly associated with this task by task_id AND strict periode_id = 2
             const subkegiatanTargets = props.monitoringTargets.filter(t => 
-              t.task_id === subkegiatan.id && t.periode_id === 2
+              t.task_id === subkegiatan.id && t.periode_id === props.periode.id
             );
-            console.log(`Subkegiatan ${subkegiatan.id} has ${subkegiatanTargets.length} targets with strict periode_id = 2:`, subkegiatanTargets);
+                          console.log(`Subkegiatan ${subkegiatan.id} has ${subkegiatanTargets.length} targets with strict periode_id = ${props.periode.id}:`, subkegiatanTargets);
             
             // Find realisasi data for this subkegiatan AND strict periode_id = 2
             const realisasiData = props.monitoringRealisasi.filter(r => 
-              r.task_id === subkegiatan.id && r.periode_id === 2
+              r.task_id === subkegiatan.id && r.periode_id === props.periode.id
             );
-            console.log(`Subkegiatan ${subkegiatan.id} has ${realisasiData.length} realisasi records with strict periode_id = 2:`, realisasiData);
+                          console.log(`Subkegiatan ${subkegiatan.id} has ${realisasiData.length} realisasi records with strict periode_id = ${props.periode.id}:`, realisasiData);
             
             let kinerjaFisikSubkegiatan = '-';
             let keuanganSubkegiatan = '-';
@@ -1435,8 +1443,9 @@ const programData = computed(() => {
             let realisasiFisik = '-';
             let realisasiKeuangan = '-';
 
-            let deskripsiSubkegiatan = 'Sub Kegiatan';
-            let pptkSubkegiatan = '-';
+            // For triwulan input, keep keterangan and pptk empty initially
+            let deskripsiSubkegiatan = '';
+            let pptkSubkegiatan = '';
             
             if (subkegiatanTargets.length > 0) {
               // Ambil data langsung dari database tanpa kalkulasi
@@ -1458,13 +1467,8 @@ const programData = computed(() => {
               targetFisikValue = target.kinerja_fisik || 0;
               targetKeuanganValue = target.keuangan || 0;
               
-              // Get deskripsi and nama_pptk from monitoringTargets
-              if (target.deskripsi) {
-                deskripsiSubkegiatan = target.deskripsi;
-              }
-              if (target.nama_pptk) {
-                pptkSubkegiatan = target.nama_pptk;
-              }
+              // Don't pre-fill keterangan and pptk from target data for triwulan input
+              // These should remain empty for user input
             }
             
             // Populate realisasi data if exists
@@ -1478,13 +1482,17 @@ const programData = computed(() => {
               realisasiFisik = `${realisasiFisikValue.toFixed(2)}%`;
               realisasiKeuangan = `Rp ${realisasiKeuanganValue.toLocaleString('id-ID')}`;
               
-              // Override with more recent data from realisasi if available
-              if (latestRealisasi.deskripsi) {
-                deskripsiSubkegiatan = latestRealisasi.deskripsi;
+              // For triwulan, only use keterangan and pptk from current period, not from previous data
+              // Check if this realisasi is for the current triwulan period
+              if (latestRealisasi.periode_id === props.periode.id) {
+                if (latestRealisasi.deskripsi) {
+                  deskripsiSubkegiatan = latestRealisasi.deskripsi;
+                }
+                if (latestRealisasi.nama_pptk) {
+                  pptkSubkegiatan = latestRealisasi.nama_pptk;
+                }
               }
-              if (latestRealisasi.nama_pptk) {
-                pptkSubkegiatan = latestRealisasi.nama_pptk;
-              }
+              // Otherwise, keep keterangan and pptk empty for new input
               
 
               
@@ -2029,27 +2037,7 @@ const saveData = (id: number) => {
   const cleanRealisasiKeuangan = getNumericValue(item.realisasiKeuangan, 'currency');
   const cleanRealisasiFisik = getNumericValue(item.realisasiFisik, 'percent');
 
-  // Calculate capaian keuangan tahunan menggunakan getPaguTerakhirDariRencanaAwal
-  const subkegiatanItem = props.subkegiatanTugas.find(sk => sk.id === id);
-  if (subkegiatanItem) {
-    // Dapatkan nilai pagu terakhir dari Rencana Awal dengan prioritas (perubahan > parsial > pokok)
-    const paguRencanaAwal = getPaguTerakhirDariRencanaAwal(subkegiatanItem);
-    
-    // Log nilai pagu dan realisasi untuk debugging
-    console.log(`DETAIL PERHITUNGAN CAPAIAN KEUANGAN TAHUNAN SUBKEGIATAN ID=${id}:`);
-    console.log(`- Nilai Pagu Terakhir: ${paguRencanaAwal.value.toLocaleString('id-ID')} (${paguRencanaAwal.type})`);
-    console.log(`- Nilai Realisasi Keuangan: ${cleanRealisasiKeuangan.toLocaleString('id-ID')}`);
-    
-    if (paguRencanaAwal.value > 0) {
-      // Hitung capaian keuangan tahunan: (realisasi keuangan / pagu) * 100
-      const result = (cleanRealisasiKeuangan / paguRencanaAwal.value) * 100;
-      console.log(`- Rumus: (${cleanRealisasiKeuangan} / ${paguRencanaAwal.value}) * 100 = ${result.toFixed(2)}%`);
-      item.capaianKeuangan = `${result.toFixed(2)}%`;
-    } else {
-      console.log('Tidak ditemukan nilai pagu terakhir di Rencana Awal untuk subkegiatan:', id);
-      item.capaianKeuangan = '0.00%';
-    }
-  }
+  // Capaian calculation has been removed per user request
 
   // Send data to server
   const formData = {
@@ -2060,14 +2048,14 @@ const saveData = (id: number) => {
     nama_pptk: item.pptk
   };
 
-  console.log('Sending data using Inertia router to:', route('triwulan.save-realisasi', { tid: 1 }));
+  console.log('Sending data using Inertia router to:', route('triwulan.save-realisasi', { tid: props.tid }));
   console.log('Form data:', formData);
 
   // Set saving state
   savingItems.value[id] = true;
 
   // Use Inertia router instead of fetch API
-  router.post(route('triwulan.save-realisasi', { tid: 1 }), formData, {
+  router.post(route('triwulan.save-realisasi', { tid: props.tid }), formData, {
     preserveState: true,
     preserveScroll: true,
     onStart: () => {
@@ -2080,7 +2068,7 @@ const saveData = (id: number) => {
        showFormatNotification('Data berhasil disimpan dan tabel diperbarui!', 'success');
        
        // Show success message
-       const successMessage = 'Data Triwulan 1 berhasil disimpan!';
+       const successMessage = `Data ${props.triwulanName} berhasil disimpan!`;
        
        // Use setTimeout to show alert after UI updates
        setTimeout(() => {
@@ -2113,14 +2101,14 @@ const saveData = (id: number) => {
       };
 
       // Also update the base data in monitoringTargets or monitoringRealisasi
-      const targetIndex = props.monitoringTargets.findIndex(t => t.task_id === id && t.periode_id === 2);
+      const targetIndex = props.monitoringTargets.findIndex(t => t.task_id === id && t.periode_id === props.periode.id);
       if (targetIndex !== -1) {
         props.monitoringTargets[targetIndex].deskripsi = item.keterangan;
         props.monitoringTargets[targetIndex].nama_pptk = item.pptk;
       }
       
       // Update realisasi if it exists
-      const realisasiIndex = props.monitoringRealisasi.findIndex(r => r.task_id === id && r.periode_id === 2);
+      const realisasiIndex = props.monitoringRealisasi.findIndex(r => r.task_id === id && r.periode_id === props.periode.id);
       if (realisasiIndex !== -1) {
         props.monitoringRealisasi[realisasiIndex] = {
           ...props.monitoringRealisasi[realisasiIndex],
@@ -2138,8 +2126,8 @@ const saveData = (id: number) => {
           id: Date.now(),
           kinerja_fisik: cleanRealisasiFisik,
           keuangan: cleanRealisasiKeuangan,
-          periode: 'Triwulan 1',
-          periode_id: 2, // Pastikan periode_id untuk Triwulan 1 adalah 2
+          periode: props.periode.nama,
+          periode_id: props.periode.id,
           monitoring_id: monitoringId,
           task_id: id,
           monitoring_anggaran_id: 0,
@@ -2223,7 +2211,7 @@ const saveData = (id: number) => {
 const fetchAkumulasiKinerjaTahunan = async (skpdTugasId, tahun = null) => {
   try {
     const tahunParam = tahun || new Date().getFullYear();
-    const response = await fetch(`/triwulan1/akumulasi-kinerja/${skpdTugasId}/${tahunParam}`);
+    const response = await fetch(`/triwulan/${props.tid}/akumulasi-kinerja/${skpdTugasId}/${tahunParam}`);
     const data = await response.json();
     
     if (data.success) {
@@ -2279,7 +2267,7 @@ const showAkumulasiKinerja = async (skpdTugasId) => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-600">Triwulan1</h2>
+                    <h2 class="text-2xl font-bold text-gray-600">{{ props.triwulanName }}</h2>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

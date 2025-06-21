@@ -34,12 +34,13 @@ const props = defineProps<{
     data: Array<{
       id: number;
       name: string;
-      skpd: {
+      skpd: Array<{
         nama_dinas: string;
         nama_operator: string;
+        nama_kepala_skpd: string;
         no_dpa: string;
         kode_organisasi: string;
-      } | null;
+      }> | null;
     }>;
   };
 }>();
@@ -55,23 +56,34 @@ const loadingCreate = ref(false);
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Monitoring', href: '/rencana-awal' },
+  { title: 'Monitoring Triwulan 2', href: route('triwulan.index', { tid: 2 }) },
 ];
 
 // Filter dan Sorting
 const filteredData = computed(() => {
+  if (!props.users || !props.users.data) return [];
   let data = [...props.users.data];
 
   // Filter berdasarkan pencarian
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    data = data.filter(item =>
-      (item.name || '').toLowerCase().includes(query) ||
-      (item.skpd?.nama_dinas || '').toLowerCase().includes(query) ||
-      (item.skpd?.nama_operator || '').toLowerCase().includes(query) ||
-      (item.skpd?.no_dpa || '').toLowerCase().includes(query) ||
-      (item.skpd?.kode_organisasi || '').toLowerCase().includes(query)
-    );
+    data = data.filter(item => {
+      const skpdList = Array.isArray(item.skpd) ? item.skpd : [];
+      // Gabungkan semua nama dinas, operator, kepala skpd, no dpa, kode organisasi dari seluruh skpd user
+      const namaDinas = skpdList.map(s => s?.nama_dinas || '').join(' ').toLowerCase();
+      const namaOperator = skpdList.map(s => s?.nama_operator || '').join(' ').toLowerCase();
+      const namaKepalaSkpd = skpdList.map(s => s?.nama_kepala_skpd || '').join(' ').toLowerCase();
+      const noDpa = skpdList.map(s => s?.no_dpa || '').join(' ').toLowerCase();
+      const kodeOrganisasi = skpdList.map(s => s?.kode_organisasi || '').join(' ').toLowerCase();
+      return (
+        (item.name || '').toLowerCase().includes(query) ||
+        namaDinas.includes(query) ||
+        namaOperator.includes(query) ||
+        namaKepalaSkpd.includes(query) ||
+        noDpa.includes(query) ||
+        kodeOrganisasi.includes(query)
+      );
+    });
   }
 
   // Sorting
@@ -107,15 +119,20 @@ const paginatedData = computed(() => {
 
 // Helper untuk mendapatkan nilai field untuk sorting
 function getFieldValue(item: any, field: string) {
+  const skpdList = Array.isArray(item.skpd) ? item.skpd : [];
+  const firstSkpd = skpdList.length > 0 ? skpdList[0] : null;
+  
   switch(field) {
     case 'nama_dinas':
-      return item.skpd?.nama_dinas || '';
+      return firstSkpd?.nama_dinas || '';
     case 'nama_operator':
-      return item.skpd?.nama_operator || '';
+      return firstSkpd?.nama_operator || '';
+    case 'nama_kepala_skpd':
+      return firstSkpd?.nama_kepala_skpd || '';
     case 'no_dpa':
-      return item.skpd?.no_dpa || '';
+      return firstSkpd?.no_dpa || '';
     case 'kode_organisasi':
-      return item.skpd?.kode_organisasi || '';
+      return firstSkpd?.kode_organisasi || '';
     default:
       return item[field] || '';
   }
@@ -144,7 +161,7 @@ function toggleSort(field: string) {
 // }
 
 function goToShowPage(id: number) {
-  router.visit(route('triwulan2.show', { id }));
+  router.visit(route('triwulan.show', { tid: 2, id }));
 }
 
 function toggleDetail(id: number) {
@@ -168,15 +185,15 @@ function truncateText(text: string | null | undefined, length: number = 30): str
 </script>
 
 <template>
-  <Head title="Monitoring" />
+  <Head title="Monitoring Triwulan 2" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex flex-col gap-6 p-6">
       <!-- Header dengan judul dan action -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Perangkat Daerah</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data Monitoring Perangkat Daerah</p>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Monitoring Triwulan 2</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Kelola data monitoring triwulan 2</p>
         </div>
         <!-- <Button
           class="flex items-center gap-2 shadow-lg transition-all duration-300 transform hover:scale-105"
@@ -233,11 +250,11 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         :class="{'opacity-100': sortField === 'nama_operator'}" />
                     </div>
                   </TableHead>
-                  <TableHead class="cursor-pointer group" @click="toggleSort('name')">
+                  <TableHead class="cursor-pointer group" @click="toggleSort('nama_kepala_skpd')">
                     <div class="flex items-center gap-1 text-gray-600">
-                      Nama Kepala Daerah
+                      Kepala SKPD
                       <ArrowUpDown class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                        :class="{'opacity-100': sortField === 'name'}" />
+                        :class="{'opacity-100': sortField === 'nama_kepala_skpd'}" />
                     </div>
                   </TableHead>
                   <TableHead class="hidden md:table-cell text-gray-600">No DPA</TableHead>
@@ -257,23 +274,23 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                       </TableCell>
                       <TableCell class="font-medium">
                         <div class="flex items-center gap-2 text-gray-500">
-                          <span>{{ truncateText(user.skpd?.nama_dinas) }}</span>
-                          <TooltipProvider v-if="user.skpd?.nama_dinas && user.skpd.nama_dinas.length > 30">
+                          <span>{{ truncateText(getFieldValue(user, 'nama_dinas')) }}</span>
+                          <TooltipProvider v-if="getFieldValue(user, 'nama_dinas') && getFieldValue(user, 'nama_dinas').length > 30">
                             <Tooltip>
                               <TooltipTrigger>
                                 <Info class="w-4 h-4 text-blue-500" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <div class="max-w-md p-2">{{ user.skpd?.nama_dinas }}</div>
+                                <div class="max-w-md p-2">{{ getFieldValue(user, 'nama_dinas') }}</div>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                      <TableCell class="text-gray-500">{{ user.skpd?.nama_operator || '-' }}</TableCell>
-                      <TableCell class="text-gray-500">{{ user.name || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.no_dpa || '-' }}</TableCell>
-                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ user.skpd?.kode_organisasi || '-' }}</TableCell>
+                      <TableCell class="text-gray-500">{{ getFieldValue(user, 'nama_operator') }}</TableCell>
+                      <TableCell class="text-gray-500">{{ getFieldValue(user, 'nama_kepala_skpd') }}</TableCell>
+                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ getFieldValue(user, 'no_dpa') }}</TableCell>
+                      <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ getFieldValue(user, 'kode_organisasi') }}</TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
                           <!-- <Button size="sm" class="bg-green-600 hover:bg-green-700 text-white"
@@ -315,20 +332,28 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               </div>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-600">Nama Dinas:</p>
-                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_dinas || '-' }}</p>
+                              <p class="text-sm text-gray-600">Kepala SKPD:</p>
+                              <p class="font-medium text-lg text-gray-500">{{ getFieldValue(user, 'nama_kepala_skpd') }}</p>
                             </div>
                             <div>
-                              <p class="text-sm text-gray-600">Nama Penanggung Jawab:</p>
-                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.skpd?.nama_operator || '-' }}</p>
+                              <p class="text-sm text-gray-600">Nama Dinas:</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ getFieldValue(user, 'nama_dinas') }}</p>
+                            </div>
+                            <div>
+                              <p class="text-sm text-gray-600">Operator/Penanggung Jawab Tim:</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ getFieldValue(user, 'nama_operator') }}</p>
+                            </div>
+                            <div>
+                              <p class="text-sm text-gray-600">Penanggung Jawab SKPD:</p>
+                              <p class="font-medium text-gray-500 dark:text-gray-200">{{ user.name || '-' }}</p>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">No DPA:</p>
-                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.no_dpa || '-' }}</p>
+                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ getFieldValue(user, 'no_dpa') }}</p>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Kode Organisasi:</p>
-                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ user.skpd?.kode_organisasi || '-' }}</p>
+                              <p class="font-mono text-gray-500 dark:text-gray-200">{{ getFieldValue(user, 'kode_organisasi') }}</p>
                             </div>
                           </div>
                           <div class="pt-3 flex justify-end gap-2">

@@ -140,10 +140,10 @@ class TriwulanController extends Controller
 
         // Get the SKPD associated with this user
         $skpd = $user->skpd()->with([
-            'skpdKepala' => function($query) {
+            'kepala' => function($query) {
                 $query->where('is_aktif', 1);
             },
-            'skpdKepala.user.userDetail',
+            'kepala.user.userDetail',
             'timKerja' => function($query) {
                 $query->where('is_aktif', 1);
             },
@@ -159,7 +159,7 @@ class TriwulanController extends Controller
             'skpd_id' => $skpd->id,
             'skpd_name' => $skpd->nama_skpd,
             'tim_kerja_count' => $skpd->timKerja->count(),
-            'kepala_count' => $skpd->skpdKepala->count()
+            'kepala_count' => $skpd->kepala->count()
         ]);
 
         // Transform data to ensure consistent structure
@@ -406,9 +406,9 @@ class TriwulanController extends Controller
             ->get();
 
         foreach ($allMonitoring as $monitoringItem) {
-            foreach ($monitoringItem->monitoringAnggaran as $anggaran) {
+            foreach ($monitoringItem->anggaran as $anggaran) {
                 // Collect monitoring targets
-                foreach ($anggaran->monitoringTarget as $target) {
+                foreach ($anggaran->target as $target) {
                     $monitoringTargets[] = [
                         'id' => $target->id,
                         'task_id' => $monitoringItem->skpd_tugas_id,

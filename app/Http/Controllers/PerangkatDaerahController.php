@@ -30,13 +30,13 @@ class PerangkatDaerahController extends Controller
             $skpd = $user->skpd->first();
             $operatorName = null;
             $kepalaName = null;
-            
+
             if ($skpd) {
                 // Ambil nama operator yang aktif
                 if ($skpd->operatorAktif && $skpd->operatorAktif->operator) {
                     $operatorName = $skpd->operatorAktif->operator->name;
                 }
-                
+
                 // Ambil nama kepala daerah yang aktif
                 if ($skpd->kepalaAktif && $skpd->kepalaAktif->user) {
                     $kepalaName = $skpd->kepalaAktif->user->name;
@@ -56,7 +56,7 @@ class PerangkatDaerahController extends Controller
     public function create()
     {
         $users = User::role('perangkat_daerah')->get();
-        $operators = User::role('operator')->get();  
+        $operators = User::role('operator')->get();
 
         return Inertia::render('PerangkatDaerah/Create', [
             'users' => $users,
@@ -98,17 +98,17 @@ class PerangkatDaerahController extends Controller
 
     public function show(string $id)
     {
-        $user = User::with(['skpd.skpdKepala.user.userDetail'])->findOrFail($id);
+        $user = User::with(['skpd.kepala.user.userDetail'])->findOrFail($id);
 
         $userSkpd = $user->skpd->first();
-        
+
         $kepalaSkpd = null;
         $nipKepala = null;
         if ($userSkpd) {
-            $skpdKepala = $userSkpd->skpdKepala()->with(['user.userDetail'])->latest()->first();
-            if ($skpdKepala && $skpdKepala->user) {
-                $kepalaSkpd = $skpdKepala->user;
-                $nipKepala = $skpdKepala->user->userDetail->nip ?? null;
+            $kepala = $userSkpd->kepala()->with(['user.userDetail'])->latest()->first();
+            if ($kepala && $kepala->user) {
+                $kepalaSkpd = $kepala->user;
+                $nipKepala = $kepala->user->userDetail->nip ?? null;
             }
         }
 
@@ -209,14 +209,14 @@ class PerangkatDaerahController extends Controller
     public function edit(string $user_id)
     {
         // Get the SKPD through the SkpdKepala relationship since the skpd table doesn't have user_id
-        $skpdKepala = SkpdKepala::where('user_id', $user_id)->first();
-        
-        if (!$skpdKepala) {
+        $kepala = SkpdKepala::where('user_id', $user_id)->first();
+
+        if (!$kepala) {
             abort(404, 'SKPD not found for this user');
         }
-        
-        $skpd = Skpd::with(['skpdKepala', 'timKerja.operator'])
-            ->findOrFail($skpdKepala->skpd_id);
+
+        $skpd = Skpd::with(['kepala', 'timKerja.operator'])
+            ->findOrFail($kepala->skpd_id);
 
         $users = User::role('perangkat_daerah')->get();
         $operators = User::role('operator')->get();
@@ -233,7 +233,7 @@ class PerangkatDaerahController extends Controller
         return Inertia::render('PerangkatDaerah/Edit', [
             'skpd' => [
                 'id' => $skpd->id,
-                'user_id' => $skpdKepala->user_id, 
+                'user_id' => $kepala->user_id,
                 'nama_skpd' => $skpd->nama_skpd,
                 'kode_organisasi' => $skpd->kode_organisasi,
                 'nama_operator' => $operatorName,
@@ -302,11 +302,11 @@ class PerangkatDaerahController extends Controller
     public function destroy(string $id)
     {
         $skpd = Skpd::findOrFail($id);
-        
-        SkpdKepala::where('skpd_id', $id)->delete(); 
+
+        SkpdKepala::where('skpd_id', $id)->delete();
         TimKerja::where('skpd_id', $id)->update(['is_aktif' => 0]);
         SkpdTugas::where('skpd_id', $id)->update(['is_aktif' => 0]);
-        
+
         $skpd->delete();
 
         return redirect()->route('perangkatdaerah.index')->with('success', 'Data SKPD berhasil dihapus.');

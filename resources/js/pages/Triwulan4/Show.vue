@@ -7,14 +7,23 @@ import { computed, onMounted, ref } from 'vue';
 import { Eye } from 'lucide-vue-next';
 
 const props = defineProps<{
-    user: {
-        skpd: {
+    skpd: {
+        id: number;
+        nama_dinas: string;
+        nama_operator: string;
+        nama_kepala_skpd?: string;
+        nip_kepala_skpd?: string;
+        nip_operator?: string;
+        no_dpa: string;
+        kode_organisasi: string;
+        nama_skpd?: string;
+        user?: {
             id: number;
-            nama_skpd: string;
-            nama_dinas: string;
-            no_dpa: string;
-            kode_organisasi: string;
-        } | null;
+            name: string;
+            user_detail?: {
+                nip?: string;
+            } | null;
+        };
     };
     urusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number }[];
     bidangUrusanList: { id: number; nomor_kode: string; nomenklatur: string; jenis_nomenklatur: number; urusan_id: number }[];
@@ -30,6 +39,14 @@ const props = defineProps<{
             jenis_nomenklatur: number;
         };
     }[];
+    tid: number;
+    tahun: number;
+    periode: {
+        id: number;
+        nama: string;
+        status: number;
+    };
+    triwulanName: string;
     errors?: Record<string, string>;
     flash?: {
         success?: string;
@@ -45,8 +62,8 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Monitoring', href: '/triwulan4' },
-    { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
+    { title: 'Monitoring Triwulan 4', href: '/triwulan/4' },
+    { title: `Monitoring Detail ${props.skpd?.nama_dinas || props.skpd?.nama_skpd || 'SKPD'}`, href: '' },
 ];
 
 const showFlash = ref({
@@ -93,7 +110,9 @@ const urusanOptions = computed(() => {
 });
 
 function ShowTugas(tugasId: number) {
-    router.visit(`/triwulan4/Detail/${tugasId}`);
+    // Get current user ID from the URL params - since we're at /triwulan/4/{id}
+    const currentUserId = window.location.pathname.split('/')[3];
+    router.visit(route('triwulan.detail', { tid: 4, id: currentUserId, taskId: tugasId }));
 }
 
 function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: any } }) {
@@ -102,7 +121,7 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
 </script>
 
 <template>
-    <Head title="Detail Perangkat Daerah" />
+    <Head title="Detail Monitoring Triwulan 4" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-4 p-4">
@@ -151,22 +170,22 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_dinas || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_dinas || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.kode_organisasi || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kode_organisasi || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.no_dpa || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.no_dpa || 'Tidak tersedia' }}</p>
                     </div>
 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.nama_skpd || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_kepala_skpd || 'Tidak tersedia' }}</p>
                     </div>
                 </div>
             </div>
@@ -209,7 +228,7 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                     type="button"
                     variant="outline"
                     class="rounded bg-gray-600 px-6 py-2 text-white hover:bg-gray-700"
-                    @click="router.visit('/triwulan1')"
+                    @click="router.visit('/triwulan/4')"
                 >
                     Kembali
                 </Button>

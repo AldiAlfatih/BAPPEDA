@@ -72,15 +72,15 @@ const mainNavItems: NavItem[] = [
         },
         {
             title: 'Triwulan 2',
-            href: '/triwulan2',
+            href: route('triwulan.index', { tid: 2 }),
         },
         {
             title: 'Triwulan 3',
-            href: '/triwulan3',
+            href: route('triwulan.index', { tid: 3 }),
         },
         {
             title: 'Triwulan 4',
-            href: '/triwulan4',
+            href: route('triwulan.index', { tid: 4 }),
         },
         {
             title: 'Laporan Akhir',

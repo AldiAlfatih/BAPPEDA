@@ -28,6 +28,14 @@ class TriwulanController extends Controller
         $user = Auth::user();
         $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini jika tidak disebutkan
 
+        \Log::info("TriwulanController.index: Starting", [
+            'tid' => $tid,
+            'tahun' => $tahun,
+            'user_id' => $user ? $user->id : 'NULL',
+            'user_name' => $user ? $user->name : 'NULL',
+            'user_roles' => $user ? $user->getRoleNames() : 'NULL'
+        ]);
+
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
             return redirect()->back()->with('error', 'Invalid triwulan ID.');
@@ -52,7 +60,7 @@ class TriwulanController extends Controller
                     $q->whereIn('skpd.id', $skpdIds);
                 })
                 ->role('perangkat_daerah')
-                ->with(['skpd', 'skpd.operatorAktif.operator.userDetail', 'skpd.skpdKepala.user.userDetail'])
+                ->with(['skpd', 'skpd.operatorAktif.operator.userDetail', 'skpd.kepala.user.userDetail'])
                 ->paginate(1000);
 
             $users->getCollection()->transform(function ($user) {
@@ -61,8 +69,8 @@ class TriwulanController extends Controller
                         'nama_dinas' => $skpd->nama_skpd ?? '-',
                         'nama_operator' => optional(optional($skpd->operatorAktif)->operator)->name ?? '-',
                         'nip_operator' => optional(optional($skpd->operatorAktif)->operator)->userDetail->nip ?? '-',
-                        'nama_kepala_skpd' => optional(optional($skpd->skpdKepala->where('is_aktif', 1)->first())->user)->name ?? '-',
-                        'nip_kepala_skpd' => optional(optional($skpd->skpdKepala->where('is_aktif', 1)->first())->user)->userDetail->nip ?? '-',
+                        'nama_kepala_skpd' => optional(optional($skpd->kepala->where('is_aktif', 1)->first())->user)->name ?? '-',
+                        'nip_kepala_skpd' => optional(optional($skpd->kepala->where('is_aktif', 1)->first())->user)->userDetail->nip ?? '-',
                         'no_dpa' => $skpd->no_dpa ?? '-',
                         'kode_organisasi' => $skpd->kode_organisasi ?? '-',
                     ];
@@ -75,6 +83,12 @@ class TriwulanController extends Controller
                 ];
             });
 
+            \Log::info("TriwulanController.index: Sending data for operator", [
+                'users_count' => $users->count(),
+                'users_total' => $users->total(),
+                'users_data_count' => count($users->items())
+            ]);
+
             return Inertia::render('Triwulan', [
                 'users' => $users,
                 'tid' => $tid,
@@ -85,7 +99,7 @@ class TriwulanController extends Controller
         }
 
         $users = User::role('perangkat_daerah')
-            ->with(['skpd', 'skpd.operatorAktif.operator.userDetail', 'skpd.skpdKepala.user.userDetail'])
+            ->with(['skpd', 'skpd.operatorAktif.operator.userDetail', 'skpd.kepala.user.userDetail'])
             ->paginate(1000);
 
         $users->getCollection()->transform(function ($user) {
@@ -94,8 +108,8 @@ class TriwulanController extends Controller
                     'nama_dinas' => $skpd->nama_skpd ?? '-',
                     'nama_operator' => optional(optional($skpd->operatorAktif)->operator)->name ?? '-',
                     'nip_operator' => optional(optional($skpd->operatorAktif)->operator)->userDetail->nip ?? '-',
-                    'nama_kepala_skpd' => optional(optional($skpd->skpdKepala->where('is_aktif', 1)->first())->user)->name ?? '-',
-                    'nip_kepala_skpd' => optional(optional($skpd->skpdKepala->where('is_aktif', 1)->first())->user)->userDetail->nip ?? '-',
+                    'nama_kepala_skpd' => optional(optional($skpd->kepala->where('is_aktif', 1)->first())->user)->name ?? '-',
+                    'nip_kepala_skpd' => optional(optional($skpd->kepala->where('is_aktif', 1)->first())->user)->userDetail->nip ?? '-',
                     'no_dpa' => $skpd->no_dpa ?? '-',
                     'kode_organisasi' => $skpd->kode_organisasi ?? '-',
                 ];
@@ -107,6 +121,12 @@ class TriwulanController extends Controller
                 'skpd' => $skpdList,
             ];
         });
+
+        \Log::info("TriwulanController.index: Sending data for admin/other", [
+            'users_count' => $users->count(),
+            'users_total' => $users->total(),
+            'users_data_count' => count($users->items())
+        ]);
 
         return Inertia::render('Triwulan', [
             'users' => $users,
@@ -140,10 +160,10 @@ class TriwulanController extends Controller
 
         // Get the SKPD associated with this user
         $skpd = $user->skpd()->with([
-            'skpdKepala' => function($query) {
+            'kepala' => function($query) {
                 $query->where('is_aktif', 1);
             },
-            'skpdKepala.user.userDetail',
+            'kepala.user.userDetail',
             'timKerja' => function($query) {
                 $query->where('is_aktif', 1);
             },
@@ -159,7 +179,7 @@ class TriwulanController extends Controller
             'skpd_id' => $skpd->id,
             'skpd_name' => $skpd->nama_skpd,
             'tim_kerja_count' => $skpd->timKerja->count(),
-            'kepala_count' => $skpd->skpdKepala->count()
+            'kepala_count' => $skpd->kepala->count()
         ]);
 
         // Transform data to ensure consistent structure
@@ -314,8 +334,8 @@ class TriwulanController extends Controller
             'skpd' => function($query) {
                 $query->select('*'); // Pastikan semua field SKPD dimuat
             },
-            'skpd.skpdKepala.user.userDetail',
-            'skpd.skpdKepala' => function($query) {
+            'skpd.kepala.user.userDetail',
+            'skpd.kepala' => function($query) {
                 $query->where('is_aktif', 1);
             },
             'skpd.timKerja.operator.userDetail',
@@ -330,7 +350,12 @@ class TriwulanController extends Controller
             ->with([
                 'kodeNomenklatur.details',
                 'monitoring' => function($query) {
-                    $query->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode']);
+                    $query->with([
+                        'anggaran.target.periode',
+                        'anggaran.realisasi.periode',
+                        'anggaran.sumberAnggaran',
+                        'anggaran.pagu'
+                    ]);
                 }
             ])
             ->get();
@@ -352,7 +377,7 @@ class TriwulanController extends Controller
         // Find any monitoring that might have deskripsi for bidang urusan
         $bidangUrusanDeskripsi = '-';
         if ($bidangUrusan) {
-            $monitoring = \App\Models\Monitoring::whereHas('skpdTugas', function($query) use ($bidangUrusan) {
+            $monitoring = \App\Models\Monitoring::whereHas('tugas', function($query) use ($bidangUrusan) {
                 $query->whereHas('kodeNomenklatur', function($query) use ($bidangUrusan) {
                     $query->where('id', $bidangUrusan->id);
                 });
@@ -391,7 +416,7 @@ class TriwulanController extends Controller
 
         // Ambil monitoring data untuk tugas ini
         $monitoring = \App\Models\Monitoring::where('skpd_tugas_id', $tugas->id)
-            ->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode'])
+            ->with(['anggaran.target.periode', 'anggaran.realisasi.periode'])
             ->get();
 
         // Collect all monitoring targets and realisasi
@@ -399,16 +424,16 @@ class TriwulanController extends Controller
         $monitoringRealisasi = [];
 
         // Get all monitoring data for all tasks in this SKPD to build complete dataset
-        $allMonitoring = \App\Models\Monitoring::whereHas('skpdTugas', function($query) use ($tugas) {
+        $allMonitoring = \App\Models\Monitoring::whereHas('tugas', function($query) use ($tugas) {
                 $query->where('skpd_id', $tugas->skpd_id);
             })
-            ->with(['monitoringAnggaran.monitoringTarget.periode', 'monitoringAnggaran.monitoringRealisasi.periode'])
+            ->with(['anggaran.target.periode', 'anggaran.realisasi.periode', 'anggaran.sumberAnggaran'])
             ->get();
 
         foreach ($allMonitoring as $monitoringItem) {
-            foreach ($monitoringItem->monitoringAnggaran as $anggaran) {
+            foreach ($monitoringItem->anggaran as $anggaran) {
                 // Collect monitoring targets
-                foreach ($anggaran->monitoringTarget as $target) {
+                foreach ($anggaran->target as $target) {
                     $monitoringTargets[] = [
                         'id' => $target->id,
                         'task_id' => $monitoringItem->skpd_tugas_id,
@@ -419,11 +444,13 @@ class TriwulanController extends Controller
                         'monitoring_id' => $monitoringItem->id,
                         'deskripsi' => $monitoringItem->deskripsi,
                         'nama_pptk' => $monitoringItem->nama_pptk,
+                        'sumber_anggaran_id' => $anggaran->sumber_anggaran_id,
+                        'sumber_anggaran_nama' => $anggaran->sumberAnggaran ? $anggaran->sumberAnggaran->nama : 'Unknown',
                     ];
                 }
 
                 // Collect monitoring realisasi
-                foreach ($anggaran->monitoringRealisasi as $realisasi) {
+                foreach ($anggaran->realisasi as $realisasi) {
                     $monitoringRealisasi[] = [
                         'id' => $realisasi->id,
                         'task_id' => $monitoringItem->skpd_tugas_id,
@@ -435,6 +462,8 @@ class TriwulanController extends Controller
                         'monitoring_anggaran_id' => $anggaran->id,
                         'deskripsi' => $monitoringItem->deskripsi,
                         'nama_pptk' => $monitoringItem->nama_pptk,
+                        'sumber_anggaran_id' => $anggaran->sumber_anggaran_id,
+                        'sumber_anggaran_nama' => $anggaran->sumberAnggaran ? $anggaran->sumberAnggaran->nama : 'Unknown',
                     ];
                 }
             }
@@ -452,10 +481,10 @@ class TriwulanController extends Controller
                 'no_dpa' => $tugas->skpd->no_dpa ?? 'NULL',
                 'tim_kerja_count' => $tugas->skpd->timKerja ? $tugas->skpd->timKerja->count() : 0,
                 'user_penanggung_jawab' => $tugas->skpd->userPenanggungJawab ? $tugas->skpd->userPenanggungJawab->name : 'NULL',
-                'skpd_kepala_count' => $tugas->skpd->skpdKepala ? $tugas->skpd->skpdKepala->count() : 0,
-                'skpd_kepala_first' => $tugas->skpd->skpdKepala && $tugas->skpd->skpdKepala->count() > 0 ? [
-                    'user_name' => $tugas->skpd->skpdKepala[0]->user->name ?? 'NULL',
-                    'user_nip' => $tugas->skpd->skpdKepala[0]->user->userDetail->nip ?? 'NULL'
+                'skpd_kepala_count' => $tugas->skpd->kepala ? $tugas->skpd->kepala->count() : 0,
+                'skpd_kepala_first' => $tugas->skpd->kepala && $tugas->skpd->kepala->count() > 0 ? [
+                    'user_name' => $tugas->skpd->kepala[0]->user->name ?? 'NULL',
+                    'user_nip' => $tugas->skpd->kepala[0]->user->userDetail->nip ?? 'NULL'
                 ] : 'NULL',
                 'tim_kerja_first' => $tugas->skpd->timKerja && $tugas->skpd->timKerja->count() > 0 ? [
                     'operator_name' => $tugas->skpd->timKerja[0]->operator->name ?? 'NULL',
@@ -476,11 +505,40 @@ class TriwulanController extends Controller
             'task_id_parameter' => $taskId
         ]);
 
+        // Prepare SKPD data with kepala information
+        $skpdData = $tugas->skpd->toArray();
+
+        // Get kepala aktif
+        $kepalaAktif = $tugas->skpd->kepala->where('is_aktif', 1)->first();
+        if ($kepalaAktif && $kepalaAktif->user) {
+            $skpdData['nama_kepala_skpd'] = $kepalaAktif->user->name;
+            $skpdData['nip_kepala_skpd'] = $kepalaAktif->user->userDetail->nip ?? '-';
+        } else {
+            $skpdData['nama_kepala_skpd'] = 'Tidak tersedia';
+            $skpdData['nip_kepala_skpd'] = '-';
+        }
+
+        // Get tim kerja aktif (operator)
+        $timKerjaAktif = $tugas->skpd->timKerja->where('is_aktif', 1)->first();
+        if ($timKerjaAktif && $timKerjaAktif->operator) {
+            $skpdData['nama_operator'] = $timKerjaAktif->operator->name;
+            $skpdData['nip_operator'] = $timKerjaAktif->operator->userDetail->nip ?? '-';
+        } else {
+            $skpdData['nama_operator'] = 'Tidak tersedia';
+            $skpdData['nip_operator'] = '-';
+        }
+
+        // Add other SKPD info
+        $skpdData['nama_dinas'] = $tugas->skpd->nama_skpd ?? $tugas->skpd->nama_dinas ?? 'SKPD';
+        $skpdData['kode_organisasi'] = $tugas->skpd->kode_organisasi ?? '-';
+        $skpdData['no_dpa'] = $tugas->skpd->no_dpa ?? '-';
+
         return Inertia::render($viewName, [
             'user' => [
                 'id' => $tugas->skpd->user_id ?? $id, // Fallback ke parameter $id jika user_id null
                 'nama_skpd' => $tugas->skpd->nama_skpd ?? $tugas->skpd->nama_dinas ?? 'SKPD'
             ],
+            'skpd' => $skpdData,
             'tugas' => $tugas,
             'skpdTugas' => $skpdTugas,
             'bidangurusanTugas' => $bidangurusanTugas,
@@ -528,41 +586,48 @@ class TriwulanController extends Controller
 
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid triwulan ID.'
-            ], 400);
+            return redirect()->back()->withErrors(['error' => 'ID Triwulan tidak valid.']);
         }
 
         $request->validate([
             'id' => 'required|numeric',
+            'sumber_anggaran_id' => 'required|numeric',
             'realisasi_fisik' => 'required|numeric|min:0|max:100',
             'realisasi_keuangan' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string|max:1000',
             'nama_pptk' => 'nullable|string|max:255',
+        ], [
+            'realisasi_fisik.max' => 'Kinerja fisik tidak boleh lebih dari 100%.',
+            'realisasi_fisik.min' => 'Kinerja fisik tidak boleh kurang dari 0%.',
+            'realisasi_fisik.required' => 'Kinerja fisik wajib diisi.',
+            'realisasi_fisik.numeric' => 'Kinerja fisik harus berupa angka.',
+            'realisasi_keuangan.min' => 'Realisasi keuangan tidak boleh kurang dari 0.',
+            'realisasi_keuangan.required' => 'Realisasi keuangan wajib diisi.',
+            'realisasi_keuangan.numeric' => 'Realisasi keuangan harus berupa angka.',
+            'id.required' => 'ID tugas wajib diisi.',
+            'id.numeric' => 'ID tugas harus berupa angka.',
+            'keterangan.max' => 'Keterangan tidak boleh lebih dari 1000 karakter.',
+            'nama_pptk.max' => 'Nama PPTK tidak boleh lebih dari 255 karakter.',
         ]);
 
         \Log::info("TriwulanController.saveRealisasi: Starting", [
             'tid' => $tid,
             'task_id' => $request->id,
+            'sumber_anggaran_id' => $request->sumber_anggaran_id,
             'realisasi_fisik' => $request->realisasi_fisik,
             'realisasi_keuangan' => $request->realisasi_keuangan,
+            'keterangan' => $request->keterangan,
+            'nama_pptk' => $request->nama_pptk,
             'tahun' => $tahun
         ]);
 
         // Check if the specified triwulan period is open
         $periode = $this->getPeriodeByTriwulan($tid, $tahun);
         if (!$periode) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Periode ' . $this->getTriwulanName($tid) . ' tahun ' . $tahun . ' tidak ditemukan.'
-            ], 404);
+            return redirect()->back()->withErrors(['error' => 'Periode ' . $this->getTriwulanName($tid) . ' tahun ' . $tahun . ' tidak ditemukan.']);
         }
         if ($periode->status != 1) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Periode ' . $this->getTriwulanName($tid) . ' belum dibuka. Data tidak dapat disimpan.'
-            ], 403);
+            return redirect()->back()->withErrors(['error' => 'Periode ' . $this->getTriwulanName($tid) . ' belum dibuka. Data tidak dapat disimpan.']);
         }
 
         // Get the task record
@@ -603,15 +668,19 @@ class TriwulanController extends Controller
             'tahun' => $monitoring->tahun
         ]);
 
-        // Get or create monitoring anggaran
+        // Get or create monitoring anggaran dengan sumber_anggaran_id yang spesifik
         $anggaran = MonitoringAnggaran::firstOrCreate(
-            ['monitoring_id' => $monitoring->id],
-            ['sumber_anggaran_id' => 1] // Default sumber anggaran
+            [
+                'monitoring_id' => $monitoring->id,
+                'sumber_anggaran_id' => $request->sumber_anggaran_id
+            ],
+            ['sumber_anggaran_id' => $request->sumber_anggaran_id]
         );
 
         \Log::info("TriwulanController.saveRealisasi: MonitoringAnggaran result", [
             'anggaran_id' => $anggaran->id,
             'monitoring_id' => $anggaran->monitoring_id,
+            'sumber_anggaran_id' => $anggaran->sumber_anggaran_id,
             'was_recently_created' => $anggaran->wasRecentlyCreated
         ]);
 

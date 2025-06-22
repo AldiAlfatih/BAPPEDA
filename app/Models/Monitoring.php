@@ -31,6 +31,7 @@ class Monitoring extends Model
     {
         return $this->hasMany(MonitoringAnggaran::class);
     }
+
     public function target()
     {
         return $this->hasManyThrough(

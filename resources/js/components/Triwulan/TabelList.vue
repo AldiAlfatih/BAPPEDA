@@ -17,7 +17,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
-  Eye,
+  Binoculars,
   Info,
 } from 'lucide-vue-next';
 
@@ -221,10 +221,9 @@ function getKepalaNip(user: any) {
                   <TableCell class="hidden md:table-cell font-mono text-gray-500">{{ getFieldValue(user, 'kode_organisasi') }}</TableCell>
                   <TableCell>
                     <div class="flex items-center gap-2">
-                      <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
+                      <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white w-15"
                         @click.stop="goToShowPage(user.id)">
-                        <Eye class="w-4 h-4 mr-1" />
-                        <span class="hidden sm:inline">Detail</span>
+                        <Binoculars class="w-4 h-4 mr-1" />
                       </Button>
                     </div>
                   </TableCell>
@@ -258,7 +257,7 @@ function getKepalaNip(user: any) {
                       <div class="pt-3 flex justify-end gap-2">
                         <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white"
                           @click.stop="goToShowPage(user.id)">
-                          <Eye class="w-4 h-4 mr-1" />
+                          <Binoculars class="w-4 h-4 mr-1" />
                           Lihat Detail Lengkap
                         </Button>
                       </div>

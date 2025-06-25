@@ -13,6 +13,7 @@ use App\Http\Controllers\SkpdTugasController;
 use App\Http\Controllers\PerangkatDaerahController;
 use App\Http\Controllers\RencanaAwalController;
 use App\Http\Controllers\ManajemenAnggaranController;
+use App\Http\Controllers\LaporanAkhirController;
 
 
 Route::get('/', function () {
@@ -76,6 +77,402 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Route untuk halaman rencana awal
     Route::get('/monitoring/rencanaawal/{id}', [ManajemenAnggaranController::class, 'showRencanaAwal'])->name('manajemenanggaran.rencanaawal');
+
+    // Route untuk halaman parsial
+    Route::get('/manajemenanggaran/{id}/parsial', [ManajemenAnggaranController::class, 'showParsial'])->name('manajemenanggaran.show_partial');
+        Route::post('/manajemenanggaran/open-parsial', [ManajemenAnggaranController::class, 'openParsial'])->name('manajemenanggaran.open-parsial');
+    Route::post('/manajemenanggaran/enable-parsial', [ManajemenAnggaranController::class, 'enableParsialForUser'])->name('manajemenanggaran.enable-parsial');
+    Route::post('/manajemenanggaran/save-parsial', [ManajemenAnggaranController::class, 'saveParsial'])->name('manajemenanggaran.save-parsial');
+
+    // Route untuk halaman rencana awal parsial (detail view)
+    Route::get('/monitoring/rencanaawal/{id}/parsial', [ManajemenAnggaranController::class, 'showRencanaAwalParsial'])->name('manajemenanggaran.rencanaawal.parsial');
+
+    // Routes untuk perubahan anggaran (Triwulan 4)
+    Route::post('/manajemenanggaran/enable-budget-change-all', [ManajemenAnggaranController::class, 'enableBudgetChangeForAll'])->name('manajemenanggaran.enable-budget-change-all');
+    Route::get('/manajemenanggaran/{id}/budget-change', [ManajemenAnggaranController::class, 'showBudgetChange'])->name('manajemenanggaran.budget-change');
+    Route::post('/manajemenanggaran/save-budget-change', [ManajemenAnggaranController::class, 'saveBudgetChange'])->name('manajemenanggaran.save-budget-change');
+    
+    // Debug route untuk cek data parsial dan budget change
+    Route::get('/debug/anggaran/{skpd_tugas_id}', function($skpd_tugas_id) {
+        $monitoring = \App\Models\Monitoring::where('skpd_tugas_id', $skpd_tugas_id)->latest()->first();
+        if (!$monitoring) {
+            return response()->json(['error' => 'No monitoring found for SKPD tugas ID: ' . $skpd_tugas_id]);
+        }
+        
+        $monitoringAnggaran = \App\Models\MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+            ->with(['sumberAnggaran', 'pagu' => function($query) {
+                $query->orderBy('kategori')->orderBy('periode_id');
+            }])
+            ->get();
+        
+        // Group data by kategori for easier analysis
+        $groupedData = [
+            'rencana_awal' => [],
+            'parsial' => [],
+            'budget_change' => []
+        ];
+        
+        foreach ($monitoringAnggaran as $item) {
+            $sumberAnggaranNama = $item->sumberAnggaran?->nama;
+            foreach ($item->pagu as $pagu) {
+                $kategoriName = match($pagu->kategori) {
+                    1 => 'rencana_awal',
+                    2 => 'parsial', 
+                    3 => 'budget_change',
+                    default => 'unknown'
+                };
+                
+                if (!isset($groupedData[$kategoriName][$sumberAnggaranNama])) {
+                    $groupedData[$kategoriName][$sumberAnggaranNama] = [];
+                }
+                
+                $groupedData[$kategoriName][$sumberAnggaranNama][] = [
+                    'id' => $pagu->id,
+                    'periode_id' => $pagu->periode_id,
+                    'dana' => $pagu->dana,
+                    'created_at' => $pagu->created_at
+                ];
+            }
+        }
+            
+        $result = [
+            'monitoring_id' => $monitoring->id,
+            'skpd_tugas_id' => $skpd_tugas_id,
+            'summary' => [
+                'rencana_awal_count' => collect($groupedData['rencana_awal'])->flatten(1)->count(),
+                'parsial_count' => collect($groupedData['parsial'])->flatten(1)->count(),
+                'budget_change_count' => collect($groupedData['budget_change'])->flatten(1)->count(),
+            ],
+            'grouped_data' => $groupedData,
+            'raw_monitoring_anggaran' => $monitoringAnggaran->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'sumber_anggaran' => $item->sumberAnggaran?->nama,
+                    'pagu_all' => $item->pagu->map(function($pagu) {
+                        return [
+                            'id' => $pagu->id,
+                            'kategori' => $pagu->kategori,
+                            'periode_id' => $pagu->periode_id,
+                            'dana' => $pagu->dana,
+                            'kategori_name' => match($pagu->kategori) {
+                                1 => 'Rencana Awal',
+                                2 => 'Parsial',
+                                3 => 'Budget Change',
+                                default => 'Unknown'
+                            }
+                        ];
+                    })
+                ];
+            })
+        ];
+        
+        return response()->json($result, 200, [], JSON_PRETTY_PRINT);
+    })->name('debug.anggaran');
+
+    // Debug route khusus untuk Triwulan - analisis data targets dan realisasi
+    Route::get('/debug/triwulan/{skpd_tugas_id}/{triwulan_id?}', function($skpd_tugas_id, $triwulan_id = null) {
+        $result = [
+            'skpd_tugas_id' => $skpd_tugas_id,
+            'triwulan_filter' => $triwulan_id,
+            'all_monitoring' => [],
+            'targets_by_periode' => [],
+            'realisasi_by_periode' => [],
+            'pagu_aggregation' => []
+        ];
+
+        // Get all monitoring for this SKPD tugas
+        $allMonitoring = \App\Models\Monitoring::where('skpd_tugas_id', $skpd_tugas_id)
+            ->with([
+                'periode.tahap', 
+                'anggaran.sumberAnggaran',
+                'anggaran.pagu',
+                'anggaran.target.periode',
+                'anggaran.realisasi.periode'
+            ])
+            ->get();
+
+        foreach ($allMonitoring as $monitoring) {
+            $monitoringData = [
+                'id' => $monitoring->id,
+                'periode' => $monitoring->periode ? [
+                    'id' => $monitoring->periode->id,
+                    'tahap' => $monitoring->periode->tahap->tahap ?? 'Unknown'
+                ] : null,
+                'deskripsi' => $monitoring->deskripsi,
+                'anggaran_count' => $monitoring->anggaran->count(),
+                'anggaran_details' => []
+            ];
+
+            foreach ($monitoring->anggaran as $anggaran) {
+                $anggaranDetail = [
+                    'id' => $anggaran->id,
+                    'sumber_anggaran' => $anggaran->sumberAnggaran?->nama,
+                    'pagu_data' => [],
+                    'targets' => [],
+                    'realisasi' => []
+                ];
+
+                // Process pagu data with aggregation
+                $paguByKategori = [1 => 0, 2 => 0, 3 => 0];
+                foreach ($anggaran->pagu as $pagu) {
+                    $paguByKategori[$pagu->kategori] += $pagu->dana;
+                    $anggaranDetail['pagu_data'][] = [
+                        'id' => $pagu->id,
+                        'kategori' => $pagu->kategori,
+                        'kategori_name' => match($pagu->kategori) {
+                            1 => 'Rencana Awal',
+                            2 => 'Parsial',
+                            3 => 'Budget Change',
+                            default => 'Unknown'
+                        },
+                        'periode_id' => $pagu->periode_id,
+                        'dana' => $pagu->dana
+                    ];
+                }
+
+                $anggaranDetail['pagu_aggregated'] = [
+                    'rencana_awal' => $paguByKategori[1],
+                    'parsial' => $paguByKategori[2],
+                    'budget_change' => $paguByKategori[3],
+                    'total' => array_sum($paguByKategori)
+                ];
+
+                // Process targets
+                foreach ($anggaran->target as $target) {
+                    $targetData = [
+                        'id' => $target->id,
+                        'periode_id' => $target->periode_id,
+                        'periode_tahap' => $target->periode->tahap->tahap ?? 'Unknown',
+                        'kinerja_fisik' => $target->kinerja_fisik,
+                        'keuangan' => $target->keuangan
+                    ];
+                    $anggaranDetail['targets'][] = $targetData;
+                    
+                    // Group by periode for analysis
+                    $periodeKey = $target->periode_id;
+                    if (!isset($result['targets_by_periode'][$periodeKey])) {
+                        $result['targets_by_periode'][$periodeKey] = [
+                            'periode_id' => $periodeKey,
+                            'periode_tahap' => $target->periode->tahap->tahap ?? 'Unknown',
+                            'targets' => []
+                        ];
+                    }
+                    $result['targets_by_periode'][$periodeKey]['targets'][] = $targetData;
+                }
+
+                // Process realisasi
+                foreach ($anggaran->realisasi as $realisasi) {
+                    $realisasiData = [
+                        'id' => $realisasi->id,
+                        'periode_id' => $realisasi->periode_id,
+                        'periode_tahap' => $realisasi->periode->tahap->tahap ?? 'Unknown',
+                        'kinerja_fisik' => $realisasi->kinerja_fisik,
+                        'keuangan' => $realisasi->keuangan
+                    ];
+                    $anggaranDetail['realisasi'][] = $realisasiData;
+                    
+                    // Group by periode for analysis
+                    $periodeKey = $realisasi->periode_id;
+                    if (!isset($result['realisasi_by_periode'][$periodeKey])) {
+                        $result['realisasi_by_periode'][$periodeKey] = [
+                            'periode_id' => $periodeKey,
+                            'periode_tahap' => $realisasi->periode->tahap->tahap ?? 'Unknown',
+                            'realisasi' => []
+                        ];
+                    }
+                    $result['realisasi_by_periode'][$periodeKey]['realisasi'][] = $realisasiData;
+                }
+
+                $monitoringData['anggaran_details'][] = $anggaranDetail;
+            }
+
+            $result['all_monitoring'][] = $monitoringData;
+        }
+
+        // Summary
+        $result['summary'] = [
+            'total_monitoring' => count($result['all_monitoring']),
+            'total_targets_periode' => count($result['targets_by_periode']),
+            'total_realisasi_periode' => count($result['realisasi_by_periode']),
+            'periode_with_data' => array_unique(array_merge(
+                array_keys($result['targets_by_periode']),
+                array_keys($result['realisasi_by_periode'])
+            ))
+        ];
+
+        return response()->json($result, 200, [], JSON_PRETTY_PRINT);
+    })->name('debug.triwulan');
+
+    // Route untuk PDF Download
+    Route::prefix('pdf')->group(function () {
+        // Rencana Awal PDF
+        Route::get('/rencana-awal/{tugasId}/form', [\App\Http\Controllers\PDFController::class, 'showRencanaAwalPdfForm'])->name('pdf.rencana-awal.form');
+        Route::post('/rencana-awal/{tugasId}/generate', [\App\Http\Controllers\PDFController::class, 'generateRencanaAwalPdf'])->name('pdf.rencana-awal.generate');
+        
+        // Triwulan PDF
+        Route::get('/triwulan/{tid}/{tugasId}/form', [\App\Http\Controllers\PDFController::class, 'showTriwulanPdfForm'])->name('pdf.triwulan.form');
+        Route::post('/triwulan/{tid}/{tugasId}/generate', [\App\Http\Controllers\PDFController::class, 'generateTriwulanPdf'])->name('pdf.triwulan.generate');
+    });
+
+    // Route untuk Arsip Monitoring (dulu Laporan Akhir)
+    Route::prefix('arsip-monitoring')->group(function () {
+        Route::get('/', [LaporanAkhirController::class, 'index'])->name('arsip-monitoring.index');
+        Route::get('/{id}', [LaporanAkhirController::class, 'show'])->name('arsip-monitoring.show');
+        Route::get('/detail/{tugasId}', [LaporanAkhirController::class, 'detail'])->name('arsip-monitoring.detail');
+        
+        // Routes untuk file operations
+        Route::post('/upload', [LaporanAkhirController::class, 'uploadArsip'])->name('arsip-monitoring.upload');
+        Route::get('/download/{id}', [LaporanAkhirController::class, 'downloadArsip'])->name('arsip-monitoring.download');
+        Route::get('/view/{id}', [LaporanAkhirController::class, 'viewArsip'])->name('arsip-monitoring.view');
+        Route::delete('/delete/{id}', [LaporanAkhirController::class, 'deleteArsip'])->name('arsip-monitoring.delete');
+        
+        // Test route untuk debug storage - simple test
+        Route::get('/test-file/{id}', function($id) {
+            try {
+                $arsip = \App\Models\ArsipMonitoring::findOrFail($id);
+                
+                $storage = \Illuminate\Support\Facades\Storage::disk('public');
+                $exists = $storage->exists($arsip->path_file);
+                $fullPath = storage_path('app/public/' . $arsip->path_file);
+                
+                if (!$exists) {
+                    return response()->json([
+                        'error' => 'File not found in storage',
+                        'path_file' => $arsip->path_file,
+                        'full_path' => $fullPath,
+                        'file_exists_php' => file_exists($fullPath),
+                        'storage_exists' => $exists
+                    ], 404);
+                }
+                
+                // Try to serve the file directly
+                if (strtolower($arsip->tipe_file) === 'pdf') {
+                    $fileContent = $storage->get($arsip->path_file);
+                    
+                    return response($fileContent, 200)
+                        ->header('Content-Type', 'application/pdf')
+                        ->header('Content-Disposition', 'inline; filename="' . $arsip->nama_file . '"');
+                }
+                
+                return response()->json([
+                    'message' => 'File found but not PDF',
+                    'arsip' => $arsip,
+                    'file_exists' => $exists
+                ]);
+                
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ], 500);
+            }
+                 })->name('arsip-monitoring.test-file');
+         
+         // Alternative route for direct file access
+         Route::get('/file/{id}', function($id) {
+             $arsip = \App\Models\ArsipMonitoring::findOrFail($id);
+             $filePath = storage_path('app/public/' . $arsip->path_file);
+             
+             if (!file_exists($filePath)) {
+                 abort(404, 'File not found');
+             }
+             
+             return response()->file($filePath, [
+                 'Content-Type' => 'application/pdf',
+                 'Content-Disposition' => 'inline; filename="' . $arsip->nama_file . '"'
+             ]);
+         })->name('arsip-monitoring.file');
+        Route::get('/debug/{tugasId}', function($tugasId) {
+            $currentYear = date('Y');
+            
+            // Get basic monitoring data
+            $monitoring = \App\Models\Monitoring::where('skpd_tugas_id', $tugasId)
+                ->where('tahun', $currentYear)
+                ->with(['anggaran.sumberAnggaran', 'anggaran.pagu', 'anggaran.target', 'anggaran.realisasi'])
+                ->get();
+            
+            // Get skpd tugas info
+            $skpdTugas = \App\Models\SkpdTugas::with(['kodeNomenklatur', 'skpd'])->find($tugasId);
+            
+            // Count data in each table
+            $counts = [
+                'monitoring_total' => \App\Models\Monitoring::count(),
+                'monitoring_current_year' => \App\Models\Monitoring::where('tahun', $currentYear)->count(),
+                'monitoring_anggaran_total' => \App\Models\MonitoringAnggaran::count(),
+                'monitoring_pagu_total' => \App\Models\MonitoringPagu::count(),
+                'monitoring_target_total' => \App\Models\MonitoringTarget::count(),
+                'monitoring_realisasi_total' => \App\Models\MonitoringRealisasi::count(),
+                'sumber_anggaran_total' => \App\Models\SumberAnggaran::count(),
+            ];
+            
+            // Get all sumber anggaran
+            $sumberAnggaran = \App\Models\SumberAnggaran::all();
+            
+            return response()->json([
+                'tugasId' => $tugasId,
+                'currentYear' => $currentYear,
+                'skpd_tugas' => $skpdTugas,
+                'monitoring_count' => $monitoring->count(),
+                'monitoring_data' => $monitoring->toArray(),
+                'counts' => $counts,
+                'sumber_anggaran' => $sumberAnggaran->toArray(),
+                'message' => 'Debug data for troubleshooting'
+            ]);
+        })->name('laporan-akhir.debug');
+        
+        // Route untuk cek semua data monitoring secara umum
+        Route::get('/debug-all/summary', function() {
+            $currentYear = date('Y');
+            
+            // Get all monitoring with relations
+            $allMonitoring = \App\Models\Monitoring::where('tahun', $currentYear)
+                ->with(['anggaran.sumberAnggaran', 'anggaran.pagu', 'anggaran.target', 'anggaran.realisasi', 'tugas.kodeNomenklatur', 'tugas.skpd'])
+                ->get();
+            
+            $summary = [
+                'total_monitoring_records' => $allMonitoring->count(),
+                'monitoring_with_anggaran' => $allMonitoring->filter(function($m) { return $m->anggaran->count() > 0; })->count(),
+                'monitoring_with_pagu' => $allMonitoring->filter(function($m) { 
+                    return $m->anggaran->filter(function($a) { return $a->pagu->count() > 0; })->count() > 0; 
+                })->count(),
+                'monitoring_with_target' => $allMonitoring->filter(function($m) { 
+                    return $m->anggaran->filter(function($a) { return $a->target->count() > 0; })->count() > 0; 
+                })->count(),
+                'monitoring_with_realisasi' => $allMonitoring->filter(function($m) { 
+                    return $m->anggaran->filter(function($a) { return $a->realisasi->count() > 0; })->count() > 0; 
+                })->count(),
+            ];
+            
+            return response()->json([
+                'year' => $currentYear,
+                'summary' => $summary,
+                'sample_data' => $allMonitoring->take(3)->toArray()
+            ]);
+        })->name('laporan-akhir.debug-all');
+        
+        // Route untuk cek data yang diinput user
+        Route::get('/check-user-data', function() {
+            $stats = [
+                'monitoring_count' => \App\Models\Monitoring::count(),
+                'monitoring_anggaran_count' => \App\Models\MonitoringAnggaran::count(),
+                'monitoring_pagu_count' => \App\Models\MonitoringPagu::count(),
+                'monitoring_target_count' => \App\Models\MonitoringTarget::count(),
+                'monitoring_realisasi_count' => \App\Models\MonitoringRealisasi::count(),
+            ];
+            
+            // Get sample data jika ada
+            $sampleMonitoring = \App\Models\Monitoring::with(['anggaran.sumberAnggaran', 'anggaran.pagu', 'anggaran.target', 'anggaran.realisasi'])
+                ->take(3)
+                ->get();
+            
+            return response()->json([
+                'message' => 'Data check completed',
+                'stats' => $stats,
+                'sample_monitoring' => $sampleMonitoring->toArray(),
+                'total_data_exist' => array_sum($stats) > 0
+            ]);
+        })->name('laporan-akhir.check-data');
+    });
 
 
     // Route::get('/manajemen-tim/usermanagement/{user}/edit', [UserManagementController::class, 'edit'])->name('usermanagement.edit');

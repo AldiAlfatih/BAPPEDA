@@ -109,23 +109,45 @@ console.log('Props monitoringRealisasi:', props.monitoringRealisasi);
 console.log('Props periode:', props.periode);
 console.log('================================');
 
-// Helper function untuk menghitung agregasi data
-const calculateAggregatedData = (items: any[], type: 'fisik' | 'keuangan') => {
-    if (!items || items.length === 0) return type === 'fisik' ? '0%' : 'Rp 0';
+// Fungsi untuk menghitung persentase keuangan
+const calculateKeuanganPersentase = (realisasiKeuangan: number, paguAnggaran: number): number => {
+    if (paguAnggaran === 0) return 0;
+    return (realisasiKeuangan / paguAnggaran) * 100;
+};
 
-    if (type === 'fisik') {
-        // Untuk fisik, gunakan rata-rata
-        const total = items.reduce((sum, item) => sum + (parseFloat(item.targetFisik) || 0), 0);
-        const avg = total / items.length;
-        return `${avg.toFixed(1)}%`;
-    } else {
-        // Untuk keuangan, gunakan total
-        const total = items.reduce((sum, item) => {
-            const value = item.targetKeuangan?.replace(/[^\d]/g, '') || '0';
-            return sum + parseInt(value);
-        }, 0);
-        return `Rp ${total.toLocaleString('id-ID')}`;
+// Fungsi untuk mendapatkan realisasi keuangan yang sudah diedit atau dari data asli
+const getRealisasiKeuangan = (id: string, originalValue: number): number => {
+    const editedValue = editedItems.value[id]?.realisasiKeuangan;
+    if (editedValue !== undefined && editedValue !== '') {
+        return parseInt(editedValue.toString().replace(/[^\d]/g, '')) || 0;
     }
+    return originalValue || 0;
+};
+
+// Computed function untuk mendapatkan persentase keuangan real-time
+const getKeuanganPersentase = (id: string): string => {
+    // Cari item dari programData untuk mendapatkan pagu
+    const item = programData.value.find(item => item.id === id);
+    if (!item || item.type !== 'subkegiatan_sumber_dana') {
+        return item?.realisasiKeuanganPersen || '0%';
+    }
+
+    // Untuk subkegiatan_sumber_dana, hitung berdasarkan input yang sedang diedit
+    const currentRealisasi = getRealisasiKeuangan(id, 0);
+    
+    // Ekstrak pagu pokok dari format "Rp 1,000,000" menjadi number
+    const paguPokokStr = item.paguPokok || 'Rp 0';
+    const paguPokok = parseInt(paguPokokStr.replace(/[^\d]/g, '')) || 0;
+    
+    const persentase = calculateKeuanganPersentase(currentRealisasi, paguPokok);
+    
+    console.log(`📊 Calculating percentage for ${id}:`, {
+        currentRealisasi,
+        paguPokok,
+        persentase: persentase.toFixed(2)
+    });
+    
+    return `${persentase.toFixed(2)}%`;
 };
 
 // Computed property untuk data program dengan data real dari RencanaAwal
@@ -133,8 +155,8 @@ const programData = computed(() => {
     const result: any[] = [];
 
     // Hitung agregasi untuk semua level hierarki
-    const allSubkegiatanTargets = [];
-    const allSubkegiatanRealisasi = [];
+    const allSubkegiatanTargets: any[] = [];
+    const allSubkegiatanRealisasi: any[] = [];
 
     if (props.subkegiatanTugas && props.subkegiatanTugas.length > 0) {
         props.subkegiatanTugas.forEach((subkegiatan) => {
@@ -155,6 +177,14 @@ const programData = computed(() => {
     const avgRealisasiFisik = allSubkegiatanRealisasi.length > 0 ? totalRealisasiFisik / allSubkegiatanRealisasi.length : 0;
 
     const totalRealisasiKeuangan = allSubkegiatanRealisasi.reduce((sum, r) => sum + (r.keuangan || 0), 0);
+
+    // Hitung agregasi pagu dari semua target
+    const totalPaguPokok = allSubkegiatanTargets.reduce((sum, t) => sum + (t.pagu_pokok || 0), 0);
+    const totalPaguParsial = allSubkegiatanTargets.reduce((sum, t) => sum + (t.pagu_parsial || 0), 0);
+    const totalPaguPerubahan = allSubkegiatanTargets.reduce((sum, t) => sum + (t.pagu_perubahan || 0), 0);
+
+    // Hitung persentase keuangan untuk level agregasi
+    const totalRealisasiKeuanganPersen = calculateKeuanganPersentase(totalRealisasiKeuangan, totalPaguPokok);
 
     // Tambahkan data bidang urusan dengan data real
     if (props.bidangUrusan) {
@@ -184,10 +214,15 @@ const programData = computed(() => {
             id: `bidang-${props.bidangUrusan.id || 'unknown'}`,
             kode: bidangUrusanKode,
             program: bidangUrusanNama.startsWith('BIDANG URUSAN:') ? bidangUrusanNama : `BIDANG URUSAN: ${bidangUrusanNama}`,
+            paguPokok: `Rp ${totalPaguPokok.toLocaleString('id-ID')}`,
+            paguParsial: `Rp ${totalPaguParsial.toLocaleString('id-ID')}`,
+            paguPerubahan: `Rp ${totalPaguPerubahan.toLocaleString('id-ID')}`,
+            sumberDana: '-',
             targetFisik: `${avgTargetFisik.toFixed(1)}%`,
             targetKeuangan: `Rp ${totalTargetKeuangan.toLocaleString('id-ID')}`,
             realisasiFisik: `${avgRealisasiFisik.toFixed(2)}%`,
             realisasiKeuangan: `Rp ${totalRealisasiKeuangan.toLocaleString('id-ID')}`,
+            realisasiKeuanganPersen: `${totalRealisasiKeuanganPersen.toFixed(2)}%`,
             keterangan: '-',
             pptk: '-',
             type: 'bidang_urusan',
@@ -222,10 +257,15 @@ const programData = computed(() => {
                 id: `program-${program.id}`,
                 kode: programKode,
                 program: programNama.startsWith('PROGRAM:') ? programNama : `PROGRAM: ${programNama}`,
+                paguPokok: `Rp ${totalPaguPokok.toLocaleString('id-ID')}`,
+                paguParsial: `Rp ${totalPaguParsial.toLocaleString('id-ID')}`,
+                paguPerubahan: `Rp ${totalPaguPerubahan.toLocaleString('id-ID')}`,
+                sumberDana: '-',
                 targetFisik: `${avgTargetFisik.toFixed(1)}%`,
                 targetKeuangan: `Rp ${totalTargetKeuangan.toLocaleString('id-ID')}`,
                 realisasiFisik: `${avgRealisasiFisik.toFixed(2)}%`,
                 realisasiKeuangan: `Rp ${totalRealisasiKeuangan.toLocaleString('id-ID')}`,
+                realisasiKeuanganPersen: `${totalRealisasiKeuanganPersen.toFixed(2)}%`,
                 keterangan: '-',
                 pptk: '-',
                 type: 'program',
@@ -265,10 +305,15 @@ const programData = computed(() => {
                 id: `kegiatan-${kegiatan.id}`,
                 kode: kegiatanKode,
                 program: kegiatanNama.startsWith('KEGIATAN:') ? kegiatanNama : `KEGIATAN: ${kegiatanNama}`,
+                paguPokok: `Rp ${totalPaguPokok.toLocaleString('id-ID')}`,
+                paguParsial: `Rp ${totalPaguParsial.toLocaleString('id-ID')}`,
+                paguPerubahan: `Rp ${totalPaguPerubahan.toLocaleString('id-ID')}`,
+                sumberDana: '-',
                 targetFisik: `${avgTargetFisik.toFixed(1)}%`,
                 targetKeuangan: `Rp ${totalTargetKeuangan.toLocaleString('id-ID')}`,
                 realisasiFisik: `${avgRealisasiFisik.toFixed(2)}%`,
                 realisasiKeuangan: `Rp ${totalRealisasiKeuangan.toLocaleString('id-ID')}`,
+                realisasiKeuanganPersen: `${totalRealisasiKeuanganPersen.toFixed(2)}%`,
                 keterangan: '-',
                 pptk: '-',
                 type: 'kegiatan',
@@ -337,6 +382,14 @@ const programData = computed(() => {
 
                 const totalRealisasiKeuangan = realisasiForSubkegiatan.reduce((sum, r) => sum + (r.keuangan || 0), 0);
 
+                // Hitung agregasi pagu untuk subkegiatan ini
+                const totalSubkegiatanPaguPokok = targetsForSubkegiatan.reduce((sum, t) => sum + (t.pagu_pokok || 0), 0);
+                const totalSubkegiatanPaguParsial = targetsForSubkegiatan.reduce((sum, t) => sum + (t.pagu_parsial || 0), 0);
+                const totalSubkegiatanPaguPerubahan = targetsForSubkegiatan.reduce((sum, t) => sum + (t.pagu_perubahan || 0), 0);
+
+                // Hitung persentase keuangan untuk level agregasi
+                const totalRealisasiKeuanganPersen = calculateKeuanganPersentase(totalRealisasiKeuangan, totalSubkegiatanPaguPokok);
+
                 // Subkegiatan utama dengan data akumulasi
                 const subkegiatanKode =
                     subkegiatan.kode_nomenklatur?.nomor_kode || subkegiatan.nomor_kode || subkegiatan.kode || subkegiatan.id || '-';
@@ -362,10 +415,15 @@ const programData = computed(() => {
                     id: `subkegiatan-${subkegiatan.id}`,
                     kode: subkegiatanKode,
                     program: subkegiatanNama.startsWith('SUB KEGIATAN:') ? subkegiatanNama : `SUB KEGIATAN: ${subkegiatanNama}`,
+                    paguPokok: `Rp ${totalSubkegiatanPaguPokok.toLocaleString('id-ID')}`,
+                    paguParsial: `Rp ${totalSubkegiatanPaguParsial.toLocaleString('id-ID')}`,
+                    paguPerubahan: `Rp ${totalSubkegiatanPaguPerubahan.toLocaleString('id-ID')}`,
+                    sumberDana: '', // Kosong untuk baris utama
                     targetFisik: `${avgTargetFisik.toFixed(1)}%`,
                     targetKeuangan: `Rp ${totalTargetKeuangan.toLocaleString('id-ID')}`,
                     realisasiFisik: `${avgRealisasiFisik.toFixed(2)}%`,
                     realisasiKeuangan: `Rp ${totalRealisasiKeuangan.toLocaleString('id-ID')}`,
+                    realisasiKeuanganPersen: `${totalRealisasiKeuanganPersen.toFixed(2)}%`,
                     keterangan: '', // Kosong untuk baris utama
                     pptk: '', // Kosong untuk baris utama
                     type: 'subkegiatan',
@@ -390,6 +448,9 @@ const programData = computed(() => {
                         anggaran_nama: target.anggaran_nama,
                         kinerja_fisik: target.kinerja_fisik,
                         keuangan: target.keuangan,
+                        pagu_pokok: target.pagu_pokok,
+                        pagu_parsial: target.pagu_parsial,
+                        pagu_perubahan: target.pagu_perubahan,
                         fullTarget: target,
                         matchingRealisasi: matchingRealisasi,
                     });
@@ -401,10 +462,15 @@ const programData = computed(() => {
                         id: `${subkegiatan.id}_${target.sumber_anggaran_id}`,
                         kode: '',
                         program: `└─ ${sumberDanaNama}`,
+                        paguPokok: `Rp ${(target.pagu_pokok || 0).toLocaleString('id-ID')}`,
+                        paguParsial: `Rp ${(target.pagu_parsial || 0).toLocaleString('id-ID')}`,
+                        paguPerubahan: `Rp ${(target.pagu_perubahan || 0).toLocaleString('id-ID')}`,
+                        sumberDana: sumberDanaNama,
                         targetFisik: `${target.kinerja_fisik || 0}%`,
                         targetKeuangan: `Rp ${(target.keuangan || 0).toLocaleString('id-ID')}`,
                         realisasiFisik: `${matchingRealisasi?.kinerja_fisik || 0}%`,
                         realisasiKeuangan: `Rp ${(matchingRealisasi?.keuangan || 0).toLocaleString('id-ID')}`,
+                        realisasiKeuanganPersen: `${calculateKeuanganPersentase(matchingRealisasi?.keuangan || 0, target.pagu_pokok || 0).toFixed(2)}%`,
                         keterangan: matchingRealisasi?.deskripsi || '',
                         pptk: matchingRealisasi?.nama_pptk || '',
                         type: 'subkegiatan_sumber_dana',
@@ -439,10 +505,15 @@ const programData = computed(() => {
                     id: `subkegiatan-${subkegiatan.id}`,
                     kode: subkegiatanKode,
                     program: subkegiatanNama.startsWith('SUB KEGIATAN:') ? subkegiatanNama : `SUB KEGIATAN: ${subkegiatanNama}`,
+                    paguPokok: 'Rp 0',
+                    paguParsial: 'Rp 0',
+                    paguPerubahan: 'Rp 0',
+                    sumberDana: '', // Kosong untuk baris utama
                     targetFisik: '0%',
                     targetKeuangan: 'Rp 0',
                     realisasiFisik: '0%',
                     realisasiKeuangan: 'Rp 0',
+                    realisasiKeuanganPersen: '0%',
                     keterangan: '', // Kosong untuk baris utama
                     pptk: '', // Kosong untuk baris utama
                     type: 'subkegiatan',
@@ -657,18 +728,44 @@ const saveData = async (id: string) => {
         <div class="flex h-full flex-1 flex-col gap-4 bg-gray-100 p-4 dark:bg-gray-800">
             <!-- Header section -->
             <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-lg">
-                <div class="mb-6 flex items-center">
-                    <div class="mr-4 rounded-full bg-blue-100 p-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="mr-4 rounded-full bg-blue-100 p-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-600">{{ triwulanName }}</h2>
+                    </div>
+                    
+                    <!-- PDF Download Button -->
+                    <button
+                        v-if="tugas?.id"
+                        @click="router.visit(route('pdf.triwulan.form', { tid: tid, tugasId: tugas.id }))"
+                        class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
+                        :title="`Download PDF ${triwulanName}`"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
                             <path
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 stroke-width="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"
                             />
                         </svg>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-600">{{ triwulanName }}</h2>
+                        <span class="text-sm font-medium">Download PDF</span>
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -720,6 +817,10 @@ const saveData = async (id: string) => {
                         <colgroup>
                             <col style="width: 120px" />
                             <col style="width: 250px" />
+                            <col style="width: 120px" />
+                            <col style="width: 120px" />
+                            <col style="width: 120px" />
+                            <col style="width: 120px" />
                             <col style="width: 100px" />
                             <col style="width: 130px" />
                             <col style="width: 100px" />
@@ -743,7 +844,19 @@ const saveData = async (id: string) => {
                                     BIDANG URUSAN & PROGRAM/<br />KEGIATAN/SUB KEGIATAN
                                 </th>
                                 <th
-                                    colspan="4"
+                                    colspan="3"
+                                    class="border-r border-gray-200 bg-amber-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    PAGU ANGGARAN APBD
+                                </th>
+                                <th
+                                    rowspan="3"
+                                    class="border-r border-gray-200 bg-amber-50 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    SUMBER DANA
+                                </th>
+                                <th
+                                    colspan="5"
                                     class="border-r border-gray-200 bg-blue-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
                                 >
                                     {{ triwulanName.toUpperCase() }}
@@ -764,13 +877,31 @@ const saveData = async (id: string) => {
                             </tr>
                             <tr class="border-b border-gray-200">
                                 <th
+                                    rowspan="2"
+                                    class="border-r border-gray-200 bg-amber-50 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase"
+                                >
+                                    POKOK<br />(RP)
+                                </th>
+                                <th
+                                    rowspan="2"
+                                    class="border-r border-gray-200 bg-amber-50 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase"
+                                >
+                                    PARSIAL<br />(RP)
+                                </th>
+                                <th
+                                    rowspan="2"
+                                    class="border-r border-gray-200 bg-amber-50 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase"
+                                >
+                                    PERUBAHAN<br />(RP)
+                                </th>
+                                <th
                                     colspan="2"
                                     class="border-r border-gray-200 bg-green-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
                                 >
                                     TARGET
                                 </th>
                                 <th
-                                    colspan="2"
+                                    colspan="3"
                                     class="border-r border-gray-200 bg-yellow-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
                                 >
                                     REALISASI
@@ -789,14 +920,17 @@ const saveData = async (id: string) => {
                                     <div class="mt-1 text-xs font-normal text-green-600">550% → 55%</div>
                                 </th>
                                 <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KEUANGAN<br />(%)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
                                     KEUANGAN<br />(RP)
                                     <div class="mt-1 text-xs font-normal text-green-600">🔄 Auto Rp</div>
                                 </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
-                            <tr v-if="programData.length === 0">
-                                <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500">
+                                                            <tr v-if="programData.length === 0">
+                                <td colspan="12" class="px-4 py-8 text-center text-sm text-gray-500">
                                     <div class="flex flex-col items-center justify-center space-y-3">
                                         <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path
@@ -835,6 +969,33 @@ const saveData = async (id: string) => {
                                 <!-- Program/Kegiatan Column -->
                                 <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
                                     <div class="line-clamp-3">{{ item.program }}</div>
+                                </td>
+
+                                <!-- Pagu Pokok Column -->
+                                <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                    {{ item.paguPokok || 'Rp 0' }}
+                                </td>
+
+                                <!-- Pagu Parsial Column -->
+                                <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                    {{ item.paguParsial || 'Rp 0' }}
+                                </td>
+
+                                <!-- Pagu Perubahan Column -->
+                                <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                    {{ item.paguPerubahan || 'Rp 0' }}
+                                </td>
+
+                                <!-- Sumber Dana Column -->
+                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                    <template v-if="item.sumberDana">
+                                        <div class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+                                            {{ item.sumberDana }}
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <span class="text-gray-400">-</span>
+                                    </template>
                                 </td>
 
                                 <!-- Target Fisik Column -->
@@ -878,7 +1039,33 @@ const saveData = async (id: string) => {
                                     </template>
                                 </td>
 
-                                <!-- Realisasi Keuangan Column -->
+                                <!-- Realisasi Keuangan Persentase Column -->
+                                <td class="border-r border-gray-200 px-2 py-3 text-center align-middle text-sm">
+                                    <template v-if="item.type === 'subkegiatan_sumber_dana'">
+                                        <div class="relative">
+                                            <span 
+                                                class="inline-flex h-8 w-16 items-center justify-center rounded bg-blue-50 text-xs font-semibold text-blue-700 border border-blue-200"
+                                                :class="{
+                                                    'bg-green-50 text-green-700 border-green-200': 
+                                                        parseFloat(getKeuanganPersentase(item.id)) >= 80,
+                                                    'bg-yellow-50 text-yellow-700 border-yellow-200': 
+                                                        parseFloat(getKeuanganPersentase(item.id)) >= 50 && 
+                                                        parseFloat(getKeuanganPersentase(item.id)) < 80,
+                                                    'bg-red-50 text-red-700 border-red-200': 
+                                                        parseFloat(getKeuanganPersentase(item.id)) < 50
+                                                }"
+                                                :title="`Dihitung dari: (Realisasi Keuangan / Pagu Pokok) × 100`"
+                                            >
+                                                {{ getKeuanganPersentase(item.id) }}
+                                            </span>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <span class="text-sm">{{ item.realisasiKeuanganPersen || '0%' }}</span>
+                                    </template>
+                                </td>
+
+                                <!-- Realisasi Keuangan Rupiah Column -->
                                 <td class="border-r border-gray-200 px-2 py-3 text-right align-middle text-sm">
                                     <template v-if="item.type === 'subkegiatan_sumber_dana'">
                                         <div class="relative">
@@ -903,7 +1090,7 @@ const saveData = async (id: string) => {
                                                         handleInputChange(item.id, 'realisasiKeuangan', (e.target as HTMLInputElement).value)
                                                 "
                                                 placeholder="500000"
-                                                title="Masukkan angka tanpa titik/koma, format Rp akan ditambah otomatis"
+                                                title="Masukkan angka tanpa titik/koma, format Rp akan ditambah otomatis. Persentase akan dihitung otomatis."
                                             />
                                         </div>
                                     </template>

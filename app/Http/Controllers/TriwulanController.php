@@ -319,32 +319,25 @@ class TriwulanController extends Controller
     {
         $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
 
-        // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
-            return redirect()->back()->with('error', 'Invalid triwulan ID.');
-        }
-
-        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
-        if (!$periode) {
-            return redirect()->back()->with('error', 'Periode triwulan tidak ditemukan untuk tahun ' . $tahun . '.');
+            return redirect()->back()->withErrors(['error' => 'ID Triwulan tidak valid.']);
         }
 
         $tugas = SkpdTugas::with([
-            'kodeNomenklatur',
-            'skpd' => function($query) {
-                $query->select('*'); // Pastikan semua field SKPD dimuat
-            },
+            'kodeNomenklatur.details',
             'skpd.kepala.user.userDetail',
             'skpd.kepala' => function($query) {
                 $query->where('is_aktif', 1);
             },
-            'skpd.timKerja.operator.userDetail',
-            'skpd.timKerja' => function($query) {
-                $query->where('is_aktif', 1);
-            },
-            'skpd.userPenanggungJawab.userDetail', // User yang bertanggung jawab atas SKPD
+            'skpd.timKerja.operator.userDetail'
         ])->findOrFail($taskId);
 
+        $periode = $this->getPeriodeByTriwulan($tid, $tahun);
+        if (!$periode) {
+            return redirect()->back()->withErrors(['error' => 'Periode ' . $this->getTriwulanName($tid) . ' tahun ' . $tahun . ' tidak ditemukan.']);
+        }
+
+        // Get all SKPD tasks for this SKPD with monitoring data
         $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
             ->where('is_aktif', 1)
             ->with([
@@ -427,11 +420,33 @@ class TriwulanController extends Controller
         $allMonitoring = \App\Models\Monitoring::whereHas('tugas', function($query) use ($tugas) {
                 $query->where('skpd_id', $tugas->skpd_id);
             })
-            ->with(['anggaran.target.periode', 'anggaran.realisasi.periode', 'anggaran.sumberAnggaran'])
+            ->with(['anggaran.target.periode', 'anggaran.realisasi.periode', 'anggaran.sumberAnggaran', 'anggaran.pagu'])
             ->get();
 
         foreach ($allMonitoring as $monitoringItem) {
             foreach ($monitoringItem->anggaran as $anggaran) {
+                // Get pagu data for all categories (pokok, parsial, perubahan) with proper aggregation
+                $paguData = [
+                    'pokok' => 0,
+                    'parsial' => 0,
+                    'perubahan' => 0
+                ];
+                
+                // PERBAIKAN: Aggregate pagu data from all records, not just override
+                foreach ($anggaran->pagu as $pagu) {
+                    switch ($pagu->kategori) {
+                        case 1:
+                            $paguData['pokok'] += $pagu->dana; // ✅ Sum, bukan override
+                            break;
+                        case 2:
+                            $paguData['parsial'] += $pagu->dana; // ✅ Sum dari semua triwulan
+                            break;
+                        case 3:
+                            $paguData['perubahan'] += $pagu->dana; // ✅ Sum dari semua budget change
+                            break;
+                    }
+                }
+
                 // Collect monitoring targets
                 foreach ($anggaran->target as $target) {
                     $monitoringTargets[] = [
@@ -439,9 +454,13 @@ class TriwulanController extends Controller
                         'task_id' => $monitoringItem->skpd_tugas_id,
                         'kinerja_fisik' => $target->kinerja_fisik,
                         'keuangan' => $target->keuangan,
+                        'pagu_pokok' => $paguData['pokok'],
+                        'pagu_parsial' => $paguData['parsial'],
+                        'pagu_perubahan' => $paguData['perubahan'],
                         'periode' => $target->periode ? $target->periode->nama : 'Unknown',
                         'periode_id' => $target->periode_id,
                         'monitoring_id' => $monitoringItem->id,
+                        'monitoring_anggaran_id' => $anggaran->id,
                         'deskripsi' => $monitoringItem->deskripsi,
                         'nama_pptk' => $monitoringItem->nama_pptk,
                         'sumber_anggaran_id' => $anggaran->sumber_anggaran_id,
@@ -456,6 +475,9 @@ class TriwulanController extends Controller
                         'task_id' => $monitoringItem->skpd_tugas_id,
                         'kinerja_fisik' => $realisasi->kinerja_fisik,
                         'keuangan' => $realisasi->keuangan,
+                        'pagu_pokok' => $paguData['pokok'],
+                        'pagu_parsial' => $paguData['parsial'],
+                        'pagu_perubahan' => $paguData['perubahan'],
                         'periode' => $realisasi->periode ? $realisasi->periode->nama : 'Unknown',
                         'periode_id' => $realisasi->periode_id,
                         'monitoring_id' => $monitoringItem->id,
@@ -639,6 +661,36 @@ class TriwulanController extends Controller
             ->where('tahun', $tahun) // Filter berdasarkan tahun
             ->first();
 
+        // PERBAIKAN: If not found by 'Rencana Awal' deskripsi, try alternative approach
+        if (!$rencanaAwalMonitoring) {
+            // Look for monitoring with Rencana periode (more flexible approach)
+            $rencanaAwalMonitoring = Monitoring::where('skpd_tugas_id', $task->id)
+                ->where('tahun', $tahun)
+                ->whereHas('periode.tahap', function($query) {
+                    $query->where('tahap', 'Rencana');
+                })
+                ->first();
+
+            \Log::info("TriwulanController.saveRealisasi: Rencana Awal lookup via periode", [
+                'found' => $rencanaAwalMonitoring ? true : false,
+                'monitoring_id' => $rencanaAwalMonitoring ? $rencanaAwalMonitoring->id : null
+            ]);
+        }
+
+        // If still not found, try the latest monitoring for this task
+        if (!$rencanaAwalMonitoring) {
+            $rencanaAwalMonitoring = Monitoring::where('skpd_tugas_id', $task->id)
+                ->where('tahun', $tahun)
+                ->latest()
+                ->first();
+
+            \Log::info("TriwulanController.saveRealisasi: Using latest monitoring as fallback", [
+                'found' => $rencanaAwalMonitoring ? true : false,
+                'monitoring_id' => $rencanaAwalMonitoring ? $rencanaAwalMonitoring->id : null,
+                'deskripsi' => $rencanaAwalMonitoring ? $rencanaAwalMonitoring->deskripsi : null
+            ]);
+        }
+
         // Get or create a monitoring record for REALIZATION specifically
         // Use a combination of skpd_tugas_id, tahun, and periode_id as identifier
         // deskripsi will be updated with user input (keterangan)
@@ -656,8 +708,8 @@ class TriwulanController extends Controller
                 'periode_id' => $periode->id  // Use periode_id as part of identifier instead of deskripsi
             ],
             [
-                'nama_pptk' => $request->nama_pptk ?? '-',
-                'deskripsi' => $request->keterangan ?? '-' // deskripsi is user input (keterangan)
+                'nama_pptk' => !empty($request->nama_pptk) ? $request->nama_pptk : '-',
+                'deskripsi' => !empty($request->keterangan) ? $request->keterangan : '-' // deskripsi is user input (keterangan)
             ]
         );
 
@@ -687,38 +739,61 @@ class TriwulanController extends Controller
         // Copy budget data (pagu) from the Rencana Awal record if it exists
         if ($rencanaAwalMonitoring) {
             $rencanaAwalAnggaran = MonitoringAnggaran::where('monitoring_id', $rencanaAwalMonitoring->id)
+                ->where('sumber_anggaran_id', $request->sumber_anggaran_id)
                 ->first();
 
             if ($rencanaAwalAnggaran) {
-                // Copy pagu data for all categories (1=Pokok, 2=Parsial, 3=Perubahan)
+                // PERBAIKAN: Copy pagu data for all categories with proper aggregation
                 for ($kategori = 1; $kategori <= 3; $kategori++) {
-                    $pagu = MonitoringPagu::where('monitoring_anggaran_id', $rencanaAwalAnggaran->id)
+                    // Get ALL pagu records for this category and sum them up
+                    $paguRecords = MonitoringPagu::where('monitoring_anggaran_id', $rencanaAwalAnggaran->id)
                         ->where('kategori', $kategori)
-                        ->first();
+                        ->get();
 
-                    if ($pagu) {
+                    if ($paguRecords->isNotEmpty()) {
+                        // Aggregate the dana values
+                        $totalDana = $paguRecords->sum('dana');
+                        
+                        // Use the first record's periode_id as reference (or you can choose the latest)
+                        $firstPagu = $paguRecords->first();
+                        
+                        // PERBAIKAN: Copy aggregated pagu data but keep the original periode_id for referencing
+                        // This allows the triwulan detail page to access the same pagu data that RencanaAwal shows
                         MonitoringPagu::updateOrCreate(
                             [
                                 'monitoring_anggaran_id' => $anggaran->id,
                                 'kategori' => $kategori,
-                                'periode_id' => $pagu->periode_id
+                                'periode_id' => $firstPagu->periode_id // Keep original periode_id from RencanaAwal
                             ],
                             [
-                                'dana' => $pagu->dana
+                                'dana' => $totalDana // ✅ Use aggregated total
                             ]
                         );
+
+                        \Log::info("TriwulanController.saveRealisasi: Copied aggregated pagu data", [
+                            'kategori' => $kategori,
+                            'records_count' => $paguRecords->count(),
+                            'individual_amounts' => $paguRecords->pluck('dana')->toArray(),
+                            'total_dana' => $totalDana,
+                            'original_periode_id' => $firstPagu->periode_id,
+                            'source_anggaran_id' => $rencanaAwalAnggaran->id,
+                            'destination_anggaran_id' => $anggaran->id
+                        ]);
                     }
                 }
             }
+        } else {
+            \Log::warning("TriwulanController.saveRealisasi: No Rencana Awal monitoring found", [
+                'task_id' => $task->id,
+                'tahun' => $tahun,
+                'sumber_anggaran_id' => $request->sumber_anggaran_id
+            ]);
         }
 
-        // Update monitoring record with nama_pptk and deskripsi (keterangan)
-        if ($request->has('nama_pptk')) {
-            $monitoring->nama_pptk = $request->nama_pptk;
-        }
-        if ($request->has('keterangan')) {
-            $monitoring->deskripsi = $request->keterangan; // Update deskripsi with user's keterangan
-        }
+        // Update monitoring record dengan nama_pptk dan deskripsi (keterangan)
+        // Pastikan tidak ada nilai null yang disimpan - gunakan default '-' untuk field kosong
+        $monitoring->nama_pptk = !empty($request->nama_pptk) ? trim($request->nama_pptk) : '-';
+        $monitoring->deskripsi = !empty($request->keterangan) ? trim($request->keterangan) : '-';
         $monitoring->save();
 
         \Log::info("TriwulanController.saveRealisasi: Before MonitoringRealisasi operation", [

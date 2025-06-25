@@ -12,9 +12,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   ArrowUpDown,
-  FileText,
   Info,
-  Building2,
   User
 } from 'lucide-vue-next';
 import {
@@ -26,17 +24,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 
 const props = defineProps<{
   users: {

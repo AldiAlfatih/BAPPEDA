@@ -105,12 +105,30 @@ interface Props {
                 blud: boolean;
             };
             values: {
-                dak: number;
-                dak_peruntukan: number;
-                dak_fisik: number;
-                dak_non_fisik: number;
-                blud: number;
+                rencana_awal: {
+                    dak?: number;
+                    dak_peruntukan?: number;
+                    dak_fisik?: number;
+                    dak_non_fisik?: number;
+                    blud?: number;
+                };
+                parsial: {
+                    dak?: number;
+                    dak_peruntukan?: number;
+                    dak_fisik?: number;
+                    dak_non_fisik?: number;
+                    blud?: number;
+                };
+                budget_change: {
+                    dak?: number;
+                    dak_peruntukan?: number;
+                    dak_fisik?: number;
+                    dak_non_fisik?: number;
+                    blud?: number;
+                };
             };
+            is_parsial_enabled?: boolean;
+            is_budget_change_enabled?: boolean;
         }
     >;
     periodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
@@ -313,8 +331,12 @@ const calculateItemTotal = (item: ItemWithKodeNomenklatur) => {
         // Subkegiatan
         // For subkegiatan with specific sumber dana, return the specific amount
         const fundingData = props.dataAnggaranTerakhir?.[item.id];
-        if (fundingData) {
-            return Object.values(fundingData.values).reduce((sum, val) => sum + val, 0);
+        if (fundingData && fundingData.values) {
+            // Calculate total from rencana_awal, parsial, and budget_change
+            const rencanaAwalTotal = Object.values(fundingData.values.rencana_awal || {}).reduce((sum, val) => sum + (val || 0), 0);
+            const parsialTotal = Object.values(fundingData.values.parsial || {}).reduce((sum, val) => sum + (val || 0), 0);
+            const budgetChangeTotal = Object.values(fundingData.values.budget_change || {}).reduce((sum, val) => sum + (val || 0), 0);
+            return rencanaAwalTotal + parsialTotal + budgetChangeTotal;
         }
         return 0;
     }
@@ -478,13 +500,25 @@ const formattedSubKegiatanData = computed(() => {
                 { key: 'blud', name: 'BLUD' },
             ];
 
+            // Debug: Log funding data to check parsial and budget change values
+            if (fundingData.values?.parsial && Object.values(fundingData.values.parsial).some(val => (val || 0) > 0)) {
+                console.log(`Subkegiatan ${subKegiatan.id} has parsial data:`, fundingData.values.parsial);
+            }
+            if (fundingData.values?.budget_change && Object.values(fundingData.values.budget_change).some(val => (val || 0) > 0)) {
+                console.log(`Subkegiatan ${subKegiatan.id} has budget change data:`, fundingData.values.budget_change);
+            }
+
             // For each active funding source, create a row
             let hasActiveSource = false;
             sources.forEach((source) => {
                 const sourceKey = source.key as keyof typeof fundingData.sumber_anggaran;
-                const valueKey = source.key as keyof typeof fundingData.values;
 
-                if (fundingData.sumber_anggaran[sourceKey] && fundingData.values[valueKey] > 0) {
+                // Check if this source is enabled and has any value (rencana_awal, parsial, or budget_change)
+                const rencanaAwalValue = fundingData.values?.rencana_awal?.[source.key] || 0;
+                const parsialValue = fundingData.values?.parsial?.[source.key] || 0;
+                const budgetChangeValue = fundingData.values?.budget_change?.[source.key] || 0;
+
+                if (fundingData.sumber_anggaran[sourceKey] && (rencanaAwalValue > 0 || parsialValue > 0 || budgetChangeValue > 0)) {
                     hasActiveSource = true;
 
                     // Get normalized targets for this specific sumber dana
@@ -497,9 +531,9 @@ const formattedSubKegiatanData = computed(() => {
                         program: parentProgram,
                         bidangUrusan: parentBidangUrusan,
                         sumberDana: source.name,
-                        pokok: fundingData.values[valueKey],
-                        parsial: 0,
-                        perubahan: 0,
+                        pokok: rencanaAwalValue,
+                        parsial: parsialValue,
+                        perubahan: budgetChangeValue,
                         normalizedTargets: targets,
                     });
                 }
@@ -510,6 +544,14 @@ const formattedSubKegiatanData = computed(() => {
                 // Get normalized targets for default case
                 const targets = processMonitoringData(subKegiatan, 'Belum diisi');
 
+                // Calculate totals from all data types
+                const totalRencanaAwal = fundingData.values?.rencana_awal ? 
+                    Object.values(fundingData.values.rencana_awal).reduce((sum, val) => sum + (val || 0), 0) : 0;
+                const totalParsial = fundingData.values?.parsial ? 
+                    Object.values(fundingData.values.parsial).reduce((sum, val) => sum + (val || 0), 0) : 0;
+                const totalBudgetChange = fundingData.values?.budget_change ? 
+                    Object.values(fundingData.values.budget_change).reduce((sum, val) => sum + (val || 0), 0) : 0;
+
                 result.push({
                     id: `${subKegiatan.id}-default`,
                     subKegiatan: subKegiatan,
@@ -517,9 +559,9 @@ const formattedSubKegiatanData = computed(() => {
                     program: parentProgram,
                     bidangUrusan: parentBidangUrusan,
                     sumberDana: 'Belum diisi',
-                    pokok: 0,
-                    parsial: 0,
-                    perubahan: 0,
+                    pokok: totalRencanaAwal,
+                    parsial: totalParsial,
+                    perubahan: totalBudgetChange,
                     normalizedTargets: targets,
                 });
             }
@@ -1237,27 +1279,53 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                         </div>
                     </div>
 
-                    <!-- Add period selector -->
-                    <div class="flex items-center">
-                        <label for="periode-selector" class="mr-2 font-medium text-gray-700">Pilih Periode:</label>
-                        <select
-                            id="periode-selector"
-                            class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            @change="handlePeriodeChange"
-                            :value="selectedPeriodeId"
-                        >
-                            <option value="">Semua Periode</option>
-                            <option
-                                v-for="periode in props.semuaPeriodeAktif"
-                                :key="periode.id"
-                                :value="periode.id"
-                                :selected="periode.id === selectedPeriodeId"
+                    <!-- Add period selector and PDF button -->
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center">
+                            <label for="periode-selector" class="mr-2 font-medium text-gray-700">Pilih Periode:</label>
+                            <select
+                                id="periode-selector"
+                                class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                @change="handlePeriodeChange"
+                                :value="selectedPeriodeId"
                             >
-                                {{ periode.tahap.tahap }} - {{ periode.tahun.tahun }}
-                            </option>
-                        </select>
+                                <option value="">Semua Periode</option>
+                                <option
+                                    v-for="periode in props.semuaPeriodeAktif"
+                                    :key="periode.id"
+                                    :value="periode.id"
+                                    :selected="periode.id === selectedPeriodeId"
+                                >
+                                    {{ periode.tahap.tahap }} - {{ periode.tahun.tahun }}
+                                </option>
+                            </select>
+                        </div>
 
-                        <div class="ml-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <!-- PDF Download Button -->
+                        <button
+                            v-if="props.tugas?.id"
+                            @click="router.visit(route('pdf.rencana-awal.form', props.tugas.id))"
+                            class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
+                            title="Download PDF Rencana Awal"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">Download PDF</span>
+                        </button>
+
+                        <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
                             <span class="text-xs font-medium text-gray-500">Tahun Anggaran</span>
                             <div class="text-center text-lg font-bold text-blue-600">{{ props.tahunAktif?.tahun || 'Belum ada' }}</div>
                         </div>

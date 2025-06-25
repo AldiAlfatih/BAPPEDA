@@ -6,17 +6,14 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { 
-  Plus, 
-  Pencil, 
   Eye, 
   Search, 
   ChevronLeft, 
   ChevronRight, 
   ArrowUpDown,
-  FileText,
+  Binoculars,
+  Wallet,
   Info,
-  Building2,
-  User
 } from 'lucide-vue-next';
 import {
   Table,
@@ -29,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const props = defineProps<{
   users: {
@@ -47,6 +45,22 @@ const props = defineProps<{
     }>;
   };
   url_detail: string;
+  showBinocularsButton?: boolean;
+  url_detail_partial: string;
+  url_budget_change?: string;
+  enabledParsialUsers?: number[];
+  isBudgetChangeMode?: boolean;
+  triwulan4Aktif?: {
+    id: number;
+    tahap: {
+      id: number;
+      tahap: string;
+    };
+    tahun: {
+      id: number;
+      tahun: string;
+    };
+  } | null;
 }>();
 
 
@@ -58,6 +72,7 @@ const sortField = ref('name');
 const sortDirection = ref('asc');
 const showDetailId = ref<number | null>(null);
 const loadingCreate = ref(false);
+const isEnablingParsial = ref(false);
 
 // Helper function to get NIP from user_detail
 function getUserNip(user: any): string {
@@ -147,7 +162,59 @@ function toggleSort(field: string) {
 }
 
 function goToShowPage(id: number) {
-  router.visit(route(props.url_detail, { id }));
+  // If budget change mode is active and enabled, go to budget change page
+  if (props.isBudgetChangeMode && isBudgetChangeEnabledForUser(id) && props.url_budget_change) {
+    router.visit(route(props.url_budget_change, { id }));
+  } else if (isParsialEnabledForUser(id)) {
+    // If parsial is enabled, go to parsial page
+    router.visit(route(props.url_detail_partial, { id }));
+  } else {
+    // Otherwise go to normal detail page
+    router.visit(route(props.url_detail, { id }));
+  }
+}
+
+async function goToShowParsial(id: number) {
+  // Get the dinas name for the confirmation dialog
+  const user = props.users.data.find(u => u.id === id);
+  const dinasName = user?.nama_dinas || 'Dinas ini';
+  
+  const isConfirmed = confirm(`Apakah Anda ingin membuka parsial pada ${dinasName}?`);
+  
+  if (!isConfirmed) {
+    return;
+  }
+  
+  isEnablingParsial.value = true;
+  
+  try {
+    const response = await fetch(route('manajemenanggaran.enable-parsial'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      },
+      body: JSON.stringify({
+        user_id: id,
+        confirm: true
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(`✅ ${result.message}\n\nSekarang Anda dapat menggunakan tombol detail (binocular) untuk mengakses mode parsial.`);
+      // Refresh current page to update visual indicators
+      window.location.reload();
+    } else {
+      alert(`❌ ${result.message || 'Terjadi kesalahan saat membuka parsial'}`);
+    }
+  } catch (error) {
+    console.error('Error enabling parsial:', error);
+    alert('❌ Terjadi kesalahan saat membuka parsial');
+  } finally {
+    isEnablingParsial.value = false;
+  }
 }
 
 function toggleDetail(id: number) {
@@ -167,6 +234,40 @@ function handleSearchChange() {
 function truncateText(text: string | null | undefined, length: number = 30): string {
   if (!text) return '-';
   return text.length > length ? text.slice(0, length) + '...' : text;
+}
+
+// Check if parsial is enabled for specific user
+function isParsialEnabledForUser(userId: number): boolean {
+  return props.enabledParsialUsers?.includes(userId) || false;
+}
+
+// Check if budget change is enabled for specific user
+function isBudgetChangeEnabledForUser(userId: number): boolean {
+  // For now, if budget change mode is active, assume all users can access it
+  // This should be enhanced based on your business logic
+  return props.isBudgetChangeMode || false;
+}
+
+// Get button class based on mode
+function getButtonClass(userId: number): string {
+  if (props.isBudgetChangeMode && isBudgetChangeEnabledForUser(userId)) {
+    return 'bg-red-500 hover:bg-red-700'; // Red for budget change
+  } else if (isParsialEnabledForUser(userId)) {
+    return 'bg-blue-500 hover:bg-blue-700'; // Blue for parsial
+  } else {
+    return 'bg-orange-500 hover:bg-orange-700'; // Orange for normal
+  }
+}
+
+// Get button tooltip text
+function getButtonTooltip(userId: number): string {
+  if (props.isBudgetChangeMode && isBudgetChangeEnabledForUser(userId)) {
+    return `Mode Perubahan Anggaran (Triwulan 4 ${props.triwulan4Aktif?.tahun?.tahun})`;
+  } else if (isParsialEnabledForUser(userId)) {
+    return 'Mode Parsial (Klik untuk akses parsial)';
+  } else {
+    return 'Mode Normal (Klik untuk rencana awal)';
+  }
 }
 </script>
 <template>
@@ -269,11 +370,47 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                             <Pencil class="w-4 h-4 mr-2" />
                             <span class="hidden sm:inline">Edit</span>
                           </Button> -->
-                          <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white" 
-                            @click.stop="goToShowPage(user.id)">
-                            <Eye class="w-4 h-4 mr-1" />
-                            <span class="hidden sm:inline">Detail</span>
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" 
+                                  :class="getButtonClass(user.id)"
+                                  class="text-white w-15 relative" 
+                                  @click.stop="goToShowPage(user.id)">
+                                  <Binoculars class="w-4 h-4 mr-1" />
+                                  <!-- Budget change indicator -->
+                                  <span v-if="isBudgetChangeMode && isBudgetChangeEnabledForUser(user.id)" 
+                                    class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-pulse border border-white">
+                                  </span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div class="text-sm">
+                                  <p class="font-medium">{{ getButtonTooltip(user.id) }}</p>
+                                  <p v-if="isBudgetChangeMode && isBudgetChangeEnabledForUser(user.id)" class="text-xs text-yellow-600 mt-1">
+                                    🔥 Mode Khusus Aktif - Perubahan Anggaran
+                                  </p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider v-if="showBinocularsButton">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="sm" 
+                                  :class="isParsialEnabledForUser(user.id) ? 'bg-gray-400 hover:bg-gray-500' : 'bg-green-500 hover:bg-green-700'"
+                                  class="text-white w-15" 
+                                  @click.stop="goToShowParsial(user.id)" 
+                                  :disabled="isEnablingParsial || isParsialEnabledForUser(user.id)">
+                                  <Wallet class="w-4 h-4 mr-1" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{{ isParsialEnabledForUser(user.id) ? 'Parsial sudah diaktifkan' : 'Klik untuk aktifkan parsial' }}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -311,10 +448,24 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                               <Pencil class="w-4 h-4 mr-2" />
                               Edit Data
                             </Button> -->
-                            <Button size="sm" class="bg-orange-500 hover:bg-blue-700 text-white" 
+                            <Button size="sm" 
+                              :class="getButtonClass(user.id)"
+                              class="text-white relative" 
                               @click.stop="goToShowPage(user.id)">
-                              <Eye class="w-4 h-4 mr-1" />
-                              Lihat Detail Lengkap
+                              <Binoculars class="w-4 h-4 mr-1" />
+                              <span v-if="isBudgetChangeMode && isBudgetChangeEnabledForUser(user.id)">
+                                Perubahan Anggaran
+                              </span>
+                              <span v-else-if="isParsialEnabledForUser(user.id)">
+                                Akses Mode Parsial
+                              </span>
+                              <span v-else>
+                                Lihat Detail Lengkap
+                              </span>
+                              <!-- Budget change indicator -->
+                              <span v-if="isBudgetChangeMode && isBudgetChangeEnabledForUser(user.id)" 
+                                class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-pulse border border-white">
+                              </span>
                             </Button>
                           </div>
                         </div>
@@ -385,7 +536,10 @@ function truncateText(text: string | null | undefined, length: number = 30): str
         </div>
       </div>
     </div>
+
+
 </template>
+
 
 <style scoped>
 .animate-fadeIn {

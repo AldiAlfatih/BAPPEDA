@@ -176,13 +176,6 @@ function getFileIcon(tipeFile: string) {
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div>
                     <div class="flex items-center gap-2 mb-2">
-                        <button 
-                            @click="goBack"
-                            class="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                            <ArrowLeft class="w-4 h-4" />
-                            Kembali
-                        </button>
                     </div>
                     <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Detail Arsip Monitoring</h1>
                     <p class="text-sm text-gray-500 dark:text-gray-400">

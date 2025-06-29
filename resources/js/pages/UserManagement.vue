@@ -47,10 +47,13 @@ const props = defineProps<{
       roles: Array<{ name: string }>;
     }>;
   };
+  filters?: {
+    search?: string;
+  };
 }>();
 
 // State untuk tabel
-const searchQuery = ref('');
+const searchQuery = ref(props.filters?.search || '');
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 const sortField = ref('name');
@@ -262,9 +265,9 @@ function handleSearchChange() {
                       <TableCell class="text-gray-500">{{ user.name }}</TableCell>
                       <TableCell class="text-gray-500">{{ user.email }}</TableCell>
                       <TableCell>
-                        <Badge class="text-gray-600">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {{ user.roles?.[0]?.name || 'Tidak ada' }}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div class="flex items-center gap-2">
@@ -300,9 +303,9 @@ function handleSearchChange() {
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Role:</p>
-                              <Badge class="text-gray-500">
+                              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                 {{ user.roles?.[0]?.name || 'Tidak ada' }}
-                              </Badge>
+                              </span>
                             </div>
                             <div>
                               <p class="text-sm text-gray-600">Nama Lengkap:</p>

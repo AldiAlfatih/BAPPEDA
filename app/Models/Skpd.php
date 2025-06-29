@@ -14,7 +14,9 @@ class Skpd extends Model
 
     protected $fillable = [
         'nama_skpd',
+        'nama_dinas',
         'kode_organisasi',
+        'no_dpa',
     ];
 
     protected $dates = ['deleted_at'];

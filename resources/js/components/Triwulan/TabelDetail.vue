@@ -2,14 +2,14 @@
 interface Props {
     skpd: {
         id: number;
-        nama_dinas: string;
+        nama_dinas?: string;
+        nama_skpd?: string;
         nama_operator: string;
         nama_kepala_skpd?: string;
         nip_kepala_skpd?: string;
         nip_operator?: string;
         no_dpa: string;
         kode_organisasi: string;
-        nama_skpd?: string;
         user?: {
             id: number;
             name: string;
@@ -18,7 +18,7 @@ interface Props {
             } | null;
         } | undefined;
     };
-    triwulanName: string;
+    triwulanName?: string;
 }
 
 const props = defineProps<Props>();
@@ -41,7 +41,7 @@ const props = defineProps<Props>();
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Perangkat Daerah</h3>
-                <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_dinas || 'Tidak tersedia' }}</p>
+                <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_dinas || skpd.nama_skpd || 'Tidak tersedia' }}</p>
             </div>
 
             <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">

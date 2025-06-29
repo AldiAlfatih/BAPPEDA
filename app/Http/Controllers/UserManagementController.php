@@ -17,9 +17,27 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('roles')->paginate(1000);
+        $query = User::with('roles');
+
+        // Tambahkan filter search jika ada
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('email', 'like', '%' . $searchTerm . '%')
+                  ->orWhereHas('roles', function($subQ) use ($searchTerm) {
+                      $subQ->where('name', 'like', '%' . $searchTerm . '%');
+                  });
+            });
+        }
+
+        $users = $query->paginate(1000);
+        
         return Inertia::render('UserManagement', [
             'users' => $users,
+            'filters' => [
+                'search' => $request->search,
+            ],
         ]);
     }
 

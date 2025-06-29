@@ -549,3 +549,37 @@ Route::get('/debug-data/{skpd_tugas_id}', function($skpd_tugas_id) {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+// Debugging route
+Route::get('/debug-skpd-data/{id}', function($id) {
+    $tugas = \App\Models\SkpdTugas::with([
+        'skpd.kepala.user.userDetail',
+        'skpd.timKerja.operator.userDetail'
+    ])->findOrFail($id);
+    
+    $data = [
+        'tugas_id' => $tugas->id,
+        'skpd_id' => $tugas->skpd_id,
+        'skpd_nama' => $tugas->skpd->nama_skpd ?? 'NULL',
+        'kepala_count' => $tugas->skpd->kepala->count(),
+        'kepala_data' => $tugas->skpd->kepala->map(function($kepala) {
+            return [
+                'id' => $kepala->id,
+                'is_aktif' => $kepala->is_aktif,
+                'user_name' => $kepala->user ? $kepala->user->name : 'NULL',
+                'user_nip' => $kepala->user && $kepala->user->userDetail ? $kepala->user->userDetail->nip : 'NULL'
+            ];
+        }),
+        'tim_kerja_count' => $tugas->skpd->timKerja->count(),
+        'tim_kerja_data' => $tugas->skpd->timKerja->map(function($timKerja) {
+            return [
+                'id' => $timKerja->id,
+                'is_aktif' => $timKerja->is_aktif,
+                'operator_name' => $timKerja->operator ? $timKerja->operator->name : 'NULL',
+                'operator_nip' => $timKerja->operator && $timKerja->operator->userDetail ? $timKerja->operator->userDetail->nip : 'NULL'
+            ];
+        })
+    ];
+    
+    return response()->json($data, 200, [], JSON_PRETTY_PRINT);
+})->name('debug.skpd-data');

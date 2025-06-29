@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 
 class PerangkatDaerahController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
@@ -22,9 +22,31 @@ class PerangkatDaerahController extends Controller
             return redirect()->route('perangkatdaerah.show', $user->id);
         }
 
-        $users = User::role('perangkat_daerah')
-            ->with(['skpd.kepalaAktif.user', 'skpd.operatorAktif.operator'])
-            ->paginate(1000);
+        $query = User::role('perangkat_daerah')
+            ->with([
+                'skpd.kepalaAktif.user.userDetail', 
+                'skpd.operatorAktif.operator.userDetail'
+            ]);
+
+        // Tambahkan filter search jika ada
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->whereHas('skpd', function($subQ) use ($searchTerm) {
+                    $subQ->where('nama_skpd', 'like', '%' . $searchTerm . '%')
+                         ->orWhere('kode_organisasi', 'like', '%' . $searchTerm . '%')
+                         ->orWhere('no_dpa', 'like', '%' . $searchTerm . '%');
+                })
+                ->orWhereHas('skpd.kepalaAktif.user', function($subQ) use ($searchTerm) {
+                    $subQ->where('name', 'like', '%' . $searchTerm . '%');
+                })
+                ->orWhereHas('skpd.operatorAktif.operator', function($subQ) use ($searchTerm) {
+                    $subQ->where('name', 'like', '%' . $searchTerm . '%');
+                });
+            });
+        }
+
+        $users = $query->paginate(1000);
 
         $users->getCollection()->transform(function ($user) {
             $skpd = $user->skpd->first();
@@ -50,6 +72,9 @@ class PerangkatDaerahController extends Controller
 
         return Inertia::render('PerangkatDaerah', [
             'users' => $users,
+            'filters' => [
+                'search' => $request->search,
+            ],
         ]);
     }
 
@@ -78,8 +103,10 @@ class PerangkatDaerahController extends Controller
         $operator = User::find($validated['operator_id']);
 
         $skpd = Skpd::create([
-            'nama_skpd' => $validated['nama_skpd'] ?? $validated['nama_dinas'],
+            'nama_skpd' => $validated['nama_dinas'] ?? 'SKPD',
+            'nama_dinas' => $validated['nama_dinas'],
             'kode_organisasi' => $validated['kode_organisasi'],
+            'no_dpa' => $validated['no_dpa'],
         ]);
 
         SkpdKepala::create([
@@ -98,17 +125,27 @@ class PerangkatDaerahController extends Controller
 
     public function show(string $id)
     {
-        $user = User::with(['skpd.kepala.user.userDetail'])->findOrFail($id);
+        $user = User::with(['skpd.kepala.user.userDetail', 'skpd.operatorAktif.operator.userDetail'])->findOrFail($id);
 
         $userSkpd = $user->skpd->first();
 
         $kepalaSkpd = null;
         $nipKepala = null;
+        $operatorSkpd = null;
+        $nipOperator = null;
+        
         if ($userSkpd) {
+            // Get Kepala SKPD data
             $kepala = $userSkpd->kepala()->with(['user.userDetail'])->latest()->first();
             if ($kepala && $kepala->user) {
                 $kepalaSkpd = $kepala->user;
                 $nipKepala = $kepala->user->userDetail->nip ?? null;
+            }
+            
+            // Get Operator data
+            if ($userSkpd->operatorAktif && $userSkpd->operatorAktif->operator) {
+                $operatorSkpd = $userSkpd->operatorAktif->operator;
+                $nipOperator = $operatorSkpd->userDetail->nip ?? null;
             }
         }
 
@@ -188,9 +225,13 @@ class PerangkatDaerahController extends Controller
             'skpd' => [
                 'id' => $userSkpd->id ?? null,
                 'nama_skpd' => $userSkpd->nama_skpd ?? null,
-                'nama_dinas' => $userSkpd->nama_dinas ?? null,
-                'kode_organisasi' => $userSkpd->kode_organisasi ?? null,
-                'no_dpa' => $userSkpd->no_dpa ?? null,
+                'nama_dinas' => $userSkpd->nama_dinas ?? $userSkpd->nama_skpd ?? 'Tidak tersedia',
+                'kode_organisasi' => $userSkpd->kode_organisasi ?? 'Tidak tersedia',
+                'no_dpa' => $userSkpd->no_dpa ?? 'Tidak tersedia',
+                'nama_operator' => $operatorSkpd->name ?? 'Tidak tersedia',
+                'nip_operator' => $nipOperator ?? '-',
+                'nama_kepala_skpd' => $kepalaSkpd->name ?? 'Tidak tersedia',
+                'nip_kepala_skpd' => $nipKepala ?? '-',
                 'kepala_skpd' => $kepalaSkpd ? [
                     'id' => $kepalaSkpd->id,
                     'name' => $kepalaSkpd->name,
@@ -254,12 +295,15 @@ class PerangkatDaerahController extends Controller
             'user_id' => 'required|exists:users,id',
             'operator_id' => 'required|exists:users,id',
             'kode_organisasi' => 'required|string|max:255',
+            'nama_dinas' => 'nullable|string|max:255',
             'no_dpa' => 'nullable|string|max:255',
         ]);
 
         // Update SKPD
         $skpd->update([
             'kode_organisasi' => $validated['kode_organisasi'],
+            'nama_dinas' => $validated['nama_dinas'],
+            'no_dpa' => $validated['no_dpa'],
         ]);
 
         // === SKPD KEPALA ===

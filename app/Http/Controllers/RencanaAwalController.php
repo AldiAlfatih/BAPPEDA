@@ -23,6 +23,24 @@ class RencanaAwalController extends Controller
 
         // Load basic data using helper methods
         $tugas = $this->loadSkpdData($id);
+
+        // DEBUG: Log relasi yang ter-load
+        \Log::info('=== TUGAS DATA LOADED ===', [
+            'tugas_id' => $tugas->id,
+            'skpd_id' => $tugas->skpd_id,
+            'skpd_exists' => $tugas->skpd ? true : false,
+            'kepala_count' => $tugas->skpd && $tugas->skpd->kepala ? $tugas->skpd->kepala->count() : 0,
+            'tim_kerja_count' => $tugas->skpd && $tugas->skpd->timKerja ? $tugas->skpd->timKerja->count() : 0,
+            'kepala_first' => $tugas->skpd && $tugas->skpd->kepala && $tugas->skpd->kepala->first() ? [
+                'id' => $tugas->skpd->kepala->first()->id,
+                'is_aktif' => $tugas->skpd->kepala->first()->is_aktif,
+                'user_exists' => $tugas->skpd->kepala->first()->user ? true : false,
+                'user_name' => $tugas->skpd->kepala->first()->user ? $tugas->skpd->kepala->first()->user->name : null,
+                'user_detail_exists' => $tugas->skpd->kepala->first()->user && $tugas->skpd->kepala->first()->user->userDetail ? true : false,
+                'user_nip' => $tugas->skpd->kepala->first()->user && $tugas->skpd->kepala->first()->user->userDetail ? $tugas->skpd->kepala->first()->user->userDetail->nip : null
+            ] : null
+        ]);
+
         $periodeAktif = $this->getActivePeriode();
         $skpdTugas = $this->loadSkpdTugasWithMonitoring($tugas->skpd_id, $periodeAktif);
 
@@ -56,18 +74,81 @@ class RencanaAwalController extends Controller
         // Process anggaran data using helper method
         $dataAnggaranTerakhir = $this->processAnggaranData($subkegiatanTugas, $periodeAktif);
 
-        // Get all available urusan
-        $allUrusans = KodeNomenklatur::where('jenis_nomenklatur', 0)
-            ->whereIn('id', function($query) use ($tugas) {
-                $query->select('id_nomenklatur')
-                    ->from('nomenklatur_details')
-                    ->where('id_urusan', function($subQuery) use ($tugas) {
-                        $subQuery->select('id_urusan')
-                            ->from('nomenklatur_details')
-                            ->where('id_skpd', $tugas->skpd_id);
-                    });
-            })
-            ->get();
+        // Debug: Log SKPD Tugas data
+        \Log::info('RencanaAwal SKPD Tugas debugging', [
+            'tugas_id' => $tugas->id,
+            'skpd_id' => $tugas->skpd_id,
+            'tugas_kode_nomenklatur' => $tugas->kodeNomenklatur->toArray(),
+            'skpd_tugas_count' => $skpdTugas->count(),
+            'skpd_tugas_sample' => $skpdTugas->take(3)->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'kode_nomenklatur_id' => $item->kode_nomenklatur_id,
+                    'jenis_nomenklatur' => $item->kodeNomenklatur->jenis_nomenklatur,
+                    'nomor_kode' => $item->kodeNomenklatur->nomor_kode,
+                    'details_count' => $item->kodeNomenklatur->details->count(),
+                    'first_detail' => $item->kodeNomenklatur->details->first() ? $item->kodeNomenklatur->details->first()->toArray() : null
+                ];
+            })->toArray()
+        ]);
+
+        // Get all available urusan for this SKPD - PERBAIKAN: Ambil semua urusan yang terkait
+        $availableUrusanIds = collect();
+
+        foreach($skpdTugas as $item) {
+            if ($item->kodeNomenklatur && $item->kodeNomenklatur->details->isNotEmpty()) {
+                $detail = $item->kodeNomenklatur->details->first();
+                if ($detail->id_urusan) {
+                    $availableUrusanIds->push($detail->id_urusan);
+                }
+            }
+        }
+
+        // Jika tidak ada urusan dari details, coba ambil dari tugas utama
+        if ($availableUrusanIds->isEmpty() && $tugas->kodeNomenklatur->details->isNotEmpty()) {
+            $mainDetail = $tugas->kodeNomenklatur->details->first();
+            if ($mainDetail->id_urusan) {
+                $availableUrusanIds->push($mainDetail->id_urusan);
+            }
+        }
+
+        // Fallback: Jika masih kosong, ambil semua urusan
+        if ($availableUrusanIds->isEmpty()) {
+            $allUrusans = KodeNomenklatur::where('jenis_nomenklatur', 0)->get();
+        } else {
+            $availableUrusanIds = $availableUrusanIds->unique()->filter()->values();
+            $allUrusans = KodeNomenklatur::where('jenis_nomenklatur', 0)
+                ->whereIn('id', $availableUrusanIds)
+                ->get();
+        }
+
+        \Log::info('RencanaAwal available urusan FINAL', [
+            'available_urusan_ids' => $availableUrusanIds->toArray(),
+            'all_urusan_count' => $allUrusans->count(),
+            'urusan_data' => $allUrusans->map(function($urusan) {
+                return [
+                    'id' => $urusan->id,
+                    'nomor_kode' => $urusan->nomor_kode,
+                    'nomenklatur' => $urusan->nomenklatur
+                ];
+            })->toArray()
+        ]);
+
+        // Get SKPD data yang lebih lengkap
+        $skpdData = $this->getDetailedSkpdData($tugas);
+
+        // Get user penanggung jawab (operator)
+        $penanggungJawab = $this->getPenanggungJawabData($tugas);
+
+        // DEBUG: Log data yang akan dikirim ke frontend
+        \Log::info('=== FINAL DATA TO FRONTEND ===', [
+            'kepalaSkpd' => $kepalaSkpd,
+            'skpdData' => $skpdData,
+            'penanggungJawab' => $penanggungJawab,
+            'skpd_kepala_structure' => $skpdData['skpd_kepala'] ?? 'NULL',
+            'tugas_skpd_kepala' => $tugas->skpd->kepala->toArray(),
+            'tugas_skpd_timkerja' => $tugas->skpd->timKerja->toArray()
+        ]);
 
         // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
@@ -82,10 +163,8 @@ class RencanaAwalController extends Controller
             'periodeAktif' => $periodeAktif ? [$periodeAktif] : [],
             'availableUrusans' => $allUrusans,
             'selectedUrusanId' => $urusanId,
-            'user' => [
-                'id' => $tugas->skpd_id,
-                'nama_skpd' => $tugas->skpd->nama_skpd
-            ],
+            'skpd' => $skpdData,
+            'user' => $penanggungJawab,
             'flash' => [
                 'success' => session('success'),
                 'error' => session('error'),
@@ -117,9 +196,15 @@ class RencanaAwalController extends Controller
     {
         return SkpdTugas::with([
             'kodeNomenklatur.details',
-            'skpd.kepala.user.userDetail',
-            'skpd.kepala' => function($query) {
-                $query->where('is_aktif', 1);
+            'skpd' => function($query) {
+                $query->with([
+                    'kepala' => function($q) {
+                        $q->with(['user.userDetail'])->orderByDesc('is_aktif'); // Load semua kepala, prioritas yang aktif
+                    },
+                    'timKerja' => function($q) {
+                        $q->with(['operator.userDetail'])->orderByDesc('is_aktif'); // Load semua tim kerja
+                    }
+                ]);
             }
         ])->findOrFail($id);
     }
@@ -188,15 +273,207 @@ class RencanaAwalController extends Controller
         $kepalaSkpd = '-';
         $kepala = $tugas->skpd->kepala->first();
 
-        if ($kepala) {
-            if ($kepala->user && $kepala->user->userDetail && $kepala->user->userDetail->nama) {
-                $kepalaSkpd = $kepala->user->userDetail->nama;
-            } elseif ($kepala->user && $kepala->user->name) {
-                $kepalaSkpd = $kepala->user->name;
-            }
+        if ($kepala && $kepala->user) {
+            // PERBAIKAN: Gunakan user.name, bukan user_detail.nama
+            $kepalaSkpd = $kepala->user->name;
         }
 
         return $kepalaSkpd;
+    }
+
+    /**
+     * Get detailed SKPD data with kepala information
+     */
+    private function getDetailedSkpdData($tugas)
+    {
+        $skpd = $tugas->skpd;
+
+        // Coba berbagai cara untuk mendapatkan kepala SKPD
+        $kepala = null;
+
+        // Method 1: Cari kepala yang aktif
+        if ($skpd->kepala && $skpd->kepala->count() > 0) {
+            $kepala = $skpd->kepala->where('is_aktif', 1)->first();
+            if (!$kepala) {
+                $kepala = $skpd->kepala->first(); // Ambil kepala pertama jika tidak ada yang aktif
+            }
+        }
+
+        // Method 2: Query langsung dari database dengan eager loading
+        if (!$kepala) {
+            $kepala = \App\Models\SkpdKepala::where('skpd_id', $skpd->id)
+                ->where('is_aktif', 1)
+                ->with(['user.userDetail'])
+                ->first();
+        }
+
+        // Method 3: Query tanpa filter is_aktif jika masih tidak ada
+        if (!$kepala) {
+            $kepala = \App\Models\SkpdKepala::where('skpd_id', $skpd->id)
+                ->with(['user.userDetail'])
+                ->latest()
+                ->first();
+        }
+
+        \Log::info('RencanaAwal getDetailedSkpdData FIXED', [
+            'skpd_id' => $skpd->id,
+            'kepala_exists' => $kepala ? true : false,
+            'kepala_id' => $kepala ? $kepala->id : null,
+            'kepala_user_exists' => $kepala && $kepala->user ? true : false,
+            'kepala_user_name' => $kepala && $kepala->user ? $kepala->user->name : null,
+            'kepala_user_detail_exists' => $kepala && $kepala->user && $kepala->user->userDetail ? true : false,
+            'kepala_nip' => $kepala && $kepala->user && $kepala->user->userDetail ? $kepala->user->userDetail->nip : null
+        ]);
+
+        return [
+            'id' => $skpd->id,
+            'nama_dinas' => $skpd->nama_dinas ?? $skpd->nama_skpd,
+            'nama_skpd' => $skpd->nama_skpd,
+            'kode_organisasi' => $skpd->kode_organisasi,
+            'no_dpa' => $skpd->no_dpa,
+            'skpd_kepala' => $kepala ? [[
+                'user' => [
+                    'name' => $kepala->user ? $kepala->user->name : null,
+                    'user_detail' => [
+                        'nama' => $kepala->user ? $kepala->user->name : null,
+                        'nip' => $kepala->user && $kepala->user->userDetail ? $kepala->user->userDetail->nip : null
+                    ]
+                ]
+            ]] : []
+        ];
+    }
+
+    /**
+     * Get penanggung jawab (operator) data
+     */
+    private function getPenanggungJawabData($tugas)
+    {
+        $penanggungJawab = null;
+        $method = 'none';
+
+        // Method 1: Cari tim kerja aktif untuk SKPD ini
+        $timKerja = \App\Models\TimKerja::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with(['operator.userDetail'])
+            ->first();
+
+        if ($timKerja && $timKerja->operator) {
+            $penanggungJawab = [
+                'id' => $timKerja->operator->id,
+                'name' => $timKerja->operator->name,
+                'nip' => $timKerja->operator->userDetail ? $timKerja->operator->userDetail->nip : null,
+                'nama_skpd' => $tugas->skpd->nama_skpd
+            ];
+            $method = 'tim_kerja';
+        }
+
+        // Method 2: Fallback ke user SKPD jika tidak ada tim kerja
+        if (!$penanggungJawab && $tugas->skpd->user_id) {
+            $user = \App\Models\User::with('userDetail')->find($tugas->skpd->user_id);
+            if ($user) {
+                $penanggungJawab = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'nip' => $user->userDetail ? $user->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'skpd_user';
+            }
+        }
+
+        // Method 3: Coba cari user yang memiliki role perangkat_daerah untuk SKPD ini
+        if (!$penanggungJawab) {
+            $perangkatDaerah = \App\Models\User::whereHas('skpd', function($query) use ($tugas) {
+                    $query->where('skpd.id', $tugas->skpd_id);
+                })
+                ->whereHas('roles', function($query) {
+                    $query->where('name', 'perangkat_daerah');
+                })
+                ->with('userDetail')
+                ->first();
+
+            if ($perangkatDaerah) {
+                $penanggungJawab = [
+                    'id' => $perangkatDaerah->id,
+                    'name' => $perangkatDaerah->name,
+                    'nip' => $perangkatDaerah->userDetail ? $perangkatDaerah->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'perangkat_daerah_role';
+            }
+        }
+
+        // Method 4: Coba cari user berdasarkan SkpdKepala (kepala sebagai fallback)
+        if (!$penanggungJawab) {
+            $kepalaAktif = \App\Models\SkpdKepala::where('skpd_id', $tugas->skpd_id)
+                ->where('is_aktif', 1)
+                ->with(['user.userDetail'])
+                ->first();
+
+            if ($kepalaAktif && $kepalaAktif->user) {
+                $penanggungJawab = [
+                    'id' => $kepalaAktif->user->id,
+                    'name' => $kepalaAktif->user->name,
+                    'nip' => $kepalaAktif->user->userDetail ? $kepalaAktif->user->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'kepala_as_fallback';
+            }
+        }
+
+        // Method 5: Coba cari user yang punya role perangkat_daerah dari semua user
+        if (!$penanggungJawab) {
+            $anyPerangkatDaerah = \App\Models\User::whereHas('roles', function($query) {
+                    $query->where('name', 'perangkat_daerah');
+                })
+                ->with('userDetail')
+                ->first();
+
+            if ($anyPerangkatDaerah) {
+                $penanggungJawab = [
+                    'id' => $anyPerangkatDaerah->id,
+                    'name' => $anyPerangkatDaerah->name,
+                    'nip' => $anyPerangkatDaerah->userDetail ? $anyPerangkatDaerah->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'any_perangkat_daerah';
+            }
+        }
+
+        \Log::info('RencanaAwal getPenanggungJawabData COMPREHENSIVE', [
+            'skpd_id' => $tugas->skpd_id,
+            'method_used' => $method,
+            'tim_kerja_exists' => $timKerja ? true : false,
+            'tim_kerja_operator_exists' => $timKerja && $timKerja->operator ? true : false,
+            'skpd_user_id' => $tugas->skpd->user_id ?? 'null',
+            'final_penanggung_jawab' => $penanggungJawab,
+            'result_name' => $penanggungJawab ? $penanggungJawab['name'] : 'NOT_FOUND',
+            'result_nip' => $penanggungJawab ? $penanggungJawab['nip'] : 'NOT_FOUND'
+        ]);
+
+        // Return result atau default fallback dengan struktur yang sesuai untuk frontend
+        if ($penanggungJawab) {
+            return [
+                'id' => $penanggungJawab['id'],
+                'name' => $penanggungJawab['name'],
+                'nip' => $penanggungJawab['nip'],
+                'nama_skpd' => $penanggungJawab['nama_skpd'],
+                // Tambahan untuk kompatibilitas dengan frontend
+                'user_detail' => [
+                    'nip' => $penanggungJawab['nip']
+                ]
+            ];
+        }
+
+        return [
+            'id' => $tugas->skpd_id,
+            'name' => 'Tidak tersedia',
+            'nip' => null,
+            'nama_skpd' => $tugas->skpd->nama_skpd,
+            'user_detail' => [
+                'nip' => null
+            ]
+        ];
     }
 
     /**
@@ -315,6 +592,12 @@ class RencanaAwalController extends Controller
         // Process anggaran data using helper method
         $dataAnggaranTerakhir = $this->processAnggaranData($subkegiatanTugas, $periodeAktif);
 
+        // Get SKPD data yang lebih lengkap
+        $skpdData = $this->getDetailedSkpdData($tugas);
+
+        // Get user penanggung jawab (operator)
+        $penanggungJawab = $this->getPenanggungJawabData($tugas);
+
         return [
             'tugas' => $tugas,
             'bidangurusanTugas' => $bidangurusanTugas,
@@ -324,10 +607,8 @@ class RencanaAwalController extends Controller
             'kepalaSkpd' => $kepalaSkpd,
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'periodeAktif' => $periodeAktif ? [$periodeAktif] : [],
-            'user' => [
-                'id' => $tugas->skpd_id,
-                'nama_skpd' => $tugas->skpd->nama_skpd
-            ]
+            'skpd' => $skpdData,
+            'user' => $penanggungJawab
         ];
     }
 

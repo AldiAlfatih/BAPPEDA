@@ -7,6 +7,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
+import TabelDetail from '@/components/Triwulan/TabelDetail.vue';
 
 const props = defineProps<{
     user: {
@@ -19,6 +20,10 @@ const props = defineProps<{
         nama_dinas: string;
         no_dpa: string;
         kode_organisasi: string;
+        nama_operator: string;
+        nip_operator: string;
+        nama_kepala_skpd: string;
+        nip_kepala_skpd: string;
         kepala_skpd: {
             id: number;
             name: string;
@@ -372,7 +377,7 @@ function saveTugas() {
     loading.value = true;
 
     router.post(
-        '/skpdtugas',
+        '/tugas',
         {
             skpd_id: props.skpd.id,
             nomenklatur_ids: selectedIds,
@@ -399,7 +404,7 @@ function saveTugas() {
 
 function deleteTugas(id: number) {
     if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
-        router.delete(`/skpdtugas/${id}`);
+        router.delete(`/tugas/${id}`);
     }
 }
 
@@ -579,38 +584,9 @@ button {
             </transition>
 
             <!-- Header Section with better card design -->
-            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
-                <div class="flex items-center mb-6">
-                    <div class="rounded-full bg-blue-100 p-3 mr-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.skpd.nama_skpd || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kode_organisasi || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">No DPA / NIP</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kepala_skpd?.nip || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <h3 class="text-sm font-medium text-gray-500 mb-2">Kepala SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ skpd.kepala_skpd?.name || 'Tidak tersedia' }}</p>
-                    </div>
-                </div>
-            </div>
+            <TabelDetail
+                :skpd="props.skpd"
+            />
 
             <!-- Tasks Section with improved table -->
             <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">

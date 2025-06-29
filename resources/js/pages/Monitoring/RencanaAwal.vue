@@ -72,8 +72,10 @@ interface Props {
         no_dpa?: string;
         skpd_kepala: Array<{
             user: {
+                name: string;
                 user_detail: {
                     nama: string;
+                    nip: string;
                 };
             };
         }>;
@@ -135,6 +137,13 @@ interface Props {
     semuaPeriodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
     tahunAktif?: { id: number; tahun: string } | null;
     bidangurusanTugas?: any[];
+    availableUrusans?: Array<{
+        id: number;
+        nomor_kode: string;
+        nomenklatur: string;
+        jenis_nomenklatur: number;
+    }>;
+    selectedUrusanId?: number | null;
 }
 
 const props = defineProps<Props>();
@@ -427,6 +436,74 @@ watch(
     { deep: true },
 );
 
+// Computed property untuk mencari urusan yang tepat
+const urusanPemerintahan = computed(() => {
+    console.log('Debug urusan data:', {
+        availableUrusans: props.availableUrusans,
+        availableUrusansLength: props.availableUrusans?.length,
+        selectedUrusanId: props.selectedUrusanId,
+        tugas: props.tugas?.kode_nomenklatur,
+        bidangurusanTugas: props.bidangurusanTugas?.[0]?.kode_nomenklatur,
+    });
+
+    // Jika tersedia availableUrusans, gunakan data urusan yang benar
+    if (props.availableUrusans && props.availableUrusans.length > 0) {
+        // Jika ada selectedUrusanId, cari urusan yang sesuai
+        if (props.selectedUrusanId) {
+            const selectedUrusan = props.availableUrusans.find((u) => u.id === props.selectedUrusanId);
+            if (selectedUrusan) {
+                return {
+                    nomor_kode: selectedUrusan.nomor_kode,
+                    nomenklatur: selectedUrusan.nomenklatur,
+                };
+            }
+        }
+
+        // Jika tidak ada selectedUrusanId, gunakan urusan pertama
+        const firstUrusan = props.availableUrusans[0];
+        return {
+            nomor_kode: firstUrusan.nomor_kode,
+            nomenklatur: firstUrusan.nomenklatur,
+        };
+    }
+
+    // Fallback 1: Jika tugas adalah urusan (jenis_nomenklatur = 0), gunakan itu
+    if (props.tugas?.kode_nomenklatur?.jenis_nomenklatur === 0) {
+        return {
+            nomor_kode: props.tugas.kode_nomenklatur.nomor_kode,
+            nomenklatur: props.tugas.kode_nomenklatur.nomenklatur,
+        };
+    }
+
+    // Fallback 2: Coba ekstrak urusan dari kode tugas saat ini
+    if (props.tugas?.kode_nomenklatur?.nomor_kode) {
+        const kodeArray = props.tugas.kode_nomenklatur.nomor_kode.split('.');
+        if (kodeArray.length > 0) {
+            const urusanKode = kodeArray[0];
+            // Hardcode beberapa urusan umum sebagai fallback
+            const commonUrusan: Record<string, string> = {
+                '1': 'URUSAN PEMERINTAHAN WAJIB YANG BERKAITAN DENGAN PELAYANAN DASAR',
+                '2': 'URUSAN PEMERINTAHAN WAJIB YANG TIDAK BERKAITAN DENGAN PELAYANAN DASAR',
+                '3': 'URUSAN PEMERINTAHAN PILIHAN',
+                '4': 'URUSAN PEMERINTAHAN LAINNYA',
+            };
+
+            if (commonUrusan[urusanKode]) {
+                return {
+                    nomor_kode: urusanKode,
+                    nomenklatur: commonUrusan[urusanKode],
+                };
+            }
+        }
+    }
+
+    // Default fallback
+    return {
+        nomor_kode: 'N/A',
+        nomenklatur: 'Urusan tidak tersedia',
+    };
+});
+
 // Add a computed property to transform subkegiatan data to include bidang urusan and multiple rows per sumber dana
 const formattedSubKegiatanData = computed(() => {
     const result: any[] = [];
@@ -501,10 +578,10 @@ const formattedSubKegiatanData = computed(() => {
             ];
 
             // Debug: Log funding data to check parsial and budget change values
-            if (fundingData.values?.parsial && Object.values(fundingData.values.parsial).some(val => (val || 0) > 0)) {
+            if (fundingData.values?.parsial && Object.values(fundingData.values.parsial).some((val) => (val || 0) > 0)) {
                 console.log(`Subkegiatan ${subKegiatan.id} has parsial data:`, fundingData.values.parsial);
             }
-            if (fundingData.values?.budget_change && Object.values(fundingData.values.budget_change).some(val => (val || 0) > 0)) {
+            if (fundingData.values?.budget_change && Object.values(fundingData.values.budget_change).some((val) => (val || 0) > 0)) {
                 console.log(`Subkegiatan ${subKegiatan.id} has budget change data:`, fundingData.values.budget_change);
             }
 
@@ -514,9 +591,9 @@ const formattedSubKegiatanData = computed(() => {
                 const sourceKey = source.key as keyof typeof fundingData.sumber_anggaran;
 
                 // Check if this source is enabled and has any value (rencana_awal, parsial, or budget_change)
-                const rencanaAwalValue = fundingData.values?.rencana_awal?.[source.key] || 0;
-                const parsialValue = fundingData.values?.parsial?.[source.key] || 0;
-                const budgetChangeValue = fundingData.values?.budget_change?.[source.key] || 0;
+                const rencanaAwalValue = fundingData.values?.rencana_awal?.[source.key as keyof typeof fundingData.values.rencana_awal] || 0;
+                const parsialValue = fundingData.values?.parsial?.[source.key as keyof typeof fundingData.values.parsial] || 0;
+                const budgetChangeValue = fundingData.values?.budget_change?.[source.key as keyof typeof fundingData.values.budget_change] || 0;
 
                 if (fundingData.sumber_anggaran[sourceKey] && (rencanaAwalValue > 0 || parsialValue > 0 || budgetChangeValue > 0)) {
                     hasActiveSource = true;
@@ -545,12 +622,15 @@ const formattedSubKegiatanData = computed(() => {
                 const targets = processMonitoringData(subKegiatan, 'Belum diisi');
 
                 // Calculate totals from all data types
-                const totalRencanaAwal = fundingData.values?.rencana_awal ? 
-                    Object.values(fundingData.values.rencana_awal).reduce((sum, val) => sum + (val || 0), 0) : 0;
-                const totalParsial = fundingData.values?.parsial ? 
-                    Object.values(fundingData.values.parsial).reduce((sum, val) => sum + (val || 0), 0) : 0;
-                const totalBudgetChange = fundingData.values?.budget_change ? 
-                    Object.values(fundingData.values.budget_change).reduce((sum, val) => sum + (val || 0), 0) : 0;
+                const totalRencanaAwal = fundingData.values?.rencana_awal
+                    ? Object.values(fundingData.values.rencana_awal).reduce((sum, val) => sum + (val || 0), 0)
+                    : 0;
+                const totalParsial = fundingData.values?.parsial
+                    ? Object.values(fundingData.values.parsial).reduce((sum, val) => sum + (val || 0), 0)
+                    : 0;
+                const totalBudgetChange = fundingData.values?.budget_change
+                    ? Object.values(fundingData.values.budget_change).reduce((sum, val) => sum + (val || 0), 0)
+                    : 0;
 
                 result.push({
                     id: `${subKegiatan.id}-default`,
@@ -1305,16 +1385,10 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                         <button
                             v-if="props.tugas?.id"
                             @click="router.visit(route('pdf.rencana-awal.form', props.tugas.id))"
-                            class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
+                            class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
                             title="Download PDF Rencana Awal"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -1333,35 +1407,60 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                 </div>
             </div>
 
-            <!-- Information Card -->
-            <div class="rounded-lg border border-gray-100 bg-white p-4 shadow-lg">
-                <div class="mb-2 flex items-center">
-                    <h2 class="mb-2 text-lg font-semibold text-gray-600">Informasi Perangkat Daerah</h2>
+            <!-- Detail Perangkat Daerah -->
+            <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-lg">
+                <div class="mb-6 flex items-center">
+                    <div class="mr-4 rounded-full bg-blue-100 p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                            />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-600">Detail Perangkat Daerah</h2>
+                        <p class="text-sm text-gray-500">Informasi SKPD dan Kode Urusan</p>
+                    </div>
+                </div>
+
+                <!-- KODE/URUSAN PEMERINTAHAN sebagai header -->
+                <div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <h3 class="mb-2 text-sm font-medium text-blue-600">KODE/URUSAN PEMERINTAHAN:</h3>
+                    <p class="text-xl font-bold text-blue-800">{{ urusanPemerintahan.nomor_kode }} - {{ urusanPemerintahan.nomenklatur }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                        <h3 class="mb-2 text-sm font-medium text-gray-500">KODE/URUSAN PEMERINTAHAN</h3>
+                        <h3 class="mb-2 text-sm font-medium text-gray-500">Nama SKPD</h3>
                         <p class="text-lg font-semibold text-gray-500">
-                            {{ props.tugas?.kode_nomenklatur.nomor_kode }} - {{ props.tugas?.kode_nomenklatur.nomenklatur }}
+                            {{ props.skpd?.nama_dinas || props.tugas?.skpd?.nama_dinas || props.user?.nama_skpd || 'Tidak tersedia' }}
                         </p>
                     </div>
 
                     <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                        <h3 class="mb-2 text-sm font-medium text-gray-500">Nama SKPD</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.tugas?.skpd.nama_dinas || 'Tidak tersedia' }}</p>
-                    </div>
-
-                    <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
                         <h3 class="mb-2 text-sm font-medium text-gray-500">Kode Organisasi</h3>
-                        <p class="text-lg font-semibold text-gray-500">{{ props.tugas?.skpd.kode_organisasi || 'Tidak tersedia' }}</p>
+                        <p class="text-lg font-semibold text-gray-500">
+                            {{ props.skpd?.kode_organisasi || props.tugas?.skpd?.kode_organisasi || 'Tidak tersedia' }}
+                        </p>
                     </div>
 
                     <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
                         <h3 class="mb-2 text-sm font-medium text-gray-500">Kepala SKPD</h3>
                         <p class="text-lg font-semibold text-gray-500">
-                            {{ props.kepalaSkpd ?? props.tugas?.skpd.skpd_kepala[0]?.user?.user_detail?.nama ?? '-' }}
+                            {{ props.kepalaSkpd || props.skpd?.skpd_kepala?.[0]?.user?.name || 'Tidak tersedia' }}
                         </p>
+                        <p class="font-mono text-sm text-gray-500">NIP: {{ props.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nip || '-' }}</p>
+                    </div>
+
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                        <h3 class="mb-2 text-sm font-medium text-gray-500">Penanggung Jawab</h3>
+                        <p class="text-lg font-semibold text-gray-500">
+                            {{ props.user?.name || 'Tidak tersedia' }}
+                        </p>
+                        <p class="font-mono text-sm text-gray-500">NIP: {{ props.user?.user_detail?.nip || props.user?.nip || '-' }}</p>
                     </div>
                 </div>
             </div>

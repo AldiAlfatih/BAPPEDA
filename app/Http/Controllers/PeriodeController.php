@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Periode;
 use App\Models\PeriodeTahap;
 use App\Models\PeriodeTahun;
+use App\Services\UserActivityService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PeriodeController extends Controller
@@ -86,12 +88,21 @@ class PeriodeController extends Controller
             ])->withInput();
         }
 
-        Periode::create([
+        $periode = Periode::create([
             'tahap_id' => $tahap->id,
             'tahun_id' => $request->tahun_id,
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_selesai' => $request->tanggal_selesai,
             'status' => 0,
+        ]);
+
+        // Log aktivitas pembuatan periode
+        UserActivityService::logPeriode('membuat periode baru', [
+            'periode_id' => $periode->id,
+            'tahap' => $request->tahap,
+            'tahun_id' => $request->tahun_id,
+            'tanggal_mulai' => $request->tanggal_mulai,
+            'tanggal_selesai' => $request->tanggal_selesai
         ]);
 
         return redirect()->route('periode.index')->with('status', 'Periode berhasil ditambahkan');
@@ -132,9 +143,20 @@ class PeriodeController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $periode = Periode::findOrFail($id);
+        $periode = Periode::with(['tahap', 'tahun'])->findOrFail($id);
+        $oldStatus = $periode->status;
         $periode->status = $request->status;
         $periode->save();
+
+        // Log aktivitas perubahan status periode
+        $statusText = $request->status == 1 ? 'mengaktifkan' : 'menonaktifkan';
+        UserActivityService::logPeriode($statusText . ' periode', [
+            'periode_id' => $periode->id,
+            'tahap' => $periode->tahap->tahap ?? 'Unknown',
+            'tahun' => $periode->tahun->tahun ?? 'Unknown',
+            'status_lama' => $oldStatus,
+            'status_baru' => $request->status
+        ]);
 
         return back()->with('message', 'Status diperbarui');
     }
@@ -195,61 +217,102 @@ class PeriodeController extends Controller
         }
 
         return redirect()->back()->with('status', "{$jumlahDitambahkan} periode berhasil dibuat untuk tahun $tahunIni.");
-        
+
     }
 
 
     public function lanjutkanKeTahunBerikutnya(Request $request)
     {
-        // Ambil tahun terakhir yang ada
-        $lastYear = PeriodeTahun::orderByDesc('tahun')->first();
+        try {
+            DB::beginTransaction();
 
-        if (!$lastYear) {
-            return response()->json(['message' => 'Tidak ada data tahun yang ada.'], 400);
-        }
+            // Ambil tahun terakhir yang ada
+            $lastYear = PeriodeTahun::orderByDesc('tahun')->first();
 
-        // Tambahkan tahun baru (tahun + 1)
-        $newYearValue = $lastYear->tahun + 1;
-        $newTahun = PeriodeTahun::create(['tahun' => $newYearValue]);
-
-        // Ambil semua tahapan
-        $tahaps = PeriodeTahap::all();
-
-        // Menyimpan tanggal selesai dari periode sebelumnya (gunakan DateTime)
-        $lastEndDate = new \DateTime(); // Mulai dengan tanggal sekarang
-
-        foreach ($tahaps as $tahap) {
-            // Tentukan apakah periode untuk tahap ini sudah ada
-            $sudahAda = Periode::where('tahap_id', $tahap->id)
-                ->where('tahun_id', $newTahun->id)
-                ->exists();
-
-            if (!$sudahAda) {
-                // Tentukan tanggal mulai dan tanggal selesai
-                $tanggalMulai = $lastEndDate->modify('+1 day'); // Tanggal mulai adalah sehari setelah tanggal selesai periode sebelumnya
-                $tanggalSelesai = clone $tanggalMulai; // Clone untuk menjaga referensi tanggal mulai
-                $tanggalSelesai->add(new \DateInterval('P30D')); // Tanggal selesai adalah 7 hari setelah tanggal mulai
-
-                // Buat periode baru untuk tahun baru
-                Periode::create([
-                    'tahap_id' => $tahap->id,
-                    'tahun_id' => $newTahun->id,
-                    'tanggal_mulai' => $tanggalMulai->format('Y-m-d H:i:s'),
-                    'tanggal_selesai' => $tanggalSelesai->format('Y-m-d H:i:s'),
-                    'status' => 0,
-                ]);
-
-                // Simpan tanggal selesai untuk periode ini
-                $lastEndDate = $tanggalSelesai;
+            if (!$lastYear) {
+                return response()->json(['message' => 'Tidak ada data tahun yang ada.'], 400);
             }
-        }
-        return Inertia::location(route('periode.index'));
 
+            // Tambahkan tahun baru (tahun + 1)
+            $newYearValue = $lastYear->tahun + 1;
+
+            // Cek apakah tahun sudah ada
+            $existingYear = PeriodeTahun::where('tahun', $newYearValue)->first();
+            if ($existingYear) {
+                return response()->json(['message' => "Tahun $newYearValue sudah ada."], 400);
+            }
+
+            // PENTING: Reset semua tahun menjadi tidak aktif terlebih dahulu
+            PeriodeTahun::query()->update(['status' => 0]);
+
+            // Buat tahun baru dan langsung set sebagai aktif
+            $newTahun = PeriodeTahun::create([
+                'tahun' => $newYearValue,
+                'status' => 1  // Set sebagai tahun aktif
+            ]);
+
+            // Ambil semua tahapan
+            $tahaps = PeriodeTahap::all();
+
+            // Menyimpan tanggal selesai dari periode sebelumnya (gunakan DateTime)
+            $lastEndDate = new \DateTime(); // Mulai dengan tanggal sekarang
+
+            foreach ($tahaps as $tahap) {
+                // Tentukan apakah periode untuk tahap ini sudah ada
+                $sudahAda = Periode::where('tahap_id', $tahap->id)
+                    ->where('tahun_id', $newTahun->id)
+                    ->exists();
+
+                if (!$sudahAda) {
+                    // Tentukan tanggal mulai dan tanggal selesai
+                    $tanggalMulai = clone $lastEndDate;
+                    $tanggalMulai->modify('+1 day'); // Tanggal mulai adalah sehari setelah tanggal selesai periode sebelumnya
+                    $tanggalSelesai = clone $tanggalMulai; // Clone untuk menjaga referensi tanggal mulai
+                    $tanggalSelesai->add(new \DateInterval('P30D')); // Tanggal selesai adalah 30 hari setelah tanggal mulai
+
+                    // Buat periode baru untuk tahun baru
+                    Periode::create([
+                        'tahap_id' => $tahap->id,
+                        'tahun_id' => $newTahun->id,
+                        'tanggal_mulai' => $tanggalMulai->format('Y-m-d H:i:s'),
+                        'tanggal_selesai' => $tanggalSelesai->format('Y-m-d H:i:s'),
+                        'status' => 0,
+                    ]);
+
+                    // Simpan tanggal selesai untuk periode ini
+                    $lastEndDate = $tanggalSelesai;
+                }
+            }
+
+            DB::commit();
+
+            // Log aktivitas pembukaan tahun baru
+            UserActivityService::logPeriode('membuat tahun baru dan mengaktifkannya', [
+                'tahun_baru' => $newYearValue,
+                'tahun_id' => $newTahun->id,
+                'jumlah_periode' => $tahaps->count(),
+                'status_aktif' => true
+            ]);
+
+            \Log::info("Tahun baru $newYearValue berhasil dibuat dan diset sebagai tahun aktif", [
+                'tahun_baru' => $newYearValue,
+                'tahun_id' => $newTahun->id,
+                'jumlah_periode' => $tahaps->count(),
+                'status_aktif' => true
+            ]);
+
+            return Inertia::location(route('periode.index'));
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error("Error saat membuat tahun baru: " . $e->getMessage());
+            return response()->json(['message' => 'Terjadi kesalahan saat membuat tahun baru.'], 500);
+        }
     }
 
     /**
      * Get periods that are not yet completed
-     * 
+     *
      * @return \Inertia\Response
      */
     public function getPeriodeBelumSelesai()
@@ -277,7 +340,7 @@ class PeriodeController extends Controller
 
     /**
      * Get active periods (status = 1)
-     * 
+     *
      * @return \Inertia\Response
      */
     public function getPeriodeAktif()
@@ -301,7 +364,7 @@ class PeriodeController extends Controller
 
     /**
      * Get all periods for the dropdown in RencanaAwal component
-     * 
+     *
      * @return \Inertia\Response
      */
     public function getAllPeriodes()
@@ -311,7 +374,7 @@ class PeriodeController extends Controller
                 ->orderBy('tahun_id', 'desc')
                 ->orderBy('tahap_id', 'asc')
                 ->get();
-            
+
             return Inertia::render('periode/List', [
                 'periodes' => $periodes
             ]);
@@ -326,7 +389,7 @@ class PeriodeController extends Controller
 
     /**
      * Get periods that are not yet completed, as JSON data
-     * 
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function getPeriodeBelumSelesaiData()
@@ -344,6 +407,31 @@ class PeriodeController extends Controller
             return response()->json([
                 'periode' => [],
                 'error' => 'Gagal mengambil data periode.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get periods that are completed, as JSON data
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPeriodeSelesaiData()
+    {
+        try {
+            $periode = Periode::with('tahap')
+                ->where('status', 2) // Status selesai
+                ->orderBy('id', 'desc') // Urutkan dari yang terbaru
+                ->get();
+
+            return response()->json([
+                'periode' => $periode
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengambil data periode selesai: ' . $e->getMessage());
+            return response()->json([
+                'periode' => [],
+                'error' => 'Gagal mengambil data periode selesai.'
             ], 500);
         }
     }

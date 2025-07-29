@@ -3,6 +3,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import ActivityLogger from '@/services/activityLogger';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Manajemen Anggaran', href: '/manajemenanggaran' },
@@ -14,14 +17,14 @@ interface AnggaranItem {
     kode: string;
     jenis_nomenklatur: string;
     sumber_anggaran: {
-        dak: boolean;
-        dak_peruntukan: boolean;
+        dau: boolean; // ✅ FIXED: dau (bukan dak)
+        dau_peruntukan: boolean; // ✅ Benar (DAU Peruntukan)
         dak_fisik: boolean;
         dak_non_fisik: boolean;
         blud: boolean;
     };
-    dak: number;
-    dak_peruntukan: number;
+    dau: number; // ✅ FIXED: dau (bukan dak)
+    dau_peruntukan: number; // ✅ Benar (DAU Peruntukan)
     dak_fisik: number;
     dak_non_fisik: number;
     blud: number;
@@ -93,28 +96,41 @@ interface Props {
     dataAnggaranTerakhir?: Record<
         number,
         {
+            monitoring_id?: number;
             sumber_anggaran: {
-                dak: boolean;
-                dak_peruntukan: boolean;
+                dau: boolean; // ✅ FIXED: dau
+                dau_peruntukan: boolean; // ✅ Benar
                 dak_fisik: boolean;
                 dak_non_fisik: boolean;
                 blud: boolean;
             };
-            values: {
-                dak?: number;
-                dak_peruntukan?: number;
-                dak_fisik?: number;
-                dak_non_fisik?: number;
-                blud?: number;
-                rencana_awal?: number;
-                parsial?: number;
-                total?: number;
-            } | {
-                rencana_awal: Record<string, number>;
-                parsial: Record<string, number>;
-                [key: string]: any;
+            sumber_anggaran_parsial?: Record<string, number>;
+            sumber_anggaran_flags?: {
+                dau: boolean; // ✅ FIXED: dau
+                dau_peruntukan: boolean; // ✅ Benar
+                dak_fisik: boolean;
+                dak_non_fisik: boolean;
+                blud: boolean;
             };
+            values:
+                | {
+                      dau?: number; // ✅ FIXED: dau
+                      dau_peruntukan?: number; // ✅ Benar
+                      dak_fisik?: number;
+                      dak_non_fisik?: number;
+                      blud?: number;
+                      rencana_awal?: number;
+                      parsial?: number;
+                      total?: number;
+                  }
+                | {
+                      rencana_awal: Record<string, number>;
+                      parsial: Record<string, number>;
+                      [key: string]: any;
+                  };
             is_parsial_enabled?: boolean;
+            is_budget_change_enabled?: boolean;
+            has_parsial_history?: boolean;
         }
     >;
     selectedPeriodeId?: number | null;
@@ -142,6 +158,50 @@ const anggaranItems = ref<AnggaranItem[]>([]);
 // Ref untuk status periode dan pesan error
 const errorMessage = ref('');
 
+// Dialog state management
+const alertDialog = ref({
+    open: false,
+    title: '',
+    message: '',
+    type: 'info' as 'info' | 'success' | 'error',
+    onConfirm: () => {}
+});
+
+const confirmDialog = ref({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    onCancel: () => {}
+});
+
+function showAlert(title: string, message: string, type: 'info' | 'success' | 'error' = 'info') {
+    alertDialog.value = {
+        open: true,
+        title,
+        message,
+        type,
+        onConfirm: () => {
+            alertDialog.value.open = false;
+        }
+    };
+}
+
+function showConfirm(title: string, message: string, onConfirm: () => void) {
+    confirmDialog.value = {
+        open: true,
+        title,
+        message,
+        onConfirm: () => {
+            confirmDialog.value.open = false;
+            onConfirm();
+        },
+        onCancel: () => {
+            confirmDialog.value.open = false;
+        }
+    };
+}
+
 // Add reactive state for selected period
 const selectedPeriodeId = ref<number | null>(props.selectedPeriodeId || null);
 
@@ -155,21 +215,39 @@ const getSkpdId = computed(() => {
 
 // PERBAIKAN: Computed untuk cek apakah periode aktif (berbeda untuk setiap mode)
 const isPeriodeRencanaAktif = computed(() => {
+    console.log('🔍 DEBUG isPeriodeRencanaAktif:', {
+        isBudgetChangeMode: isBudgetChangeMode.value,
+        isParsialMode: isParsialMode.value,
+        periodeAktif: props.periodeAktif,
+        periodeAktifLength: props.periodeAktif?.length || 0,
+    });
+
     if (isBudgetChangeMode.value) {
         // In budget change mode, check for active Triwulan 4 period
-        return props.periodeAktif && props.periodeAktif.length > 0 && 
-               props.periodeAktif.some(p => p.tahap?.tahap === 'Triwulan 4');
+        const result = props.periodeAktif && props.periodeAktif.length > 0 && props.periodeAktif.some((p) => p.tahap?.tahap === 'Triwulan 4');
+        console.log('🔍 Budget change mode result:', result);
+        return result;
     } else if (isParsialMode.value) {
         // In parsial mode, check for active triwulan periods
-        return props.periodeAktif && props.periodeAktif.length > 0;
+        const result = props.periodeAktif && props.periodeAktif.length > 0;
+        console.log('🔍 Parsial mode result:', result);
+        return result;
     }
     // In normal mode, check for active rencana periods
-    return props.periodeAktif && props.periodeAktif.length > 0;
+    const result = props.periodeAktif && props.periodeAktif.length > 0;
+    console.log('🔍 Normal mode result:', result);
+    return result;
 });
 
 // Computed to check if we're in parsial mode
 const isParsialMode = computed(() => {
     return props.isParsialMode || false;
+});
+
+// TAMBAHAN: Computed to check if any task has parsial history
+const hasAnyParsialHistory = computed(() => {
+    if (!props.dataAnggaranTerakhir) return false;
+    return Object.values(props.dataAnggaranTerakhir).some((data) => data.has_parsial_history);
 });
 
 // Computed to check if we're in budget change mode
@@ -193,36 +271,36 @@ const pageTitle = computed(() => {
 // PERBAIKAN: Computed untuk informasi periode yang ditampilkan
 const currentPeriodeInfo = computed(() => {
     if (selectedPeriodeId.value && props.semuaPeriodeAktif) {
-        const selectedPeriode = props.semuaPeriodeAktif.find(p => p.id === selectedPeriodeId.value);
+        const selectedPeriode = props.semuaPeriodeAktif.find((p) => p.id === selectedPeriodeId.value);
         if (selectedPeriode) {
             return {
                 id: selectedPeriode.id,
                 tahap: selectedPeriode.tahap.tahap,
                 tahun: selectedPeriode.tahun.tahun,
-                isActive: props.periodeAktif?.some(p => p.id === selectedPeriode.id) || false
+                isActive: props.periodeAktif?.some((p) => p.id === selectedPeriode.id) || false,
             };
         }
     }
-    
+
     if (isPeriodeRencanaAktif.value) {
         const activePeriode = props.periodeAktif![0];
         return {
             id: activePeriode.id,
             tahap: activePeriode.tahap.tahap,
             tahun: activePeriode.tahun.tahun,
-            isActive: true
+            isActive: true,
         };
     }
-    
+
     if (props.periodeRencanaFallback) {
         return {
             id: props.periodeRencanaFallback.id,
             tahap: props.periodeRencanaFallback.tahap.tahap,
             tahun: props.periodeRencanaFallback.tahun.tahun,
-            isActive: false
+            isActive: false,
         };
     }
-    
+
     return null;
 });
 
@@ -253,43 +331,85 @@ onMounted(() => {
         anggaranItems.value = subKegiatanTasks.map((task) => {
             // Cek apakah ada data terakhir untuk tugas ini
             const lastData = props.dataAnggaranTerakhir?.[task.id];
-            console.log(`Processing task ${task.id}, lastData:`, lastData);
+            console.log(`🔍 Processing task ${task.id}, lastData:`, lastData);
+
+            if (lastData && lastData.values) {
+                console.log(`📊 Task ${task.id} - values structure:`, lastData.values);
+                console.log(`🔧 Task ${task.id} - has 'dak' in values:`, 'dak' in lastData.values);
+                console.log(`🔧 Task ${task.id} - has 'rencana_awal' in values:`, 'rencana_awal' in lastData.values);
+            }
+
+            // 🚨 DEBUG: Log sumber_anggaran flags
+            if (lastData) {
+                console.log(`🚨 Task ${task.id} - sumber_anggaran:`, lastData.sumber_anggaran);
+                console.log(`🚨 Task ${task.id} - sumber_anggaran_flags:`, lastData.sumber_anggaran_flags);
+                console.log(`🚨 Task ${task.id} - DAU checkbox should be:`, lastData.sumber_anggaran?.dau || lastData.sumber_anggaran_flags?.dau);
+                console.log(
+                    `🚨 Task ${task.id} - DAU Peruntukan checkbox should be:`,
+                    lastData.sumber_anggaran?.dau_peruntukan || lastData.sumber_anggaran_flags?.dau_peruntukan,
+                );
+            }
 
             if (lastData) {
                 // Handle different modes: normal, parsial, and budget change
-                if ((isParsialMode.value || isBudgetChangeMode.value) && lastData.values && typeof lastData.values === 'object' && 'rencana_awal' in lastData.values) {
-                    // Parsial or Budget Change mode with structured data
-                    const structuredData = lastData.values as { 
-                        rencana_awal: Record<string, number>; 
+                // PERBAIKAN: Tampilkan riwayat parsial meskipun mode parsial dinonaktifkan
+                if (
+                    (isParsialMode.value || isBudgetChangeMode.value || lastData.has_parsial_history) &&
+                    lastData.values &&
+                    typeof lastData.values === 'object' &&
+                    'rencana_awal' in lastData.values
+                ) {
+                    // Parsial, Budget Change mode, or normal mode with parsial history
+                    const structuredData = lastData.values as {
+                        rencana_awal: Record<string, number>;
                         parsial: Record<string, number>;
                         budget_change?: Record<string, number>;
                     };
-                    console.log(`Task ${task.id} - Structured data (${isBudgetChangeMode.value ? 'Budget Change' : 'Parsial'} mode):`, structuredData);
-                    
+                    console.log(
+                        `Task ${task.id} - Structured data (${isBudgetChangeMode.value ? 'Budget Change' : 'Parsial'} mode):`,
+                        structuredData,
+                    );
+
                     // Determine which values to use for input fields based on mode
                     let inputValues;
+                    const hasValidParsialData = structuredData.parsial && Object.keys(structuredData.parsial).length > 0;
+
                     if (isBudgetChangeMode.value) {
                         // In budget change mode, use budget_change values for input
                         inputValues = structuredData.budget_change || {};
-                    } else {
+                    } else if (isParsialMode.value) {
                         // In parsial mode, use parsial values for input
                         inputValues = structuredData.parsial || {};
+                    } else {
+                        // PERBAIKAN: In normal mode, show latest parsial data if available, otherwise rencana_awal
+                        // Priority: parsial data (latest) > rencana_awal (fallback)
+                        inputValues = hasValidParsialData ? structuredData.parsial : structuredData.rencana_awal || {};
                     }
-                    
+
+                    // 🚨 DEBUG: Log struktur data lengkap untuk task ini
+                    console.log(`🔍 Task ${task.id} - Full lastData structure:`, lastData);
+                    console.log(`🔍 Task ${task.id} - sumber_anggaran:`, lastData.sumber_anggaran);
+                    console.log(`🔍 Task ${task.id} - values structure:`, lastData.values);
+                    console.log(`🔍 Task ${task.id} - structuredData:`, structuredData);
+                    console.log(`🔍 Task ${task.id} - inputValues:`, inputValues);
+                    console.log(`🔍 Task ${task.id} - isParsialMode:`, isParsialMode.value);
+                    console.log(`🔍 Task ${task.id} - hasValidParsialData:`, hasValidParsialData);
+
                     return {
                         id: task.id,
                         kode: (task.kode_nomenklatur as any).nomor_kode || task.id.toString(),
                         jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
                         sumber_anggaran: {
-                            dak: lastData.sumber_anggaran.dak,
-                            dak_peruntukan: lastData.sumber_anggaran.dak_peruntukan,
-                            dak_fisik: lastData.sumber_anggaran.dak_fisik,
-                            dak_non_fisik: lastData.sumber_anggaran.dak_non_fisik,
-                            blud: lastData.sumber_anggaran.blud,
+                            // PERBAIKAN: Gunakan sumber_anggaran_flags jika tersedia (untuk mode normal dengan riwayat parsial)
+                            dau: lastData.sumber_anggaran_flags?.dau ?? lastData.sumber_anggaran.dau, // ✅ FIXED: dau
+                            dau_peruntukan: lastData.sumber_anggaran_flags?.dau_peruntukan ?? lastData.sumber_anggaran.dau_peruntukan,
+                            dak_fisik: lastData.sumber_anggaran_flags?.dak_fisik ?? lastData.sumber_anggaran.dak_fisik,
+                            dak_non_fisik: lastData.sumber_anggaran_flags?.dak_non_fisik ?? lastData.sumber_anggaran.dak_non_fisik,
+                            blud: lastData.sumber_anggaran_flags?.blud ?? lastData.sumber_anggaran.blud,
                         },
                         // Use appropriate values for input fields based on mode
-                        dak: inputValues.dak || 0,
-                        dak_peruntukan: inputValues.dak_peruntukan || 0,
+                        dau: inputValues.dau || 0, // ✅ FIXED: dau
+                        dau_peruntukan: inputValues.dau_peruntukan || 0,
                         dak_fisik: inputValues.dak_fisik || 0,
                         dak_non_fisik: inputValues.dak_non_fisik || 0,
                         blud: inputValues.blud || 0,
@@ -300,52 +420,113 @@ onMounted(() => {
                         is_parsial_enabled: (lastData as any).is_parsial_enabled || false,
                         is_budget_change_enabled: (lastData as any).is_budget_change_enabled || false,
                     };
-                } else if (lastData.values && typeof lastData.values === 'object' && 'dak' in lastData.values) {
+                } else if (lastData.values && typeof lastData.values === 'object' && 'dau' in lastData.values) {
+                    // ✅ FIXED: dau
                     // Normal mode with simple data structure
-                    const simpleData = lastData.values as { dak?: number; dak_peruntukan?: number; dak_fisik?: number; dak_non_fisik?: number; blud?: number };
+                    const simpleData = lastData.values as {
+                        dau?: number; // ✅ FIXED: dau
+                        dau_peruntukan?: number; // ✅ Benar
+                        dak_fisik?: number;
+                        dak_non_fisik?: number;
+                        blud?: number;
+                    };
                     console.log(`Task ${task.id} - Normal mode data:`, simpleData);
-                    
+
                     return {
                         id: task.id,
                         kode: (task.kode_nomenklatur as any).nomor_kode || task.id.toString(),
                         jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
                         sumber_anggaran: {
-                            dak: lastData.sumber_anggaran.dak,
-                            dak_peruntukan: lastData.sumber_anggaran.dak_peruntukan,
+                            dau: lastData.sumber_anggaran.dau, // ✅ FIXED: dau
+                            dau_peruntukan: lastData.sumber_anggaran.dau_peruntukan,
                             dak_fisik: lastData.sumber_anggaran.dak_fisik,
                             dak_non_fisik: lastData.sumber_anggaran.dak_non_fisik,
                             blud: lastData.sumber_anggaran.blud,
                         },
-                        dak: simpleData.dak || 0,
-                        dak_peruntukan: simpleData.dak_peruntukan || 0,
+                        dau: simpleData.dau || 0, // ✅ FIXED: dau
+                        dau_peruntukan: simpleData.dau_peruntukan || 0,
                         dak_fisik: simpleData.dak_fisik || 0,
                         dak_non_fisik: simpleData.dak_non_fisik || 0,
                         blud: simpleData.blud || 0,
                     };
                 } else {
-                    console.log(`Task ${task.id} - No matching data structure, lastData:`, lastData);
+                    console.log(`Task ${task.id} - No matching data structure, trying fallback, lastData:`, lastData);
+
+                    // PERBAIKAN: Fallback untuk struktur data yang tidak dikenali
+                    // Coba ekstrak data dari struktur apapun yang ada
+                    let extractedData = {
+                        dau: 0, // ✅ FIXED: dau (bukan dak)
+                        dau_peruntukan: 0, // ✅ Benar
+                        dak_fisik: 0, // ✅ Benar
+                        dak_non_fisik: 0, // ✅ Benar
+                        blud: 0, // ✅ Benar
+                    };
+
+                    // Coba ekstrak dari berbagai kemungkinan struktur
+                    if (lastData.values) {
+                        if (typeof lastData.values === 'object') {
+                            // Jika ada struktur rencana_awal, gunakan itu
+                            if ('rencana_awal' in lastData.values && lastData.values.rencana_awal) {
+                                const rencanaData = lastData.values.rencana_awal as Record<string, number>;
+                                extractedData.dau = rencanaData.dau || 0; // ✅ FIXED: dau
+                                extractedData.dau_peruntukan = rencanaData.dau_peruntukan || 0;
+                                extractedData.dak_fisik = rencanaData.dak_fisik || 0;
+                                extractedData.dak_non_fisik = rencanaData.dak_non_fisik || 0;
+                                extractedData.blud = rencanaData.blud || 0;
+                            }
+                            // Atau langsung dari values jika ada
+                            else if ('dau' in lastData.values) {
+                                // ✅ FIXED: dau
+                                extractedData.dau = (lastData.values as any).dau || 0; // ✅ FIXED: dau
+                                extractedData.dau_peruntukan = (lastData.values as any).dau_peruntukan || 0;
+                                extractedData.dak_fisik = (lastData.values as any).dak_fisik || 0;
+                                extractedData.dak_non_fisik = (lastData.values as any).dak_non_fisik || 0;
+                                extractedData.blud = (lastData.values as any).blud || 0;
+                            }
+                        }
+                    }
+
+                    console.log(`Task ${task.id} - Extracted data:`, extractedData);
+
+                    return {
+                        id: task.id,
+                        kode: (task.kode_nomenklatur as any).nomor_kode || task.id.toString(),
+                        jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
+                        sumber_anggaran: {
+                            dau: lastData.sumber_anggaran?.dau || false, // ✅ FIXED: dau
+                            dau_peruntukan: lastData.sumber_anggaran?.dau_peruntukan || false,
+                            dak_fisik: lastData.sumber_anggaran?.dak_fisik || false,
+                            dak_non_fisik: lastData.sumber_anggaran?.dak_non_fisik || false,
+                            blud: lastData.sumber_anggaran?.blud || false,
+                        },
+                        dau: extractedData.dau, // ✅ FIXED: dau
+                        dau_peruntukan: extractedData.dau_peruntukan,
+                        dak_fisik: extractedData.dak_fisik,
+                        dak_non_fisik: extractedData.dak_non_fisik,
+                        blud: extractedData.blud,
+                    };
                 }
             }
-            
+
             // Fallback: use empty data if no saved data exists
             return {
                 id: task.id,
                 kode: (task.kode_nomenklatur as any).nomor_kode || task.id.toString(),
                 jenis_nomenklatur: task.kode_nomenklatur.nomenklatur,
                 sumber_anggaran: {
-                    dak: false,
-                    dak_peruntukan: false,
-                    dak_fisik: false,
-                    dak_non_fisik: false,
-                    blud: false,
+                    dau: false, // ✅ FIXED: dau (bukan dak)
+                    dau_peruntukan: false, // ✅ Benar
+                    dak_fisik: false, // ✅ Benar
+                    dak_non_fisik: false, // ✅ Benar
+                    blud: false, // ✅ Benar
                 },
-                dak: 0,
-                dak_peruntukan: 0,
-                dak_fisik: 0,
-                dak_non_fisik: 0,
-                blud: 0,
+                dau: 0, // ✅ FIXED: dau (bukan dak)
+                dau_peruntukan: 0, // ✅ Benar
+                dak_fisik: 0, // ✅ Benar
+                dak_non_fisik: 0, // ✅ Benar
+                blud: 0, // ✅ Benar
                 // Initialize data structures for different modes
-                rencana_awal: (isParsialMode.value || isBudgetChangeMode.value) ? {} : undefined,
+                rencana_awal: isParsialMode.value || isBudgetChangeMode.value ? {} : undefined,
                 parsial_data: isBudgetChangeMode.value ? {} : undefined,
                 budget_change_data: isBudgetChangeMode.value ? {} : undefined,
                 is_parsial_enabled: false,
@@ -353,14 +534,26 @@ onMounted(() => {
             };
         });
 
-        console.log('Initialized anggaranItems:', anggaranItems.value);
+        console.log('🔍 DEBUG - Initialized anggaranItems:', anggaranItems.value);
+        console.log('🔍 DEBUG - anggaranItems length:', anggaranItems.value.length);
+        console.log('🔍 DEBUG - isParsialMode.value:', isParsialMode.value);
+        console.log('🔍 DEBUG - dataAnggaranTerakhir keys:', Object.keys(props.dataAnggaranTerakhir || {}));
     } else {
-        console.log('No skpdTugas data available');
+        console.log('🔍 DEBUG - No skpdTugas data available');
     }
 });
 
 // Use the reactive array for the table
-const anggaranData = computed<AnggaranItem[]>(() => anggaranItems.value);
+const anggaranData = computed<AnggaranItem[]>(() => {
+    console.log('🔍 DEBUG anggaranData computed - anggaranItems.value:', anggaranItems.value);
+    console.log('🔍 DEBUG anggaranData computed - length:', anggaranItems.value.length);
+    return anggaranItems.value;
+});
+
+// 🚨 DEBUG: Log semua data yang diterima dari backend
+console.log('🔍 DEBUG - Props dataAnggaranTerakhir:', props.dataAnggaranTerakhir);
+console.log('🔍 DEBUG - Props isParsialMode:', props.isParsialMode);
+console.log('🔍 DEBUG - Props selectedPeriodeId:', props.selectedPeriodeId);
 
 const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('id-ID').format(value);
@@ -377,10 +570,14 @@ const countSelectedSources = (sumberAnggaran: AnggaranItem['sumber_anggaran']) =
 };
 
 // Handler for checkbox changes
-const handleSumberAnggaranChange = (item: AnggaranItem, key: SumberAnggaranKey, event: Event) => {
+const handleSumberAnggaranChange = async (item: AnggaranItem, key: SumberAnggaranKey, event: Event) => {
     // Periksa apakah periode sedang aktif
     if (!isPeriodeRencanaAktif.value) {
-        alert('Periode belum dibuka. Sumber dana tidak dapat diisi sampai periode dibuka.');
+        showAlert(
+            'Periode Tidak Aktif',
+            'Periode belum dibuka. Sumber dana tidak dapat diisi sampai periode dibuka.',
+            'error'
+        );
         if (event.target instanceof HTMLInputElement) {
             event.target.checked = false;
         }
@@ -397,11 +594,20 @@ const handleSumberAnggaranChange = (item: AnggaranItem, key: SumberAnggaranKey, 
         if (!checked) {
             item[key] = 0;
         }
+
+        // 📝 Log aktivitas perubahan sumber anggaran
+        const actionDescription = checked ? `Mengaktifkan sumber anggaran ${key.toUpperCase()}` : `Menonaktifkan sumber anggaran ${key.toUpperCase()}`;
+        await ActivityLogger.logManajemenAnggaran(actionDescription, {
+            subkegiatan_id: item.id,
+            subkegiatan_name: item.jenis_nomenklatur,
+            sumber_anggaran_key: key,
+            status: checked ? 'activated' : 'deactivated',
+        });
     }
 };
 
 const calculateTotal = (item: AnggaranItem): number => {
-    return item.dak + item.dak_peruntukan + item.dak_fisik + item.dak_non_fisik + item.blud;
+    return item.dau + item.dau_peruntukan + item.dak_fisik + item.dak_non_fisik + item.blud; // ✅ FIXED: dau
 };
 
 // Helper function to calculate rencana awal total
@@ -431,9 +637,13 @@ const calculateBudgetChangeGrandTotal = (item: AnggaranItem): number => {
     return rencanaAwalTotal + parsialTotal + budgetChangeTotal;
 };
 
-const handleInputChange = (item: AnggaranItem, field: keyof AnggaranItem, event: Event) => {
+const handleInputChange = async (item: AnggaranItem, field: keyof AnggaranItem, event: Event) => {
     if (!isPeriodeRencanaAktif.value) {
-        alert('Periode belum dibuka. Sumber dana tidak dapat diisi sampai periode dibuka.');
+        showAlert(
+            'Periode Tidak Aktif',
+            'Periode belum dibuka. Sumber dana tidak dapat diisi sampai periode dibuka.',
+            'error'
+        );
         return;
     }
 
@@ -443,12 +653,12 @@ const handleInputChange = (item: AnggaranItem, field: keyof AnggaranItem, event:
     const value = parseInt(target.value) || 0;
 
     if (field in item) {
-        const numericField = field as keyof Pick<AnggaranItem, 'dak' | 'dak_peruntukan' | 'dak_fisik' | 'dak_non_fisik' | 'blud'>;
+        const numericField = field as keyof Pick<AnggaranItem, 'dau' | 'dau_peruntukan' | 'dak_fisik' | 'dak_non_fisik' | 'blud'>; // ✅ FIXED: dau
         item[numericField] = value;
     }
 };
 
-const saveItem = (item: AnggaranItem) => {
+const saveItem = async (item: AnggaranItem) => {
     console.log('=== SAVE ITEM DEBUG ===');
     console.log('Item to save:', item);
     console.log('isParsialMode:', isParsialMode.value);
@@ -459,7 +669,11 @@ const saveItem = (item: AnggaranItem) => {
     // Periksa apakah periode sedang aktif
     if (!isPeriodeRencanaAktif.value) {
         const modeText = isParsialMode.value ? 'triwulan' : 'rencana';
-        alert(`Periode ${modeText} belum dibuka. Sumber dana tidak dapat diisi sampai periode dibuka.`);
+        showAlert(
+            'Periode Tidak Aktif',
+            `Periode ${modeText} belum dibuka. Sumber dana tidak dapat diisi sampai periode dibuka.`,
+            'error'
+        );
         return;
     }
 
@@ -468,7 +682,11 @@ const saveItem = (item: AnggaranItem) => {
     console.log('Selected sources count:', selectedCount);
 
     if (selectedCount === 0) {
-        alert('Pilih minimal satu sumber anggaran terlebih dahulu!');
+        showAlert(
+            'Sumber Anggaran Belum Dipilih',
+            'Pilih minimal satu sumber anggaran terlebih dahulu!',
+            'error'
+        );
         return;
     }
 
@@ -480,7 +698,7 @@ const saveItem = (item: AnggaranItem) => {
     console.log('Periode ID to use:', periodeId);
 
     if (!periodeId) {
-        alert('Tidak ada periode aktif yang dipilih!');
+        showAlert('Kesalahan', 'Tidak ada periode aktif yang dipilih!', 'error');
         return;
     }
 
@@ -488,13 +706,19 @@ const saveItem = (item: AnggaranItem) => {
     const dataToSave = {
         skpd_tugas_id: item.id,
         periode_id: periodeId,
-        sumber_anggaran: item.sumber_anggaran,
+        sumber_anggaran: {
+            dau: item.sumber_anggaran.dau ?? false,
+            dau_peruntukan: item.sumber_anggaran.dau_peruntukan ?? false,
+            dak_fisik: item.sumber_anggaran.dak_fisik ?? false,
+            dak_non_fisik: item.sumber_anggaran.dak_non_fisik ?? false,
+            blud: item.sumber_anggaran.blud ?? false,
+        },
         values: {
-            dak: item.dak,
-            dak_peruntukan: item.dak_peruntukan,
-            dak_fisik: item.dak_fisik,
-            dak_non_fisik: item.dak_non_fisik,
-            blud: item.blud,
+            dau: item.dau ?? 0, // ✅ FIXED: dau
+            dau_peruntukan: item.dau_peruntukan ?? 0,
+            dak_fisik: item.dak_fisik ?? 0,
+            dak_non_fisik: item.dak_non_fisik ?? 0,
+            blud: item.blud ?? 0,
         },
     };
 
@@ -511,19 +735,43 @@ const saveItem = (item: AnggaranItem) => {
     }
 
     console.log(`Sending POST request to ${saveEndpoint}`);
-    
+
     // Gunakan Inertia router untuk mengirim data ke server
     router.post(saveEndpoint, dataToSave, {
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
             console.log('✅ SUCCESS - Server response:', response);
             console.log('Data berhasil disimpan ke database');
+
+            // 📝 Log aktivitas ke sistem
+            let actionDescription = '';
+            let logDetails = {
+                subkegiatan_id: item.id,
+                subkegiatan_name: item.jenis_nomenklatur,
+                sumber_anggaran: item.sumber_anggaran,
+                total_anggaran: calculateTotal(item),
+                periode_id: periodeId,
+            };
+
+            if (isBudgetChangeMode.value) {
+                actionDescription = 'Menyimpan perubahan anggaran Triwulan 4';
+                logDetails = { ...logDetails, mode: 'budget_change', grand_total: calculateBudgetChangeGrandTotal(item) };
+            } else if (isParsialMode.value) {
+                actionDescription = 'Menyimpan data anggaran parsial';
+                logDetails = { ...logDetails, mode: 'parsial', grand_total: calculateGrandTotal(item) };
+            } else {
+                actionDescription = 'Menyimpan data anggaran rencana awal';
+                logDetails = { ...logDetails, mode: 'rencana_awal' };
+            }
+
+            // Kirim log aktivitas
+            await ActivityLogger.logManajemenAnggaran(actionDescription, logDetails);
 
             // Update UI silently without displaying any JSON data
             const updatedItem = anggaranItems.value.find((i) => i.id === item.id);
             if (updatedItem) {
                 updatedItem.sumber_anggaran = { ...item.sumber_anggaran };
-                updatedItem.dak = item.dak;
-                updatedItem.dak_peruntukan = item.dak_peruntukan;
+                updatedItem.dau = item.dau; // ✅ FIXED: dau
+                updatedItem.dau_peruntukan = item.dau_peruntukan;
                 updatedItem.dak_fisik = item.dak_fisik;
                 updatedItem.dak_non_fisik = item.dak_non_fisik;
                 updatedItem.blud = item.blud;
@@ -541,26 +789,35 @@ const saveItem = (item: AnggaranItem) => {
             } else {
                 modeText = 'rencana awal';
             }
-            
+
             if (isBudgetChangeMode.value) {
-                alert(`✅ Data ${modeText} berhasil disimpan ke database!\n\n🔥 Perubahan anggaran untuk Triwulan 4 telah berhasil disimpan.`);
+                showAlert(
+                    'Berhasil!',
+                    `Data ${modeText} berhasil disimpan ke database!\n\n🔥 Perubahan anggaran untuk Triwulan 4 telah berhasil disimpan.`,
+                    'success'
+                );
             } else if (isParsialMode.value) {
-                const viewDetail = confirm(`✅ Data ${modeText} berhasil disimpan ke database!\n\n📊 Data parsial sekarang tersedia di halaman Rencana Awal.\n\nApakah Anda ingin melihat detail Rencana Awal sekarang?`);
-                if (viewDetail) {
-                    goToSubkegiatanDetail(item.id);
-                    return; // Don't reload current page if navigating away
-                }
+                showConfirm(
+                    'Data Berhasil Disimpan',
+                    `Data ${modeText} berhasil disimpan ke database!\n\n📊 Data parsial sekarang tersedia di halaman Rencana Awal.\n\nApakah Anda ingin melihat detail Rencana Awal sekarang?`,
+                    () => {
+                        goToSubkegiatanDetail(item.id);
+                        return; // Don't reload current page if navigating away
+                    }
+                );
             } else {
-                alert(`✅ Data ${modeText} berhasil disimpan ke database!`);
+                showAlert(
+                    'Berhasil!',
+                    `Data ${modeText} berhasil disimpan ke database!`,
+                    'success'
+                );
             }
 
             // Reload data untuk konsistensi tanpa menampilkan alert atau JSON
             const skpdId = getSkpdId.value;
             if (skpdId) {
-                const reloadUrl = isParsialMode.value 
-                    ? `/manajemenanggaran/${skpdId}/parsial`
-                    : `/manajemenanggaran/${skpdId}`;
-                    
+                const reloadUrl = isParsialMode.value ? `/manajemenanggaran/${skpdId}/parsial` : `/manajemenanggaran/${skpdId}`;
+
                 router.visit(reloadUrl, {
                     preserveState: true,
                     preserveScroll: true,
@@ -568,10 +825,14 @@ const saveItem = (item: AnggaranItem) => {
                 });
             }
         },
-        onError: (errors) => {
+        onError: async (errors) => {
             console.log('❌ ERROR - Server errors:', errors);
             errorMessage.value = Object.values(errors).join('\n');
-            alert('❌ Terjadi kesalahan saat menyimpan data: ' + errorMessage.value);
+            showAlert(
+                'Terjadi Kesalahan',
+                'Terjadi kesalahan saat menyimpan data: ' + errorMessage.value,
+                'error'
+            );
             console.error('Full error details:', errors);
         },
         onBefore: () => {
@@ -587,7 +848,7 @@ const saveItem = (item: AnggaranItem) => {
 const totalSeluruhAnggaran = computed(() => {
     return anggaranItems.value.reduce((total, item) => {
         let itemTotal = calculateTotal(item);
-        
+
         // In budget change mode, add rencana awal and parsial values to the total
         if (isBudgetChangeMode.value) {
             const rencanaAwalTotal = calculateRencanaAwalTotal(item.rencana_awal);
@@ -599,7 +860,7 @@ const totalSeluruhAnggaran = computed(() => {
             const rencanaAwalTotal = Object.values(item.rencana_awal).reduce((sum, val) => sum + (val || 0), 0);
             itemTotal += rencanaAwalTotal;
         }
-        
+
         return total + itemTotal;
     }, 0);
 });
@@ -608,7 +869,7 @@ const totalSeluruhAnggaran = computed(() => {
 const jumlahSubKegiatanDiisi = computed(() => {
     return anggaranItems.value.filter((item) => {
         let itemTotal = calculateTotal(item);
-        
+
         // In budget change mode, also check rencana awal and parsial values
         if (isBudgetChangeMode.value) {
             const rencanaAwalTotal = calculateRencanaAwalTotal(item.rencana_awal);
@@ -620,7 +881,7 @@ const jumlahSubKegiatanDiisi = computed(() => {
             const rencanaAwalTotal = Object.values(item.rencana_awal).reduce((sum, val) => sum + (val || 0), 0);
             itemTotal += rencanaAwalTotal;
         }
-        
+
         return itemTotal > 0;
     }).length;
 });
@@ -692,7 +953,7 @@ const dataDisplayInfo = computed(() => {
     if (!currentInfo) {
         return 'Tidak ada data yang dapat ditampilkan';
     }
-    
+
     if (currentInfo.isActive) {
         return `Data periode aktif: ${currentInfo.tahap} ${currentInfo.tahun}`;
     } else {
@@ -706,15 +967,15 @@ const goToRencanaAwal = () => {
     const skpdId = getSkpdId.value;
     if (skpdId) {
         // If there's a specific subkegiatan, we can navigate to its detail
-        const firstSubkegiatan = props.skpdTugas?.find(task => task.kode_nomenklatur.jenis_nomenklatur === 4);
+        const firstSubkegiatan = props.skpdTugas?.find((task) => task.kode_nomenklatur.jenis_nomenklatur === 4);
         if (firstSubkegiatan) {
             router.visit(`/monitoring/rencanaawal/${firstSubkegiatan.id}`, {
-                preserveState: false
+                preserveState: false,
             });
         } else {
             // Fallback to main rencana awal page for this user
             router.visit(`/rencana-awal/${skpdId}`, {
-                preserveState: false
+                preserveState: false,
             });
         }
     }
@@ -724,7 +985,7 @@ const goToRencanaAwal = () => {
 const goToSubkegiatanDetail = (subkegiatanId: number) => {
     // Navigate to Rencana Awal detail page for the specific subkegiatan
     router.visit(`/monitoring/rencanaawal/${subkegiatanId}`, {
-        preserveState: false
+        preserveState: false,
     });
 };
 </script>
@@ -772,22 +1033,31 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
             <div v-if="currentPeriodeInfo" class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <div class="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                     </svg>
                     <div class="ml-2">
                         <h4 class="font-medium text-blue-800">{{ dataDisplayInfo }}</h4>
-                        <p class="text-sm text-blue-600">{{ currentPeriodeInfo.isActive ? 'Data dapat diedit' : 'Data hanya dapat dilihat (periode sudah ditutup)' }}</p>
+                        <p class="text-sm text-blue-600">
+                            {{ currentPeriodeInfo.isActive ? 'Data dapat diedit' : 'Data hanya dapat dilihat (periode sudah ditutup)' }}
+                        </p>
                     </div>
                 </div>
             </div>
 
             <!-- Status Period Card - Diperkecil -->
-            <div class="overflow-hidden rounded-lg shadow-md" 
+            <div
+                class="overflow-hidden rounded-lg shadow-md"
                 :class="{
                     'bg-red-600': isBudgetChangeMode && isPeriodeRencanaAktif,
                     'bg-green-600': !isBudgetChangeMode && isPeriodeRencanaAktif,
-                    'border-gray-200 bg-gray-100': !isPeriodeRencanaAktif
-                }">
+                    'border-gray-200 bg-gray-100': !isPeriodeRencanaAktif,
+                }"
+            >
                 <div class="p-3 text-white">
                     <div class="flex items-center">
                         <div class="mr-3 flex-shrink-0">
@@ -816,7 +1086,12 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                 stroke="currentColor"
                                 v-else
                             >
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                             </svg>
                         </div>
                         <div class="flex-1">
@@ -863,6 +1138,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                     <h2 class="text-lg font-semibold text-gray-600">
                         <span v-if="isBudgetChangeMode">🔥 Detail Perubahan Anggaran Sub Kegiatan</span>
                         <span v-else-if="isParsialMode">Detail Anggaran Sub Kegiatan (Rencana Awal + Parsial)</span>
+                        <span v-else-if="hasAnyParsialHistory">📋 Detail Anggaran Sub Kegiatan (Termasuk Riwayat Parsial)</span>
                         <span v-else>Detail Anggaran Sub Kegiatan</span>
                     </h2>
                     <p v-if="isBudgetChangeMode" class="mt-1 text-sm text-red-600">
@@ -870,6 +1146,10 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                     </p>
                     <p v-else-if="isParsialMode" class="mt-1 text-sm text-gray-500">
                         Data rencana awal tetap ditampilkan, form input untuk menambahkan pagu parsial
+                    </p>
+                    <p v-else-if="hasAnyParsialHistory" class="mt-1 text-sm text-blue-600">
+                        📊 Menampilkan data parsial terbaru di input field. Data rencana awal tetap tersimpan sebagai referensi (mode parsial saat ini
+                        nonaktif)
                     </p>
                 </div>
 
@@ -880,7 +1160,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sub Kegiatan</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sumber Anggaran</th>
-                                
+
                                 <!-- Dynamic column headers based on mode -->
                                 <template v-if="isBudgetChangeMode">
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
@@ -888,7 +1168,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                         <div class="text-[9px] text-red-500">Awal | Parsial | Perubahan</div>
                                     </th>
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                                        <div>DAK Peruntukan</div>
+                                        <div>DAU Peruntukan</div>
                                         <div class="text-[9px] text-red-500">Awal | Parsial | Perubahan</div>
                                     </th>
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
@@ -910,7 +1190,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                         <div class="text-[10px] text-gray-400">Awal | Parsial</div>
                                     </th>
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                                        <div>DAK Peruntukan</div>
+                                        <div>DAU Peruntukan</div>
                                         <div class="text-[10px] text-gray-400">Awal | Parsial</div>
                                     </th>
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">
@@ -928,12 +1208,12 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                 </template>
                                 <template v-else>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">DAU</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">DAK Peruntukan</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">DAU Peruntukan</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">DAK Fisik</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">DAK Non Fisik</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">BLUD</th>
                                 </template>
-                                
+
                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
@@ -962,25 +1242,25 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                         <label class="flex items-center text-xs">
                                             <input
                                                 type="checkbox"
-                                                :checked="item.sumber_anggaran.dak"
-                                                @change="(e) => handleSumberAnggaranChange(item, 'dak', e)"
+                                                :checked="item.sumber_anggaran.dau"
+                                                @change="(e) => handleSumberAnggaranChange(item, 'dau', e)"
                                                 class="mr-2 h-3 w-3 rounded border-gray-300 text-indigo-600"
                                                 :disabled="!isPeriodeRencanaAktif"
                                             />
                                             DAU
-                                            <span v-if="item.sumber_anggaran.dak" class="ml-1 text-green-600">✓</span>
+                                            <span v-if="item.sumber_anggaran.dau" class="ml-1 text-green-600">✓</span>
                                         </label>
 
                                         <label class="flex items-center text-xs">
                                             <input
                                                 type="checkbox"
-                                                :checked="item.sumber_anggaran.dak_peruntukan"
-                                                @change="(e) => handleSumberAnggaranChange(item, 'dak_peruntukan', e)"
+                                                :checked="item.sumber_anggaran.dau_peruntukan"
+                                                @change="(e) => handleSumberAnggaranChange(item, 'dau_peruntukan', e)"
                                                 class="mr-2 h-3 w-3 rounded border-gray-300 text-indigo-600"
                                                 :disabled="!isPeriodeRencanaAktif"
                                             />
-                                            DAK Peruntukan
-                                            <span v-if="item.sumber_anggaran.dak_peruntukan" class="ml-1 text-green-600">✓</span>
+                                            DAU Peruntukan
+                                            <span v-if="item.sumber_anggaran.dau_peruntukan" class="ml-1 text-green-600">✓</span>
                                         </label>
 
                                         <label class="flex items-center text-xs">
@@ -1029,27 +1309,27 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Rencana Awal:</div>
                                                 <div class="font-medium text-blue-600">
-                                                    {{ formatCurrency(item.rencana_awal?.dak || 0) }}
+                                                    {{ formatCurrency(item.rencana_awal?.dau || 0) }}
                                                 </div>
                                             </div>
                                             <!-- Parsial (Read-only) -->
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Parsial:</div>
                                                 <div class="font-medium text-green-600">
-                                                    {{ formatCurrency(item.parsial_data?.dak || 0) }}
+                                                    {{ formatCurrency(item.parsial_data?.dau || 0) }}
                                                 </div>
                                             </div>
                                             <!-- Perubahan (Editable) -->
                                             <div class="text-xs">
-                                                <div class="text-red-600 font-medium">Perubahan:</div>
+                                                <div class="font-medium text-red-600">Perubahan:</div>
                                                 <input
                                                     type="number"
-                                                    :value="item.dak"
-                                                    @input="(e) => handleInputChange(item, 'dak', e)"
-                                                    :disabled="!item.sumber_anggaran.dak || !isPeriodeRencanaAktif"
+                                                    :value="item.dau"
+                                                    @input="(e) => handleInputChange(item, 'dau', e)"
+                                                    :disabled="!item.sumber_anggaran.dau || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-red-300 px-1 py-0.5 text-right text-xs focus:border-red-500"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak || !isPeriodeRencanaAktif }"
+                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dau || !isPeriodeRencanaAktif }"
                                                 />
                                             </div>
                                         </div>
@@ -1060,7 +1340,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Rencana Awal:</div>
                                                 <div class="font-medium text-blue-600">
-                                                    {{ formatCurrency(item.rencana_awal?.dak || 0) }}
+                                                    {{ formatCurrency(item.rencana_awal?.dau || 0) }}
                                                 </div>
                                             </div>
                                             <!-- Parsial (Editable) -->
@@ -1068,58 +1348,82 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                 <div class="text-gray-500">Parsial:</div>
                                                 <input
                                                     type="number"
-                                                    :value="item.dak"
-                                                    @input="(e) => handleInputChange(item, 'dak', e)"
-                                                    :disabled="!item.sumber_anggaran.dak || !isPeriodeRencanaAktif"
+                                                    :value="item.dau"
+                                                    @input="(e) => handleInputChange(item, 'dau', e)"
+                                                    :disabled="!item.sumber_anggaran.dau || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-gray-300 px-1 py-0.5 text-right text-xs"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak || !isPeriodeRencanaAktif }"
+                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dau || !isPeriodeRencanaAktif }"
                                                 />
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else-if="hasAnyParsialHistory">
+                                        <!-- Normal mode with parsial history - show same format as parsial mode -->
+                                        <div class="space-y-2">
+                                            <!-- Rencana Awal (Read-only) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Rencana Awal:</div>
+                                                <div class="font-medium text-blue-600">
+                                                    {{ formatCurrency(item.rencana_awal?.dau || 0) }}
+                                                    <!-- ✅ FIXED: dau -->
+                                                </div>
+                                            </div>
+                                            <!-- Parsial (Read-only in normal mode) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Parsial:</div>
+                                                <div class="font-medium text-green-600">
+                                                    {{ formatCurrency(item.parsial_data?.dau || 0) }}
+                                                    <!-- ✅ FIXED: dau -->
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
                                     <template v-else>
                                         <input
                                             type="number"
-                                            :value="item.dak"
-                                            @input="(e) => handleInputChange(item, 'dak', e)"
-                                            :disabled="!item.sumber_anggaran.dak || !isPeriodeRencanaAktif"
+                                            :value="item.dau"
+                                            @input="(e) => handleInputChange(item, 'dau', e)"
+                                            :disabled="!item.sumber_anggaran.dau || !isPeriodeRencanaAktif"
                                             min="0"
                                             class="h-8 w-24 rounded border border-gray-300 px-2 py-1 text-right text-xs"
-                                            :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak || !isPeriodeRencanaAktif }"
+                                            :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dau || !isPeriodeRencanaAktif }"
                                         />
-                                        <div v-if="item.dak > 0" class="mt-1 text-xs text-green-600">
-                                            {{ formatCurrency(item.dak) }}
+                                        <div v-if="item.dau > 0" class="mt-1 text-xs text-green-600">
+                                            {{ formatCurrency(item.dau) }}
                                         </div>
                                     </template>
                                 </td>
 
-                                <!-- DAK Peruntukan Amount -->
+                                <!-- DAU Peruntukan Amount -->
                                 <td class="px-2 py-3 text-center">
                                     <template v-if="isBudgetChangeMode">
                                         <div class="space-y-1">
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Rencana Awal:</div>
                                                 <div class="font-medium text-blue-600">
-                                                    {{ formatCurrency(item.rencana_awal?.dak_peruntukan || 0) }}
+                                                    {{ formatCurrency(item.rencana_awal?.dau_peruntukan || 0) }}
                                                 </div>
                                             </div>
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Parsial:</div>
                                                 <div class="font-medium text-green-600">
-                                                    {{ formatCurrency(item.parsial_data?.dak_peruntukan || 0) }}
+                                                    {{ formatCurrency(item.parsial_data?.dau_peruntukan || 0) }}
                                                 </div>
                                             </div>
                                             <div class="text-xs">
-                                                <div class="text-red-600 font-medium">Perubahan:</div>
+                                                <div class="font-medium text-red-600">Perubahan:</div>
                                                 <input
                                                     type="number"
-                                                    :value="item.dak_peruntukan"
-                                                    @input="(e) => handleInputChange(item, 'dak_peruntukan', e)"
-                                                    :disabled="!item.sumber_anggaran.dak_peruntukan || !isPeriodeRencanaAktif"
+                                                    :value="item.dau_peruntukan"
+                                                    @input="(e) => handleInputChange(item, 'dau_peruntukan', e)"
+                                                    :disabled="!item.sumber_anggaran.dau_peruntukan || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-red-300 px-1 py-0.5 text-right text-xs focus:border-red-500"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_peruntukan || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100':
+                                                            !item.sumber_anggaran.dau_peruntukan || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
                                             </div>
                                         </div>
@@ -1129,35 +1433,59 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Rencana Awal:</div>
                                                 <div class="font-medium text-blue-600">
-                                                    {{ formatCurrency(item.rencana_awal?.dak_peruntukan || 0) }}
+                                                    {{ formatCurrency(item.rencana_awal?.dau_peruntukan || 0) }}
                                                 </div>
                                             </div>
                                             <div class="text-xs">
                                                 <div class="text-gray-500">Parsial:</div>
                                                 <input
                                                     type="number"
-                                                    :value="item.dak_peruntukan"
-                                                    @input="(e) => handleInputChange(item, 'dak_peruntukan', e)"
-                                                    :disabled="!item.sumber_anggaran.dak_peruntukan || !isPeriodeRencanaAktif"
+                                                    :value="item.dau_peruntukan"
+                                                    @input="(e) => handleInputChange(item, 'dau_peruntukan', e)"
+                                                    :disabled="!item.sumber_anggaran.dau_peruntukan || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-gray-300 px-1 py-0.5 text-right text-xs"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_peruntukan || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100':
+                                                            !item.sumber_anggaran.dau_peruntukan || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else-if="hasAnyParsialHistory">
+                                        <!-- Normal mode with parsial history - show same format as parsial mode -->
+                                        <div class="space-y-2">
+                                            <!-- Rencana Awal (Read-only) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Rencana Awal:</div>
+                                                <div class="font-medium text-blue-600">
+                                                    {{ formatCurrency(item.rencana_awal?.dau_peruntukan || 0) }}
+                                                </div>
+                                            </div>
+                                            <!-- Parsial (Read-only in normal mode) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Parsial:</div>
+                                                <div class="font-medium text-green-600">
+                                                    {{ formatCurrency(item.parsial_data?.dau_peruntukan || 0) }}
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
                                     <template v-else>
                                         <input
                                             type="number"
-                                            :value="item.dak_peruntukan"
-                                            @input="(e) => handleInputChange(item, 'dak_peruntukan', e)"
-                                            :disabled="!item.sumber_anggaran.dak_peruntukan || !isPeriodeRencanaAktif"
+                                            :value="item.dau_peruntukan"
+                                            @input="(e) => handleInputChange(item, 'dau_peruntukan', e)"
+                                            :disabled="!item.sumber_anggaran.dau_peruntukan || !isPeriodeRencanaAktif"
                                             min="0"
                                             class="h-8 w-24 rounded border border-gray-300 px-2 py-1 text-right text-xs"
-                                            :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_peruntukan || !isPeriodeRencanaAktif }"
+                                            :class="{
+                                                'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dau_peruntukan || !isPeriodeRencanaAktif,
+                                            }"
                                         />
-                                        <div v-if="item.dak_peruntukan > 0" class="mt-1 text-xs text-green-600">
-                                            {{ formatCurrency(item.dak_peruntukan) }}
+                                        <div v-if="item.dau_peruntukan > 0" class="mt-1 text-xs text-green-600">
+                                            {{ formatCurrency(item.dau_peruntukan) }}
                                         </div>
                                     </template>
                                 </td>
@@ -1179,7 +1507,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                 </div>
                                             </div>
                                             <div class="text-xs">
-                                                <div class="text-red-600 font-medium">Perubahan:</div>
+                                                <div class="font-medium text-red-600">Perubahan:</div>
                                                 <input
                                                     type="number"
                                                     :value="item.dak_fisik"
@@ -1187,7 +1515,9 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                     :disabled="!item.sumber_anggaran.dak_fisik || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-red-300 px-1 py-0.5 text-right text-xs focus:border-red-500"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_fisik || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_fisik || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
                                             </div>
                                         </div>
@@ -1209,8 +1539,29 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                     :disabled="!item.sumber_anggaran.dak_fisik || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-gray-300 px-1 py-0.5 text-right text-xs"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_fisik || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_fisik || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else-if="hasAnyParsialHistory">
+                                        <!-- Normal mode with parsial history - show same format as parsial mode -->
+                                        <div class="space-y-2">
+                                            <!-- Rencana Awal (Read-only) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Rencana Awal:</div>
+                                                <div class="font-medium text-blue-600">
+                                                    {{ formatCurrency(item.rencana_awal?.dak_fisik || 0) }}
+                                                </div>
+                                            </div>
+                                            <!-- Parsial (Read-only in normal mode) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Parsial:</div>
+                                                <div class="font-medium text-green-600">
+                                                    {{ formatCurrency(item.parsial_data?.dak_fisik || 0) }}
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -1247,7 +1598,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                 </div>
                                             </div>
                                             <div class="text-xs">
-                                                <div class="text-red-600 font-medium">Perubahan:</div>
+                                                <div class="font-medium text-red-600">Perubahan:</div>
                                                 <input
                                                     type="number"
                                                     :value="item.dak_non_fisik"
@@ -1255,7 +1606,10 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                     :disabled="!item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-red-300 px-1 py-0.5 text-right text-xs focus:border-red-500"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100':
+                                                            !item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
                                             </div>
                                         </div>
@@ -1277,8 +1631,30 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                     :disabled="!item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-gray-300 px-1 py-0.5 text-right text-xs"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100':
+                                                            !item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else-if="hasAnyParsialHistory">
+                                        <!-- Normal mode with parsial history - show same format as parsial mode -->
+                                        <div class="space-y-2">
+                                            <!-- Rencana Awal (Read-only) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Rencana Awal:</div>
+                                                <div class="font-medium text-blue-600">
+                                                    {{ formatCurrency(item.rencana_awal?.dak_non_fisik || 0) }}
+                                                </div>
+                                            </div>
+                                            <!-- Parsial (Read-only in normal mode) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Parsial:</div>
+                                                <div class="font-medium text-green-600">
+                                                    {{ formatCurrency(item.parsial_data?.dak_non_fisik || 0) }}
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -1290,7 +1666,9 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                             :disabled="!item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif"
                                             min="0"
                                             class="h-8 w-24 rounded border border-gray-300 px-2 py-1 text-right text-xs"
-                                            :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif }"
+                                            :class="{
+                                                'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.dak_non_fisik || !isPeriodeRencanaAktif,
+                                            }"
                                         />
                                         <div v-if="item.dak_non_fisik > 0" class="mt-1 text-xs text-green-600">
                                             {{ formatCurrency(item.dak_non_fisik) }}
@@ -1315,7 +1693,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                 </div>
                                             </div>
                                             <div class="text-xs">
-                                                <div class="text-red-600 font-medium">Perubahan:</div>
+                                                <div class="font-medium text-red-600">Perubahan:</div>
                                                 <input
                                                     type="number"
                                                     :value="item.blud"
@@ -1323,7 +1701,9 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                     :disabled="!item.sumber_anggaran.blud || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-red-300 px-1 py-0.5 text-right text-xs focus:border-red-500"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.blud || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.blud || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
                                             </div>
                                         </div>
@@ -1345,8 +1725,29 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                     :disabled="!item.sumber_anggaran.blud || !isPeriodeRencanaAktif"
                                                     min="0"
                                                     class="h-6 w-20 rounded border border-gray-300 px-1 py-0.5 text-right text-xs"
-                                                    :class="{ 'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.blud || !isPeriodeRencanaAktif }"
+                                                    :class="{
+                                                        'cursor-not-allowed bg-gray-100': !item.sumber_anggaran.blud || !isPeriodeRencanaAktif,
+                                                    }"
                                                 />
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else-if="hasAnyParsialHistory">
+                                        <!-- Normal mode with parsial history - show same format as parsial mode -->
+                                        <div class="space-y-2">
+                                            <!-- Rencana Awal (Read-only) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Rencana Awal:</div>
+                                                <div class="font-medium text-blue-600">
+                                                    {{ formatCurrency(item.rencana_awal?.blud || 0) }}
+                                                </div>
+                                            </div>
+                                            <!-- Parsial (Read-only in normal mode) -->
+                                            <div class="text-xs">
+                                                <div class="text-gray-500">Parsial:</div>
+                                                <div class="font-medium text-green-600">
+                                                    {{ formatCurrency(item.parsial_data?.blud || 0) }}
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -1375,7 +1776,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                 :disabled="!isPeriodeRencanaAktif"
                                                 :class="{
                                                     'bg-red-600 hover:bg-red-700': isBudgetChangeMode,
-                                                    'bg-blue-600 hover:bg-blue-700': !isBudgetChangeMode
+                                                    'bg-blue-600 hover:bg-blue-700': !isBudgetChangeMode,
                                                 }"
                                                 class="rounded px-3 py-1 text-xs text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-400"
                                             >
@@ -1383,21 +1784,35 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
                                                 <span v-else-if="isParsialMode">Simpan Parsial</span>
                                                 <span v-else>Simpan</span>
                                             </button>
-                                            
+
                                             <!-- Binocular button for parsial mode to view detail -->
                                         </div>
 
                                         <div class="text-xs text-gray-600">
                                             <template v-if="isBudgetChangeMode">
-                                                <div>Perubahan: <span class="font-bold text-red-600">{{ formatCurrency(calculateTotal(item)) }}</span></div>
-                                                <div>Total All: <span class="font-bold text-purple-600">{{ formatCurrency(calculateBudgetChangeGrandTotal(item)) }}</span></div>
+                                                <div>
+                                                    Perubahan: <span class="font-bold text-red-600">{{ formatCurrency(calculateTotal(item)) }}</span>
+                                                </div>
+                                                <div>
+                                                    Total All:
+                                                    <span class="font-bold text-purple-600">{{
+                                                        formatCurrency(calculateBudgetChangeGrandTotal(item))
+                                                    }}</span>
+                                                </div>
                                             </template>
                                             <template v-else-if="isParsialMode">
-                                                <div>Parsial: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(item)) }}</span></div>
-                                                <div>Total: <span class="font-bold text-blue-600">{{ formatCurrency(calculateGrandTotal(item)) }}</span></div>
+                                                <div>
+                                                    Parsial: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(item)) }}</span>
+                                                </div>
+                                                <div>
+                                                    Total:
+                                                    <span class="font-bold text-blue-600">{{ formatCurrency(calculateGrandTotal(item)) }}</span>
+                                                </div>
                                             </template>
                                             <template v-else>
-                                                <div>Total: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(item)) }}</span></div>
+                                                <div>
+                                                    Total: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(item)) }}</span>
+                                                </div>
                                             </template>
                                         </div>
                                     </div>
@@ -1409,6 +1824,44 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Dialog Alert -->
+    <Dialog :open="alertDialog.open" @update:open="(value) => alertDialog.open = value">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>{{ alertDialog.title }}</DialogTitle>
+                <DialogDescription>{{ alertDialog.message }}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter class="flex justify-end gap-2 pt-4">
+                <Button 
+                    @click="alertDialog.onConfirm"
+                    :class="{
+                        'bg-blue-600 text-white hover:bg-blue-700': alertDialog.type === 'info',
+                        'bg-green-600 text-white hover:bg-green-700': alertDialog.type === 'success',
+                        'bg-red-600 text-white hover:bg-red-700': alertDialog.type === 'error'
+                    }"
+                >
+                    OK
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <!-- Dialog Konfirmasi -->
+    <Dialog :open="confirmDialog.open" @update:open="(value) => confirmDialog.open = value">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>{{ confirmDialog.title }}</DialogTitle>
+                <DialogDescription>{{ confirmDialog.message }}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter class="flex justify-end gap-2 pt-4">
+                <Button variant="outline" @click="confirmDialog.onCancel">Batal</Button>
+                <Button class="bg-blue-600 text-white hover:bg-blue-700" @click="confirmDialog.onConfirm">
+                    Ya, Lihat Detail
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>
 
 <style scoped>

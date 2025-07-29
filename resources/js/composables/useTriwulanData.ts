@@ -17,8 +17,8 @@ interface Props {
 export function useTriwulanData(props: Props) {
   // Sumber dana yang tersedia
   const sources = [
-    { key: 'dak', name: 'DAK' },
-    { key: 'dak_peruntukan', name: 'DAK Peruntukan' },
+    { key: 'dau', name: 'DAU' }, // ✅ FIXED: dau
+    { key: 'dau_peruntukan', name: 'DAU Peruntukan' }, // ✅ FIXED: dau_peruntukan
     { key: 'dak_fisik', name: 'DAK Fisik' },
     { key: 'dak_non_fisik', name: 'DAK Non Fisik' },
     { key: 'blud', name: 'BLUD' }
@@ -35,23 +35,29 @@ export function useTriwulanData(props: Props) {
     // Return array of sumber dana dengan data masing-masing
     return monitoring.anggaran.map((anggaran: any) => {
       const sumberAnggaran = anggaran.sumberAnggaran;
-      const pagu = anggaran.pagu?.[0]; // Ambil pagu pertama (kategori 1 = pokok)
+
+      // Cari pagu berdasarkan kategori (1 = pokok/rencana awal)
+      const paguPokok = anggaran.pagu?.find((p: any) => p.kategori === 1);
+      const paguParsial = anggaran.pagu?.find((p: any) => p.kategori === 2);
+      const paguPerubahan = anggaran.pagu?.find((p: any) => p.kategori === 3);
 
       return {
         sumberDana: sumberAnggaran?.nama || 'Unknown',
-        nilai: pagu?.dana || 0,
-        kategori: pagu?.kategori || 1
+        nilai: paguPokok?.dana || 0, // Gunakan pagu pokok untuk kolom pokok
+        nilaiParsial: paguParsial?.dana || 0,
+        nilaiPerubahan: paguPerubahan?.dana || 0,
+        kategori: 1 // Default ke kategori pokok
       };
     });
   }
 
   // Helper function untuk mendapatkan target dan realisasi data
   function getMonitoringData(subKegiatan: any, sumberDana?: string) {
-    const targets = props.monitoringTargets?.filter(t => 
+    const targets = props.monitoringTargets?.filter(t =>
       t.task_id === subKegiatan.id && t.periode_id === props.periode?.id
     ) || [];
 
-    const realisasi = props.monitoringRealisasi?.filter(r => 
+    const realisasi = props.monitoringRealisasi?.filter(r =>
       r.task_id === subKegiatan.id && r.periode_id === props.periode?.id
     ) || [];
 
@@ -114,8 +120,8 @@ export function useTriwulanData(props: Props) {
             bidangUrusan: parentBidangUrusan,
             sumberDana: sumberAnggaranData.sumberDana,
             pokok: sumberAnggaranData.nilai,
-            parsial: 0,
-            perubahan: 0,
+            parsial: sumberAnggaranData.nilaiParsial || 0,
+            perubahan: sumberAnggaranData.nilaiPerubahan || 0,
             target: monitoringData.target,
             realisasi: monitoringData.realisasi
           });

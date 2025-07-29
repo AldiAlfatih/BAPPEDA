@@ -17,6 +17,10 @@ class TimKerja extends Model
         'is_aktif',
     ];
 
+    protected $attributes = [
+        'is_aktif' => 1,
+    ];
+
     public function skpd()
     {
         return $this->belongsTo(Skpd::class);
@@ -26,7 +30,7 @@ class TimKerja extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    
+
     public function operator()
     {
         return $this->belongsTo(User::class, 'operator_id');

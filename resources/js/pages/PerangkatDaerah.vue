@@ -326,13 +326,11 @@ function truncateText(text: string | null | undefined, length: number = 30): str
                         <div class="flex items-center gap-2">
                           <Button size="sm" class="bg-green-900 hover:bg-green-700 text-white" 
                             @click.stop="goToEditPage(user.id)">
-                            <Pencil class="w-4 h-4 mr-2" />
-                            <span class="hidden sm:inline">Edit</span>
+                            <Pencil class="w-4 h-4 mr-2 ml-2" />
                           </Button>
                           <Button size="sm" class="bg-orange-500 hover:bg-orange-700 text-white" 
                             @click.stop="goToShowPage(user.id)">
-                            <Binoculars class="w-4 h-4 mr-1" />
-                            <span class="hidden sm:inline">Detail</span>
+                            <Binoculars class="w-4 h-4 mr-2 ml-2" />
                           </Button>
                         </div>
                       </TableCell>

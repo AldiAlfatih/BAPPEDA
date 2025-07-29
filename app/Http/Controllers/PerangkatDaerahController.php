@@ -16,17 +16,45 @@ class PerangkatDaerahController extends Controller
 {
     public function index(Request $request)
     {
+        // Force log to file immediately
+        file_put_contents(storage_path('logs/debug.log'),
+            "[" . date('Y-m-d H:i:s') . "] PerangkatDaerahController.index CALLED\n",
+            FILE_APPEND | LOCK_EX
+        );
+
+        \Log::info('PerangkatDaerahController.index START', [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'user_authenticated' => auth()->check()
+        ]);
+
         $user = auth()->user();
 
+
+
+        \Log::info('PerangkatDaerahController.index called', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_roles' => $user->getRoleNames(),
+            'has_perangkat_daerah_role' => $user->hasRole('perangkat_daerah')
+        ]);
+
         if ($user->hasRole('perangkat_daerah')) {
+            \Log::info('User has perangkat_daerah role, redirecting to show', [
+                'redirect_to' => route('perangkatdaerah.show', $user->id)
+            ]);
             return redirect()->route('perangkatdaerah.show', $user->id);
         }
 
         $query = User::role('perangkat_daerah')
             ->with([
-                'skpd.kepalaAktif.user.userDetail', 
+                'skpd.kepalaAktif.user.userDetail',
                 'skpd.operatorAktif.operator.userDetail'
             ]);
+
+        \Log::info('PerangkatDaerahController.index query built', [
+            'base_query_count' => User::role('perangkat_daerah')->count()
+        ]);
 
         // Tambahkan filter search jika ada
         if ($request->has('search') && !empty($request->search)) {
@@ -47,6 +75,12 @@ class PerangkatDaerahController extends Controller
         }
 
         $users = $query->paginate(1000);
+
+        \Log::info('PerangkatDaerahController.index users fetched', [
+            'users_count' => $users->count(),
+            'users_total' => $users->total(),
+            'first_user_id' => $users->count() > 0 ? $users->first()->id : null
+        ]);
 
         $users->getCollection()->transform(function ($user) {
             $skpd = $user->skpd->first();
@@ -70,6 +104,13 @@ class PerangkatDaerahController extends Controller
             return $user;
         });
 
+
+
+        \Log::info('PerangkatDaerahController.index rendering view', [
+            'final_users_count' => $users->count(),
+            'search_filter' => $request->search
+        ]);
+
         return Inertia::render('PerangkatDaerah', [
             'users' => $users,
             'filters' => [
@@ -80,8 +121,19 @@ class PerangkatDaerahController extends Controller
 
     public function create()
     {
+        \Log::info('PerangkatDaerahController.create called', [
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name ?? 'Unknown',
+            'user_roles' => auth()->user()->getRoleNames()
+        ]);
+
         $users = User::role('perangkat_daerah')->get();
         $operators = User::role('operator')->get();
+
+        \Log::info('PerangkatDaerahController.create data', [
+            'users_count' => $users->count(),
+            'operators_count' => $operators->count()
+        ]);
 
         return Inertia::render('PerangkatDaerah/Create', [
             'users' => $users,
@@ -91,6 +143,12 @@ class PerangkatDaerahController extends Controller
 
     public function store(Request $request)
     {
+        \Log::info('PerangkatDaerahController.store called', [
+            'request_data' => $request->all(),
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name ?? 'Unknown'
+        ]);
+
         $validated = $request->validate([
             'kode_organisasi' => 'required|string|max:100',
             'user_id' => 'required|exists:users,id',
@@ -111,7 +169,8 @@ class PerangkatDaerahController extends Controller
 
         SkpdKepala::create([
             'skpd_id' => $skpd->id,
-            'user_id' => $validated['user_id']
+            'user_id' => $validated['user_id'],
+            'is_aktif' => 1
         ]);
 
         TimKerja::create([
@@ -133,7 +192,7 @@ class PerangkatDaerahController extends Controller
         $nipKepala = null;
         $operatorSkpd = null;
         $nipOperator = null;
-        
+
         if ($userSkpd) {
             // Get Kepala SKPD data
             $kepala = $userSkpd->kepala()->with(['user.userDetail'])->latest()->first();
@@ -141,7 +200,7 @@ class PerangkatDaerahController extends Controller
                 $kepalaSkpd = $kepala->user;
                 $nipKepala = $kepala->user->userDetail->nip ?? null;
             }
-            
+
             // Get Operator data
             if ($userSkpd->operatorAktif && $userSkpd->operatorAktif->operator) {
                 $operatorSkpd = $userSkpd->operatorAktif->operator;

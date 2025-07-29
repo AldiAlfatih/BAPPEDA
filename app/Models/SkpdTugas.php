@@ -19,8 +19,12 @@ class SkpdTugas extends Model
         'is_aktif',
     ];
 
+    protected $attributes = [
+        'is_aktif' => 1,
+    ];
+
     protected $dates = ['deleted_at'];
-   
+
     public function skpd()
     {
         return $this->belongsTo(Skpd::class);
@@ -30,7 +34,7 @@ class SkpdTugas extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    
+
     public function kodeNomenklatur()
     {
         return $this->belongsTo(KodeNomenklatur::class, 'kode_nomenklatur_id');

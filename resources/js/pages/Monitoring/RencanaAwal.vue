@@ -1,33 +1,10 @@
 <script setup lang="ts">
+import { useRencanaAwalData } from '@/composables/useRencanaAwalData';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
-
-interface Target {
-    kinerjaFisik: string;
-    keuangan: string;
-}
-
-interface ProgramData {
-    kode: string;
-    program: string;
-    pokok: string;
-    parsial: string;
-    perubahan: string;
-    sumberDana: string;
-    targets: Target[];
-    monitoring?: {
-        pagu_pokok: number;
-        pagu_parsial: number;
-        pagu_perubahan: number;
-        sumber_dana: string;
-        targets: Array<{
-            kinerja_fisik: number;
-            keuangan: number;
-        }>;
-    };
-}
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import ActivityLogger from '@/services/activityLogger';
 
 interface User {
     id: number;
@@ -35,23 +12,6 @@ interface User {
     nama_skpd: string;
     skpd_id?: number;
     nip: string;
-}
-
-interface ItemWithKodeNomenklatur {
-    id: number;
-    kode_nomenklatur: {
-        id: number;
-        nomor_kode: string;
-        nomenklatur: string;
-        jenis_nomenklatur: number;
-        details?: any[];
-    };
-    monitoring?: {
-        targets?: Array<{
-            kinerja_fisik: number;
-            keuangan: number;
-        }>;
-    };
 }
 
 interface Props {
@@ -135,7 +95,8 @@ interface Props {
     >;
     periodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
     semuaPeriodeAktif?: Array<{ id: number; tahap: { id: number; tahap: string }; tahun: { id: number; tahun: string } }>;
-    tahunAktif?: { id: number; tahun: string } | null;
+    tahunAktif?: { id: number; tahun: string; status: number } | null;
+    allTahun?: Array<{ id: number; tahun: string; status: number }>;
     bidangurusanTugas?: any[];
     availableUrusans?: Array<{
         id: number;
@@ -144,23 +105,141 @@ interface Props {
         jenis_nomenklatur: number;
     }>;
     selectedUrusanId?: number | null;
+    breadcrumbUserId?: number | null;
 }
 
 const props = defineProps<Props>();
 
+// Get current user role from global auth
+const page = usePage();
+const auth = page.props.auth as {
+    user: {
+        role?: string;
+    };
+};
+
+// Check if current user is Admin or Operator (hide actions for these roles)
+const isAdminOrOperator = computed(() => {
+    const userRole = auth?.user?.role?.toLowerCase();
+    return userRole === 'admin' || userRole === 'operator';
+});
+
 // Add reactive state for selected period
 const selectedPeriodeId = ref<number | null>(null);
+
+// Reactive state for selected year - menggunakan computed agar selalu sinkron dengan props
+const selectedTahunId = computed(() => props.tahunAktif?.id || null);
+
+// Debounced update untuk meningkatkan responsivitas UI
+let updateTimeout: number | null = null;
+const debouncedUIUpdate = (callback: () => void, delay: number = 100) => {
+    if (updateTimeout) {
+        clearTimeout(updateTimeout);
+    }
+    updateTimeout = setTimeout(callback, delay);
+};
+
+// Handler for year change
+const handleTahunChange = (event: Event) => {
+    const target = event.target as HTMLSelectElement;
+    const newTahunId = target.value ? parseInt(target.value) : null;
+
+    console.log('Year change triggered:', {
+        oldTahunId: selectedTahunId.value,
+        newTahunId,
+        currentEditingTargets: Object.keys(editingTargets.value).length,
+    });
+
+    if (selectedTahunId.value !== newTahunId) {
+        // PERBAIKAN: Simpan state editingTargets sebelum navigasi
+        const currentEditingState = saveEditingState();
+        console.log('Saved editing state before navigation:', currentEditingState);
+
+        // Reload data with the new year
+        const selectedTahun = props.allTahun?.find((t) => t.id === newTahunId);
+        if (selectedTahun && props.tugas?.id) {
+            console.log('Navigating to year:', selectedTahun.tahun);
+            router.visit(
+                route('monitoring.rencanaawal.tahun', {
+                    id: props.tugas.id,
+                    tahun: selectedTahun.tahun,
+                }),
+                {
+                    preserveState: false,
+                    onSuccess: () => {
+                        console.log('Navigation successful, restoring state...');
+                        // PERBAIKAN: Restore editing state setelah navigasi berhasil
+                        nextTick(() => {
+                            restoreEditingState(currentEditingState);
+                            ensureEditingTargets();
+                            console.log('State restoration complete');
+                        });
+                    },
+                },
+            );
+        }
+    }
+};
 
 // Tambahkan state untuk edit target subkegiatan
 const editingTargets = ref<Record<string, any>>({});
 const loadingRow = ref<string | null>(null); // Unique key: subkegiatan.id + sumberDana
 const successRow = ref<string | null>(null); // Unique key: subkegiatan.id + sumberDana
 const errorRow = ref<string | null>(null); // Unique key: subkegiatan.id + sumberDana
+const updatingRow = ref<string | null>(null); // Untuk tracking row yang sedang diupdate
+
+// Computed property untuk menghitung agregasi real-time dari editingTargets
+const aggregatedTargets = computed(() => {
+    const result: Record<string, any[]> = {};
+
+    // Group editingTargets by subKegiatan ID
+    Object.keys(editingTargets.value).forEach((uniqueKey) => {
+        const subKegiatanId = uniqueKey.split('-')[0]; // Extract subKegiatan ID from unique key
+
+        if (!result[subKegiatanId]) {
+            result[subKegiatanId] = [
+                { kinerja_fisik: 0, keuangan: 0 },
+                { kinerja_fisik: 0, keuangan: 0 },
+                { kinerja_fisik: 0, keuangan: 0 },
+                { kinerja_fisik: 0, keuangan: 0 },
+            ];
+        }
+
+        const targets = editingTargets.value[uniqueKey];
+        if (targets && Array.isArray(targets)) {
+            targets.forEach((target: any, index: number) => {
+                if (index < 4 && target) {
+                    // Sum keuangan values
+                    result[subKegiatanId][index].keuangan += parseFloat(target.keuangan?.toString().replace(/[^\d]/g, '') || '0');
+                    // Sum kinerja_fisik values (will be averaged later)
+                    result[subKegiatanId][index].kinerja_fisik += parseFloat(target.kinerja_fisik || '0');
+                }
+            });
+        }
+    });
+
+    // Calculate average for kinerja_fisik
+    Object.keys(result).forEach((subKegiatanId) => {
+        // Count how many sources have data for this subKegiatan
+        const sourceCount = Object.keys(editingTargets.value).filter((key) => key.startsWith(subKegiatanId + '-')).length;
+
+        if (sourceCount > 1) {
+            result[subKegiatanId].forEach((target) => {
+                target.kinerja_fisik = target.kinerja_fisik / sourceCount;
+            });
+        }
+    });
+
+    return result;
+});
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
-    { title: 'Monitoring', href: '/rencana-awal' },
-    { title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, href: `/rencana-awal/${props.user?.id}` },
-    { title: 'Rencana Awal PD', href: '/rencanaawal' },
+    { title: 'Monitoring', href: route('monitoring.index') },
+    { 
+        title: `Monitoring Detail ${props.user?.nama_skpd ?? '-'}`, 
+        href: props.breadcrumbUserId ? route('monitoring.show', props.breadcrumbUserId) : '' 
+    },
+    { title: 'Rencana Awal PD', href: '' },
 ]);
 
 // Initialize with the active period if available
@@ -172,56 +251,16 @@ onMounted(() => {
     }
 });
 
-// Modal and target editing states
-const showModal = ref(false);
-const currentItem = ref<ItemWithKodeNomenklatur | null>(null);
-const targetData = ref({
-    tw1: { kinerja_fisik: 0, keuangan: 0 },
-    tw2: { kinerja_fisik: 0, keuangan: 0 },
-    tw3: { kinerja_fisik: 0, keuangan: 0 },
-    tw4: { kinerja_fisik: 0, keuangan: 0 },
-});
-
-// Fill targets action
-const fillTargets = (item: ItemWithKodeNomenklatur) => {
-    currentItem.value = item;
-    // Populate target data from existing values if available
-    if (item.monitoring?.targets) {
-        targetData.value = {
-            tw1: {
-                kinerja_fisik: item.monitoring.targets[0]?.kinerja_fisik || 0,
-                keuangan: item.monitoring.targets[0]?.keuangan || 0,
-            },
-            tw2: {
-                kinerja_fisik: item.monitoring.targets[1]?.kinerja_fisik || 0,
-                keuangan: item.monitoring.targets[1]?.keuangan || 0,
-            },
-            tw3: {
-                kinerja_fisik: item.monitoring.targets[2]?.kinerja_fisik || 0,
-                keuangan: item.monitoring.targets[2]?.keuangan || 0,
-            },
-            tw4: {
-                kinerja_fisik: item.monitoring.targets[3]?.kinerja_fisik || 0,
-                keuangan: item.monitoring.targets[3]?.keuangan || 0,
-            },
-        };
-    } else {
-        // Reset to defaults if no data exists
-        targetData.value = {
-            tw1: { kinerja_fisik: 0, keuangan: 0 },
-            tw2: { kinerja_fisik: 0, keuangan: 0 },
-            tw3: { kinerja_fisik: 0, keuangan: 0 },
-            tw4: { kinerja_fisik: 0, keuangan: 0 },
-        };
-    }
-    showModal.value = true;
-};
-
 // Format angka ke dalam format rupiah
-const formatRupiah = (value: number): string => {
+const formatRupiah = (value: number | string | null | undefined): string => {
+    // PERBAIKAN: Handle null, undefined, atau empty values
+    if (value === null || value === undefined || value === '') {
+        return '0';
+    }
+
     const numberString = value.toString().replace(/[^,\d]/g, '');
     const split = numberString.split(',');
-    let sisa = split[0].length % 3;
+    const sisa = split[0].length % 3;
     let rupiah = split[0].substr(0, sisa);
     const ribuan = split[0].substr(sisa).match(/\d{3}/g);
 
@@ -230,152 +269,6 @@ const formatRupiah = (value: number): string => {
     }
 
     return 'Rp ' + rupiah + (split[1] ? ',' + split[1] : '');
-};
-
-// Format angka ke dalam format persentase
-const formatPercent = (value: number | string): string => {
-    if (value === '' || value === undefined || value === null) return '';
-    const numValue = parseFloat(String(value).replace(',', '.'));
-    if (isNaN(numValue)) return '0%';
-    return numValue.toFixed(2) + '%';
-};
-
-// Saat input keuangan diubah
-const onInputRupiah = (event: Event, triwulan: 'tw1' | 'tw2' | 'tw3' | 'tw4') => {
-    const input = event.target as HTMLInputElement;
-    const rawValue = input.value.replace(/[^\d]/g, ''); // Hanya ambil angka
-    const numericValue = parseInt(rawValue) || 0;
-
-    targetData.value[triwulan].keuangan = numericValue;
-};
-
-// Saat input kinerja fisik diubah
-const onInputPercent = (event: Event, triwulan: 'tw1' | 'tw2' | 'tw3' | 'tw4') => {
-    const input = event.target as HTMLInputElement;
-    let rawValue = input.value.replace(/[^\d.,]/g, ''); // Hanya ambil angka dan tanda desimal
-    rawValue = rawValue.replace(',', '.'); // Ubah koma menjadi titik untuk decimal
-
-    // Pastikan nilai tidak melebihi 100%
-    const numericValue = parseFloat(rawValue);
-    if (isNaN(numericValue)) {
-        targetData.value[triwulan].kinerja_fisik = 0;
-    } else {
-        targetData.value[triwulan].kinerja_fisik = Math.min(100, numericValue);
-    }
-};
-
-// Save targets action
-const modalSaveTargets = (item: ItemWithKodeNomenklatur) => {
-    if (!currentItem.value || !showModal.value) {
-        fillTargets(item); // If not already in edit mode, open the modal first
-        return;
-    }
-
-    // Prepare data for saving
-    const targets = [
-        {
-            kinerja_fisik: parseFloat(String(targetData.value.tw1.kinerja_fisik)) || 0,
-            keuangan: targetData.value.tw1.keuangan || 0,
-        },
-        {
-            kinerja_fisik: parseFloat(String(targetData.value.tw2.kinerja_fisik)) || 0,
-            keuangan: targetData.value.tw2.keuangan || 0,
-        },
-        {
-            kinerja_fisik: parseFloat(String(targetData.value.tw3.kinerja_fisik)) || 0,
-            keuangan: targetData.value.tw3.keuangan || 0,
-        },
-        {
-            kinerja_fisik: parseFloat(String(targetData.value.tw4.kinerja_fisik)) || 0,
-            keuangan: targetData.value.tw4.keuangan || 0,
-        },
-    ];
-
-    // Determine what kind of item we are saving (bidang urusan, program, kegiatan, or subkegiatan)
-    const itemType = item.kode_nomenklatur.jenis_nomenklatur;
-    const route = getRouteBasedOnItemType(itemType);
-
-    // Send to server
-    router.post(
-        route,
-        {
-            tugas_id: item.id,
-            skpd_id: props.user?.skpd_id || props.tugas?.skpd_id,
-            sumber_dana: 'APBD', // Default sumber dana
-            deskripsi: 'Rencana Awal',
-            tahun: props.tahunAktif?.tahun || new Date().getFullYear(),
-            periode_id: selectedPeriodeId.value,
-            pagu_pokok: calculateItemTotal(item), // Get appropriate total based on item type
-            pagu_parsial: 0,
-            pagu_perubahan: 0,
-            targets: targets,
-        },
-        {
-            onSuccess: () => {
-                alert('Target berhasil disimpan');
-                showModal.value = false;
-                currentItem.value = null;
-            },
-            onError: (errors) => {
-                alert('Gagal menyimpan target: ' + Object.values(errors).join('\n'));
-            },
-        },
-    );
-};
-
-// Helper to calculate total for an item based on its type
-const calculateItemTotal = (item: ItemWithKodeNomenklatur) => {
-    const itemType = item.kode_nomenklatur.jenis_nomenklatur;
-
-    if (itemType === 1) {
-        // Bidang urusan
-        return calculateBidangUrusan.value[item.kode_nomenklatur.id] || 0;
-    } else if (itemType === 2) {
-        // Program
-        return calculateProgram.value[item.kode_nomenklatur.id] || 0;
-    } else if (itemType === 3) {
-        // Kegiatan
-        return calculateKegiatan.value[item.id] || 0;
-    } else if (itemType === 4) {
-        // Subkegiatan
-        // For subkegiatan with specific sumber dana, return the specific amount
-        const fundingData = props.dataAnggaranTerakhir?.[item.id];
-        if (fundingData && fundingData.values) {
-            // Calculate total from rencana_awal, parsial, and budget_change
-            const rencanaAwalTotal = Object.values(fundingData.values.rencana_awal || {}).reduce((sum, val) => sum + (val || 0), 0);
-            const parsialTotal = Object.values(fundingData.values.parsial || {}).reduce((sum, val) => sum + (val || 0), 0);
-            const budgetChangeTotal = Object.values(fundingData.values.budget_change || {}).reduce((sum, val) => sum + (val || 0), 0);
-            return rencanaAwalTotal + parsialTotal + budgetChangeTotal;
-        }
-        return 0;
-    }
-    return 0;
-};
-
-// Helper to determine the API endpoint based on item type
-const getRouteBasedOnItemType = (itemType: number) => {
-    // Using the same endpoint for all types for simplicity
-    return '/rencana-awal/save-monitoring-data';
-};
-
-// Delete item action
-const deleteItem = (item: ItemWithKodeNomenklatur) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus item ini?\n${item.kode_nomenklatur.nomenklatur}`)) {
-        router.delete(`/rencana-awal/delete/${item.id}`, {
-            onSuccess: () => {
-                alert('Item berhasil dihapus');
-            },
-            onError: (errors) => {
-                alert('Gagal menghapus item: ' + Object.values(errors).join('\n'));
-            },
-        });
-    }
-};
-
-// Close modal
-const closeModal = () => {
-    showModal.value = false;
-    currentItem.value = null;
 };
 
 // Handler for period change
@@ -504,459 +397,75 @@ const urusanPemerintahan = computed(() => {
     };
 });
 
-// Add a computed property to transform subkegiatan data to include bidang urusan and multiple rows per sumber dana
-const formattedSubKegiatanData = computed(() => {
-    const result: any[] = [];
+// Use the hierarchical data composable
+const {
+    formattedSubKegiatanData,
+    calculateKegiatan: calculateKegiatanFromComposable,
+    calculateProgram: calculateProgramFromComposable,
+    calculateBidangUrusan: calculateBidangUrusanFromComposable,
+    getUniqueKey,
+} = useRencanaAwalData(props as any, editingTargets);
 
-    if (!props.subkegiatanTugas) {
-        return result;
-    }
+// Use calculate functions from composable
+const calculateKegiatan = calculateKegiatanFromComposable;
 
-    // For each subkegiatan
-    props.subkegiatanTugas.forEach((subKegiatan) => {
-        // Find the parent kegiatan
-        const parentKegiatan = props.kegiatanTugas?.find((k) => k.kode_nomenklatur.id === subKegiatan.kode_nomenklatur.details[0]?.id_kegiatan);
+const calculateProgram = calculateProgramFromComposable;
 
-        if (!parentKegiatan) return;
-
-        // Find the parent program
-        const parentProgram = props.programTugas?.find((p) => p.kode_nomenklatur.id === parentKegiatan.kode_nomenklatur.details[0]?.id_program);
-
-        if (!parentProgram) return;
-
-        // Find the parent bidang urusan
-        const parentBidangUrusan = props.bidangurusanTugas?.find(
-            (bu) => bu.kode_nomenklatur.id === parentProgram.kode_nomenklatur.details[0]?.id_bidang_urusan,
-        );
-
-        if (!parentBidangUrusan) return;
-
-        // Get the funding data for this subkegiatan
-        const fundingData = props.dataAnggaranTerakhir?.[subKegiatan.id];
-
-        // Process monitoring data to extract targets for specific sumber anggaran
-        const processMonitoringData = (subKegiatan: any, sumberDana: string) => {
-            // Initialize an array to hold normalized targets data (one entry per triwulan)
-            const normalizedTargets = [
-                { kinerja_fisik: 0, keuangan: 0 },
-                { kinerja_fisik: 0, keuangan: 0 },
-                { kinerja_fisik: 0, keuangan: 0 },
-                { kinerja_fisik: 0, keuangan: 0 },
-            ];
-
-            // Check if we have targets grouped by sumber anggaran
-            if (subKegiatan.monitoring?.targets_by_sumber_anggaran) {
-                const sumberAnggaranId = getSumberAnggaranId(sumberDana);
-                const targetsBySumber = subKegiatan.monitoring.targets_by_sumber_anggaran[sumberAnggaranId];
-
-                if (targetsBySumber?.targets) {
-                    targetsBySumber.targets.forEach((target: any, index: number) => {
-                        if (index < 4) {
-                            normalizedTargets[index] = {
-                                kinerja_fisik: target.kinerja_fisik || 0,
-                                keuangan: target.keuangan || 0,
-                            };
-                        }
-                    });
-                }
-            }
-            // PERBAIKAN: Hapus fallback yang menyebabkan cross-contamination
-            // Hanya gunakan targets_by_sumber_anggaran yang spesifik
-            // Jika tidak ada target untuk sumber anggaran tertentu, biarkan kosong
-
-            return normalizedTargets;
-        };
-
-        if (fundingData) {
-            // Check each funding source
-            const sources = [
-                { key: 'dak', name: 'DAU' },
-                { key: 'dak_peruntukan', name: 'DAU Peruntukan' },
-                { key: 'dak_fisik', name: 'DAK Fisik' },
-                { key: 'dak_non_fisik', name: 'DAK Non-Fisik' },
-                { key: 'blud', name: 'BLUD' },
-            ];
-
-            // Debug: Log funding data to check parsial and budget change values
-            if (fundingData.values?.parsial && Object.values(fundingData.values.parsial).some((val) => (val || 0) > 0)) {
-                console.log(`Subkegiatan ${subKegiatan.id} has parsial data:`, fundingData.values.parsial);
-            }
-            if (fundingData.values?.budget_change && Object.values(fundingData.values.budget_change).some((val) => (val || 0) > 0)) {
-                console.log(`Subkegiatan ${subKegiatan.id} has budget change data:`, fundingData.values.budget_change);
-            }
-
-            // For each active funding source, create a row
-            let hasActiveSource = false;
-            sources.forEach((source) => {
-                const sourceKey = source.key as keyof typeof fundingData.sumber_anggaran;
-
-                // Check if this source is enabled and has any value (rencana_awal, parsial, or budget_change)
-                const rencanaAwalValue = fundingData.values?.rencana_awal?.[source.key as keyof typeof fundingData.values.rencana_awal] || 0;
-                const parsialValue = fundingData.values?.parsial?.[source.key as keyof typeof fundingData.values.parsial] || 0;
-                const budgetChangeValue = fundingData.values?.budget_change?.[source.key as keyof typeof fundingData.values.budget_change] || 0;
-
-                if (fundingData.sumber_anggaran[sourceKey] && (rencanaAwalValue > 0 || parsialValue > 0 || budgetChangeValue > 0)) {
-                    hasActiveSource = true;
-
-                    // Get normalized targets for this specific sumber dana
-                    const targets = processMonitoringData(subKegiatan, source.name);
-
-                    result.push({
-                        id: `${subKegiatan.id}-${source.key}`,
-                        subKegiatan: subKegiatan,
-                        kegiatan: parentKegiatan,
-                        program: parentProgram,
-                        bidangUrusan: parentBidangUrusan,
-                        sumberDana: source.name,
-                        pokok: rencanaAwalValue,
-                        parsial: parsialValue,
-                        perubahan: budgetChangeValue,
-                        normalizedTargets: targets,
-                    });
-                }
-            });
-
-            // If no active sources are found but funding data exists, create a default row
-            if (!hasActiveSource) {
-                // Get normalized targets for default case
-                const targets = processMonitoringData(subKegiatan, 'Belum diisi');
-
-                // Calculate totals from all data types
-                const totalRencanaAwal = fundingData.values?.rencana_awal
-                    ? Object.values(fundingData.values.rencana_awal).reduce((sum, val) => sum + (val || 0), 0)
-                    : 0;
-                const totalParsial = fundingData.values?.parsial
-                    ? Object.values(fundingData.values.parsial).reduce((sum, val) => sum + (val || 0), 0)
-                    : 0;
-                const totalBudgetChange = fundingData.values?.budget_change
-                    ? Object.values(fundingData.values.budget_change).reduce((sum, val) => sum + (val || 0), 0)
-                    : 0;
-
-                result.push({
-                    id: `${subKegiatan.id}-default`,
-                    subKegiatan: subKegiatan,
-                    kegiatan: parentKegiatan,
-                    program: parentProgram,
-                    bidangUrusan: parentBidangUrusan,
-                    sumberDana: 'Belum diisi',
-                    pokok: totalRencanaAwal,
-                    parsial: totalParsial,
-                    perubahan: totalBudgetChange,
-                    normalizedTargets: targets,
-                });
-            }
-        }
-        // If no funding data but has monitoring, create at least one row for this subkegiatan
-        else if (subKegiatan.monitoring) {
-            const sumberDana = subKegiatan.monitoring.sumber_dana || 'Multiple';
-            // Get normalized targets for this sumber dana
-            const targets = processMonitoringData(subKegiatan, sumberDana);
-
-            result.push({
-                id: `${subKegiatan.id}-default`,
-                subKegiatan: subKegiatan,
-                kegiatan: parentKegiatan,
-                program: parentProgram,
-                bidangUrusan: parentBidangUrusan,
-                sumberDana: sumberDana,
-                pokok: subKegiatan.monitoring.pagu_pokok || 0,
-                parsial: subKegiatan.monitoring.pagu_parsial || 0,
-                perubahan: subKegiatan.monitoring.pagu_perubahan || 0,
-                normalizedTargets: targets,
-            });
-        }
-        // If no funding data and no monitoring, still show the row with zero values
-        else {
-            result.push({
-                id: `${subKegiatan.id}-default`,
-                subKegiatan: subKegiatan,
-                kegiatan: parentKegiatan,
-                program: parentProgram,
-                bidangUrusan: parentBidangUrusan,
-                sumberDana: 'Belum diisi',
-                pokok: 0,
-                parsial: 0,
-                perubahan: 0,
-                normalizedTargets: [
-                    { kinerja_fisik: 0, keuangan: 0 },
-                    { kinerja_fisik: 0, keuangan: 0 },
-                    { kinerja_fisik: 0, keuangan: 0 },
-                    { kinerja_fisik: 0, keuangan: 0 },
-                ],
-            });
-        }
-    });
-
-    return result;
-});
-
-// Add computed properties to calculate the sums
-const calculateKegiatan = computed<Record<number, any>>(() => {
-    const kegiatanSums: Record<string, any> = {};
-
-    // First, calculate sums for each kegiatan based on its subkegiatans
-    formattedSubKegiatanData.value.forEach((item) => {
-        const kegiatanId = item.kegiatan.id.toString();
-        if (!kegiatanSums[kegiatanId]) {
-            kegiatanSums[kegiatanId] = {
-                pokok: 0,
-                parsial: 0,
-                perubahan: 0,
-                // Targets for each triwulan (fisik and keuangan)
-                targets: [
-                    { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 1
-                    { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 2
-                    { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 3
-                    { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 4
-                ],
-            };
-        }
-
-        // Sum the pagu values (total budget for this item)
-        kegiatanSums[kegiatanId].pokok += item.pokok || 0;
-        kegiatanSums[kegiatanId].parsial += item.parsial || 0;
-        kegiatanSums[kegiatanId].perubahan += item.perubahan || 0;
-
-        // Use the normalizedTargets we prepared
-        if (item.normalizedTargets) {
-            item.normalizedTargets.forEach((target: any, index: number) => {
-                if (index < 4) {
-                    // Add kinerja_fisik (we'll calculate average later)
-                    if (target.kinerja_fisik > 0) {
-                        kegiatanSums[kegiatanId].targets[index].kinerja_fisik += target.kinerja_fisik;
-                        kegiatanSums[kegiatanId].targets[index].count++;
-                        kegiatanSums[kegiatanId].targets[index].has_values = true;
-                    }
-
-                    // Sum keuangan values - use the actual keuangan value from each target
-                    if (target.keuangan > 0) {
-                        kegiatanSums[kegiatanId].targets[index].keuangan += target.keuangan;
-                        kegiatanSums[kegiatanId].targets[index].has_values = true;
-                    }
-                }
-            });
-        }
-
-        // Also check editingTargets for any values being edited
-        const uniqueKey = getUniqueKey(item.subKegiatan, item.sumberDana);
-        if (editingTargets.value[uniqueKey]) {
-            editingTargets.value[uniqueKey].forEach((target: any, index: number) => {
-                if (index < 4) {
-                    // Add kinerja_fisik from editing values if they exist
-                    const kinerja_fisik = parseFloat(target.kinerja_fisik);
-                    if (!isNaN(kinerja_fisik) && kinerja_fisik > 0) {
-                        kegiatanSums[kegiatanId].targets[index].kinerja_fisik += kinerja_fisik;
-                        kegiatanSums[kegiatanId].targets[index].count++;
-                        kegiatanSums[kegiatanId].targets[index].has_values = true;
-                    }
-
-                    // For edited values, we don't immediately add to keuangan since they're not yet saved
-                    // The refreshData function will handle reloading the calculations after save
-                }
-            });
-        }
-    });
-
-    // Calculate averages for kinerja_fisik
-    Object.keys(kegiatanSums).forEach((kegiatanId) => {
-        const kegiatan = kegiatanSums[kegiatanId];
-
-        // Calculate average for each triwulan's kinerja_fisik
-        kegiatan.targets.forEach((target: any) => {
-            if (target.count > 0) {
-                target.kinerja_fisik = target.kinerja_fisik / target.count;
-            }
-        });
-    });
-
-    // Convert to numeric keys for the return value
-    const result: Record<number, any> = {};
-    Object.keys(kegiatanSums).forEach((key) => {
-        result[parseInt(key)] = kegiatanSums[key];
-    });
-
-    return result;
-});
-
-const calculateProgram = computed<Record<number, any>>(() => {
-    const programSums: Record<string, any> = {};
-
-    // Calculate sums for each program based on its kegiatans
-    props.kegiatanTugas?.forEach((kegiatan) => {
-        const parentProgramId = kegiatan.kode_nomenklatur.details[0]?.id_program;
-        if (parentProgramId) {
-            const programId = parentProgramId.toString();
-            if (!programSums[programId]) {
-                programSums[programId] = {
-                    pokok: 0,
-                    parsial: 0,
-                    perubahan: 0,
-                    // Targets for each triwulan (fisik and keuangan)
-                    targets: [
-                        { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 1
-                        { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 2
-                        { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 3
-                        { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 4
-                    ],
-                };
-            }
-
-            // Get the calculated values for this kegiatan
-            const kegiatanData = calculateKegiatan.value[kegiatan.id];
-            if (kegiatanData) {
-                // Sum the pagu values
-                programSums[programId].pokok += kegiatanData.pokok || 0;
-                programSums[programId].parsial += kegiatanData.parsial || 0;
-                programSums[programId].perubahan += kegiatanData.perubahan || 0;
-
-                // Process each triwulan's targets
-                kegiatanData.targets.forEach((target: any, index: number) => {
-                    // Add kinerja_fisik (we'll calculate average later)
-                    if (target.has_values && target.kinerja_fisik > 0) {
-                        programSums[programId].targets[index].kinerja_fisik += target.kinerja_fisik;
-                        programSums[programId].targets[index].count++;
-                        programSums[programId].targets[index].has_values = true;
-                    }
-
-                    // Sum the keuangan values from kegiatan targets
-                    if (target.has_values && target.keuangan > 0) {
-                        programSums[programId].targets[index].keuangan += target.keuangan;
-                        programSums[programId].targets[index].has_values = true;
-                    }
-                });
-            }
-        }
-    });
-
-    // Calculate averages for kinerja_fisik
-    Object.keys(programSums).forEach((programId) => {
-        const program = programSums[programId];
-
-        // Calculate average for each triwulan's kinerja_fisik
-        program.targets.forEach((target: any) => {
-            if (target.count > 0) {
-                target.kinerja_fisik = target.kinerja_fisik / target.count;
-            }
-        });
-    });
-
-    // Convert to numeric keys for the return value
-    const result: Record<number, any> = {};
-    Object.keys(programSums).forEach((key) => {
-        result[parseInt(key)] = programSums[key];
-    });
-
-    return result;
-});
-
-const calculateBidangUrusan = computed<Record<number, any>>(() => {
-    const bidangUrusanSums: Record<string, any> = {};
-
-    // Calculate sums for each bidang urusan based on its programs
-    props.programTugas?.forEach((program) => {
-        const parentBidangUrusanId = program.kode_nomenklatur.details[0]?.id_bidang_urusan;
-        if (parentBidangUrusanId) {
-            // Find the bidang urusan with this ID
-            const bidangUrusan = props.bidangurusanTugas?.find((bu) => bu.kode_nomenklatur.id === parentBidangUrusanId);
-
-            if (bidangUrusan) {
-                const bidangUrusanNomenklaturId = bidangUrusan.kode_nomenklatur.id.toString();
-                if (!bidangUrusanSums[bidangUrusanNomenklaturId]) {
-                    bidangUrusanSums[bidangUrusanNomenklaturId] = {
-                        pokok: 0,
-                        parsial: 0,
-                        perubahan: 0,
-                        // Targets for each triwulan (fisik and keuangan)
-                        targets: [
-                            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 1
-                            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 2
-                            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 3
-                            { kinerja_fisik: 0, keuangan: 0, count: 0, has_values: false }, // Triwulan 4
-                        ],
-                    };
-                }
-
-                // Get the calculated values for this program
-                const programData = calculateProgram.value[program.kode_nomenklatur.id];
-                if (programData) {
-                    // Sum the pagu values
-                    bidangUrusanSums[bidangUrusanNomenklaturId].pokok += programData.pokok || 0;
-                    bidangUrusanSums[bidangUrusanNomenklaturId].parsial += programData.parsial || 0;
-                    bidangUrusanSums[bidangUrusanNomenklaturId].perubahan += programData.perubahan || 0;
-
-                    // Process each triwulan's targets
-                    programData.targets.forEach((target: any, index: number) => {
-                        // Add kinerja_fisik (we'll calculate average later)
-                        if (target.has_values && target.kinerja_fisik > 0) {
-                            bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].kinerja_fisik += target.kinerja_fisik;
-                            bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].count++;
-                            bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].has_values = true;
-                        }
-
-                        // Sum the keuangan values from program targets
-                        if (target.has_values && target.keuangan > 0) {
-                            bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].keuangan += target.keuangan;
-                            bidangUrusanSums[bidangUrusanNomenklaturId].targets[index].has_values = true;
-                        }
-                    });
-                }
-            }
-        }
-    });
-
-    // Calculate averages for kinerja_fisik
-    Object.keys(bidangUrusanSums).forEach((bidangUrusanId) => {
-        const bidangUrusan = bidangUrusanSums[bidangUrusanId];
-
-        // Calculate average for each triwulan's kinerja_fisik
-        bidangUrusan.targets.forEach((target: any) => {
-            if (target.count > 0) {
-                target.kinerja_fisik = target.kinerja_fisik / target.count;
-            }
-        });
-    });
-
-    // Convert to numeric keys for the return value
-    const result: Record<number, any> = {};
-    Object.keys(bidangUrusanSums).forEach((key) => {
-        result[parseInt(key)] = bidangUrusanSums[key];
-    });
-
-    return result;
-});
+const calculateBidangUrusan = calculateBidangUrusanFromComposable;
 
 // Helper untuk inisialisasi data target berdasarkan sumber anggaran
 function getInitialTargets(subKegiatan: any, sumberDana?: string) {
+    console.log('getInitialTargets called for:', {
+        subKegiatanId: subKegiatan.id,
+        sumberDana,
+        hasMonitoring: !!subKegiatan.monitoring,
+        monitoringType: Array.isArray(subKegiatan.monitoring) ? 'array' : typeof subKegiatan.monitoring,
+        monitoringLength: Array.isArray(subKegiatan.monitoring) ? subKegiatan.monitoring.length : 'not array',
+    });
+
+    // PERBAIKAN: Akses monitoring yang benar - monitoring adalah collection/array
+    let monitoring = null;
+    if (Array.isArray(subKegiatan.monitoring) && subKegiatan.monitoring.length > 0) {
+        monitoring = subKegiatan.monitoring[0]; // Ambil monitoring pertama dari collection
+    } else if (subKegiatan.monitoring && !Array.isArray(subKegiatan.monitoring)) {
+        monitoring = subKegiatan.monitoring; // Jika bukan array, gunakan langsung
+    }
+
+    console.log('Monitoring object:', {
+        monitoring,
+        hasTargetsBySumber: !!monitoring?.targets_by_sumber_anggaran,
+        targetsBySumberKeys: monitoring?.targets_by_sumber_anggaran ? Object.keys(monitoring.targets_by_sumber_anggaran) : [],
+    });
+
     // Jika ada sumberDana, cari target spesifik untuk sumber anggaran tersebut
-    if (sumberDana && subKegiatan.monitoring?.targets_by_sumber_anggaran) {
+    if (sumberDana && monitoring?.targets_by_sumber_anggaran) {
         const sumberAnggaranId = getSumberAnggaranId(sumberDana);
-        const targetsBySumber = subKegiatan.monitoring.targets_by_sumber_anggaran[sumberAnggaranId];
+        const targetsBySumber = monitoring.targets_by_sumber_anggaran[sumberAnggaranId];
+
+        console.log('Found targets by sumber:', {
+            sumberAnggaranId,
+            targetsBySumber,
+            hasTargets: !!targetsBySumber?.targets,
+        });
 
         if (targetsBySumber?.targets) {
-            return [0, 1, 2, 3].map((i) => ({
+            const result = [0, 1, 2, 3].map((i) => ({
                 kinerja_fisik: targetsBySumber.targets[i]?.kinerja_fisik || '',
                 keuangan: targetsBySumber.targets[i]?.keuangan || '',
             }));
+            console.log('Returning specific targets:', result);
+            return result;
         }
     }
 
     // Fallback ke targets umum atau kosong
-    const targets = subKegiatan.monitoring?.targets || subKegiatan.targets || [];
-    return [0, 1, 2, 3].map((i) => ({
+    const targets = monitoring?.targets || subKegiatan.targets || [];
+    const result = [0, 1, 2, 3].map((i) => ({
         kinerja_fisik: targets[i]?.kinerja_fisik || targets[i]?.kinerjaFisik || '',
         keuangan: targets[i]?.keuangan || '',
     }));
-}
-
-// Helper untuk key unik per baris subkegiatan (id + sumberDana)
-function getUniqueKey(subKegiatan: any, sumberDana: string) {
-    return `${subKegiatan.id}-${sumberDana}`;
-}
-
-// Fungsi untuk mulai edit
-function startEdit(subKegiatan: any, sumberDana: string) {
-    const uniqueKey = getUniqueKey(subKegiatan, sumberDana);
-    editingTargets.value[uniqueKey] = getInitialTargets(subKegiatan, sumberDana);
+    console.log('Returning fallback targets:', result);
+    return result;
 }
 
 // Tambahkan method untuk handle input target
@@ -985,6 +494,26 @@ function onInputTarget(uniqueKey: string, idx: number, field: 'kinerja_fisik' | 
         if (errorRow.value === uniqueKey.split('-')[0]) {
             errorRow.value = null;
         }
+
+        // PERBAIKAN: Tambahkan visual feedback untuk perubahan
+        updatingRow.value = uniqueKey;
+
+        // PERBAIKAN: Immediate UI update - langsung update tampilan tanpa delay
+        // Ini memberikan feedback instant ke user
+        editingTargets.value = { ...editingTargets.value };
+
+        // PERBAIKAN: Debounced update untuk optimasi performa
+        debouncedUIUpdate(() => {
+            // Force Vue reactivity untuk memastikan semua computed properties ter-update
+            editingTargets.value = { ...editingTargets.value };
+
+            // Clear updating indicator setelah update
+            setTimeout(() => {
+                if (updatingRow.value === uniqueKey) {
+                    updatingRow.value = null;
+                }
+            }, 200); // Kurangi delay untuk response yang lebih cepat
+        }, 50); // Delay lebih pendek untuk responsivitas yang lebih baik
     }
 }
 
@@ -992,8 +521,6 @@ function onInputTarget(uniqueKey: string, idx: number, field: 'kinerja_fisik' | 
 function getSumberAnggaranId(sumberDanaNama: string): number {
     // Lowercase dan normalisasi nama sumber dana
     const normalizedName = sumberDanaNama?.toLowerCase().trim() || 'dau';
-
-    console.log('Mencari ID untuk sumber dana:', normalizedName);
 
     // Mapping nama sumber dana ke ID dengan lebih banyak kemungkinan
     const sumberDanaMapping: Record<string, number> = {
@@ -1013,7 +540,6 @@ function getSumberAnggaranId(sumberDanaNama: string): number {
     };
 
     const result = sumberDanaMapping[normalizedName] || 1;
-    console.log('Ditemukan ID untuk sumber dana:', result);
     return result; // Default ke ID 1 jika tidak ditemukan
 }
 
@@ -1090,8 +616,8 @@ async function saveTargets(subKegiatan: any, sumberDana: string) {
 
         console.log('Mengirim data:', payload);
 
-        // PENTING: Cadangkan semua state editing sebelum API call
-        const allEditingTargetsBackup = JSON.parse(JSON.stringify(editingTargets.value));
+        // PENTING: Cadangkan semua state editing sebelum API call (untuk debugging jika diperlukan)
+        // const allEditingTargetsBackup = JSON.parse(JSON.stringify(editingTargets.value));
 
         // Simpan data semua baris subkegiatan yang ada sebelum menyimpan
         const allRowsForThisSubkegiatan = formattedSubKegiatanData.value.filter((item) => item.subKegiatan.id === subkegiatanId);
@@ -1114,11 +640,33 @@ async function saveTargets(subKegiatan: any, sumberDana: string) {
         router.post('/rencanaawal/save-target', payload, {
             preserveScroll: true,
             preserveState: false,
-            onSuccess: () => {
+            onSuccess: async () => {
                 // PERBAIKAN: Gunakan unique key untuk success state
                 successRow.value = uniqueKey;
-                // Hapus mode editing untuk baris ini
-                delete editingTargets.value[uniqueKey];
+
+                // 📝 Log aktivitas rencana awal
+                const totalKinerjaFisik = processedTargets.reduce((sum: number, target: any) => sum + target.kinerja_fisik, 0) / processedTargets.length;
+                const totalKeuangan = processedTargets.reduce((sum: number, target: any) => sum + target.keuangan, 0);
+
+                await ActivityLogger.logRencanaAwal('Menyimpan target rencana awal', {
+                    subkegiatan_id: subKegiatan.id,
+                    subkegiatan_name: subKegiatan.kode_nomenklatur?.nomenklatur || 'Sub Kegiatan',
+                    sumber_dana: sumberDana,
+                    sumber_anggaran_id: sumberAnggaranId,
+                    targets: processedTargets,
+                    avg_kinerja_fisik: totalKinerjaFisik,
+                    total_keuangan: totalKeuangan,
+                    periode_id: selectedPeriodeId.value,
+                    tahun: props.tahunAktif?.tahun,
+                });
+
+                // PERBAIKAN: Immediate update - langsung update editingTargets dengan data yang baru disimpan
+                // Ini memberikan feedback langsung ke user tanpa menunggu reload
+                const savedTargets = processedTargets.map((target: any) => ({
+                    kinerja_fisik: target.kinerja_fisik,
+                    keuangan: target.keuangan,
+                }));
+                editingTargets.value[uniqueKey] = savedTargets;
 
                 // Set timeout untuk menghilangkan success indicator
                 setTimeout(() => {
@@ -1126,6 +674,38 @@ async function saveTargets(subKegiatan: any, sumberDana: string) {
                         successRow.value = null;
                     }
                 }, 3000);
+
+                // PERBAIKAN: Refresh data dari server untuk sinkronisasi
+                // Delay lebih pendek untuk response yang lebih cepat
+                setTimeout(() => {
+                    if (props.tugas?.id) {
+                        router.reload({
+                            only: ['subkegiatanTugas', 'dataAnggaranTerakhir'],
+                            onSuccess: () => {
+                                // 2. Setelah reload berhasil, pastikan editingTargets ter-update dengan data server
+                                nextTick(() => {
+                                    // PERBAIKAN: Simpan data yang baru disimpan sebelum ensureEditingTargets
+                                    const currentSavedData = editingTargets.value[uniqueKey];
+
+                                    ensureEditingTargets();
+
+                                    // PERBAIKAN: Jika ada data yang baru disimpan, pertahankan data tersebut
+                                    // Jangan timpa dengan data lama dari getInitialTargets
+                                    if (currentSavedData && currentSavedData.length > 0) {
+                                        const hasRecentData = currentSavedData.some(
+                                            (target: any) => target.kinerja_fisik !== '' || target.keuangan !== '',
+                                        );
+                                        if (hasRecentData) {
+                                            editingTargets.value[uniqueKey] = currentSavedData;
+                                        }
+                                    }
+
+                                    console.log('Data after reload and preserve:', editingTargets.value[uniqueKey]);
+                                });
+                            },
+                        });
+                    }
+                }, 50); // Kurangi delay menjadi 50ms untuk response yang lebih cepat
             },
             onError: (err: any) => {
                 console.error('Error saat menyimpan target:', err);
@@ -1159,130 +739,55 @@ async function saveTargets(subKegiatan: any, sumberDana: string) {
     }
 }
 
-// Helper function untuk normalisasi key sumber anggaran
-function normalizeKey(name: string): string {
-    if (!name) return 'dau';
+// Function untuk menyimpan state editing saat navigasi
+function saveEditingState() {
+    // PERBAIKAN: Simpan SEMUA data editingTargets, bukan hanya yang dimodifikasi
+    // Ini memastikan data dari database juga tersimpan
+    const savedEditingTargets: Record<string, any> = {};
 
-    const key = name.toLowerCase().replace(/\s+/g, '_');
+    Object.keys(editingTargets.value).forEach((key) => {
+        const targets = editingTargets.value[key];
+        if (targets && Array.isArray(targets)) {
+            savedEditingTargets[key] = JSON.parse(JSON.stringify(targets)); // Deep copy
+        }
+    });
 
-    // Mapping normalisasi
-    const mapping: Record<string, string> = {
-        dau: 'dau',
-        dau_peruntukan: 'dau_peruntukan',
-        dak: 'dak',
-        dak_fisik: 'dak_fisik',
-        dak_non_fisik: 'dak_non_fisik',
-        'dak_non-fisik': 'dak_non_fisik',
-        blud: 'blud',
-        apbd: 'apbd',
+    // PERBAIKAN: Simpan juga ke localStorage sebagai backup
+    const backupData = {
+        editingTargets: savedEditingTargets,
+        timestamp: Date.now(),
+        tugasId: props.tugas?.id,
+        tahunId: selectedTahunId.value, // Simpan juga tahun yang sedang aktif
     };
+    localStorage.setItem('rencana_awal_editing_backup', JSON.stringify(backupData));
 
-    return mapping[key] || key;
+    console.log('Saving editing state:', savedEditingTargets);
+
+    // Kembalikan semua data editing yang disimpan
+    return {
+        editingTargets: savedEditingTargets,
+    };
 }
 
-// Fungsi hapus target
-async function deleteTargets(subKegiatan: any) {
-    loadingRow.value = subKegiatan.id;
-    errorRow.value = null;
-    successRow.value = null;
-    try {
-        // Cari sumberDana dari formattedSubKegiatanData jika tidak ada di subKegiatan
-        let sumberDana = subKegiatan.sumberDana;
+// Function untuk restore state editing setelah navigasi
+function restoreEditingState(savedState: any) {
+    if (savedState && savedState.editingTargets) {
+        console.log('Restoring editing state:', savedState.editingTargets);
 
-        // Jika sumberDana tidak ada di subKegiatan, cari dari formattedSubKegiatanData
-        if (!sumberDana) {
-            const matchingItem = formattedSubKegiatanData.value.find((item) => item.subKegiatan.id === subKegiatan.id);
-            if (matchingItem) {
-                sumberDana = matchingItem.sumberDana;
-            } else {
-                // Default fallback jika tidak ditemukan
-                sumberDana = 'APBD';
+        // PERBAIKAN: Restore semua data yang tersimpan
+        // Ini memastikan baik data dari database maupun input user ter-restore
+        Object.keys(savedState.editingTargets).forEach((key) => {
+            const savedData = savedState.editingTargets[key];
+            if (savedData && Array.isArray(savedData)) {
+                editingTargets.value[key] = JSON.parse(JSON.stringify(savedData));
             }
-        }
-
-        console.log('Sumber dana untuk hapus:', sumberDana);
-        const sumberAnggaranId = getSumberAnggaranId(sumberDana);
-        console.log('ID sumber anggaran untuk hapus:', sumberAnggaranId);
-
-        const uniqueKey = getUniqueKey(subKegiatan, sumberDana);
-
-        // Ask for confirmation
-        if (!confirm('Apakah Anda yakin ingin menghapus target untuk sub kegiatan ini?')) {
-            loadingRow.value = null;
-            return;
-        }
-
-        // Cari monitoring_anggaran_id jika tersedia
-        const monitoringAnggaranId = subKegiatan.monitoring?.monitoring_anggaran_id || 0;
-
-        const payload = {
-            skpd_tugas_id: subKegiatan.id,
-            tahun: props.tahunAktif?.tahun,
-            // PERBAIKAN: Hapus deskripsi karena tidak diperlukan di RencanaAwal
-            // deskripsi: 'Rencana Awal', // Field ini hanya untuk TriwulanController
-            sumber_anggaran_id: sumberAnggaranId,
-            periode_id: selectedPeriodeId.value,
-            monitoring_anggaran_id: monitoringAnggaranId,
-        };
-
-        console.log('Menghapus data target:', payload);
-
-        await router.post(`/rencanaawal/delete-target`, payload, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: (response) => {
-                console.log('Response hapus sukses:', response);
-                successRow.value = subKegiatan.id;
-
-                // Reset form values to empty
-                if (editingTargets.value[uniqueKey]) {
-                    editingTargets.value[uniqueKey] = [0, 1, 2, 3].map((i) => ({
-                        kinerja_fisik: '',
-                        keuangan: '',
-                    }));
-                }
-
-                // Kosongkan monitoring/targets di frontend
-                if (subKegiatan.monitoring) {
-                    subKegiatan.monitoring.targets = [];
-                }
-
-                // Show temporary success message
-                setTimeout(() => {
-                    if (successRow.value === subKegiatan.id) {
-                        successRow.value = null;
-                    }
-                }, 3000);
-
-                // Reload the page after a slight delay to refresh data
-                setTimeout(() => {
-                    if (props.user?.id) {
-                        router.reload({ only: ['subkegiatanTugas', 'dataAnggaranTerakhir'] });
-                    }
-                }, 500);
-            },
-            onError: (err) => {
-                console.error('Error saat hapus:', err);
-                errorRow.value = subKegiatan.id;
-            },
-            onFinish: () => {
-                loadingRow.value = null;
-            },
         });
-    } catch (e) {
-        console.error('Exception saat hapus:', e);
-        errorRow.value = subKegiatan.id;
-        loadingRow.value = null;
+
+        // Force reactivity update
+        editingTargets.value = { ...editingTargets.value };
+
+        console.log('Editing targets after restore:', editingTargets.value);
     }
-}
-
-// Function to handle navigation
-function goToMonitoringDetail() {
-    router.visit(`/rencana-awal/${props.user?.id}`);
-}
-
-function goToCreate() {
-    router.visit('/rencanaawal/create');
 }
 
 // Fungsi untuk mempertahankan data semua sumber dana
@@ -1311,21 +816,139 @@ function preserveAllFundingSources(subkegiatanId: number) {
 
 // Update ensureEditingTargets agar pakai key unik
 function ensureEditingTargets() {
+    console.log('ensureEditingTargets called');
     const allRows = new Set<string>();
     if (formattedSubKegiatanData.value) {
+        console.log('formattedSubKegiatanData.value exists, processing items:', formattedSubKegiatanData.value.length);
         formattedSubKegiatanData.value.forEach((item: any) => {
             const uniqueKey = getUniqueKey(item.subKegiatan, item.sumberDana);
             allRows.add(uniqueKey);
+
+            console.log('Processing item:', {
+                uniqueKey,
+                subKegiatanId: item.subKegiatan.id,
+                sumberDana: item.sumberDana,
+                hasExistingData: !!editingTargets.value[uniqueKey],
+            });
+
+            // PERBAIKAN: Hanya update jika belum ada data atau data kosong
+            // Ini memastikan data yang sudah diinput user tidak tertimpa
             if (!editingTargets.value[uniqueKey]) {
-                editingTargets.value[uniqueKey] = getInitialTargets(item.subKegiatan, item.sumberDana);
+                const initialTargets = getInitialTargets(item.subKegiatan, item.sumberDana);
+                editingTargets.value[uniqueKey] = initialTargets;
+                console.log('Set initial targets for', uniqueKey, ':', initialTargets);
+            } else {
+                // Jika sudah ada data, cek apakah perlu update dengan data server yang lebih baru
+                const currentData = editingTargets.value[uniqueKey];
+                const serverData = getInitialTargets(item.subKegiatan, item.sumberDana);
+
+                // Hanya update jika data server memiliki nilai yang tidak ada di current data
+                const hasUserInput = currentData.some((target: any) => target.kinerja_fisik !== '' || target.keuangan !== '');
+
+                console.log('Existing data check:', {
+                    uniqueKey,
+                    hasUserInput,
+                    currentData,
+                    serverData,
+                });
+
+                if (!hasUserInput) {
+                    // Jika tidak ada input user, gunakan data server
+                    editingTargets.value[uniqueKey] = serverData;
+                    console.log('Updated with server data for', uniqueKey, ':', serverData);
+                }
             }
         });
+    } else {
+        console.log('formattedSubKegiatanData.value is empty or undefined');
+    }
+
+    // PERBAIKAN: Hapus editingTargets yang tidak lagi ada di data
+    Object.keys(editingTargets.value).forEach((key) => {
+        if (!allRows.has(key)) {
+            delete editingTargets.value[key];
+        }
+    });
+}
+
+// Function untuk restore data dari localStorage
+function restoreFromLocalStorage() {
+    try {
+        const backupData = localStorage.getItem('rencana_awal_editing_backup');
+        if (backupData) {
+            const parsed = JSON.parse(backupData);
+            // Cek apakah backup masih valid (tidak lebih dari 1 jam dan untuk tugas yang sama)
+            const isValid =
+                parsed.timestamp &&
+                Date.now() - parsed.timestamp < 3600000 && // 1 jam
+                parsed.tugasId === props.tugas?.id;
+
+            if (isValid && parsed.editingTargets) {
+                // Restore data yang ada di localStorage
+                Object.keys(parsed.editingTargets).forEach((key) => {
+                    const savedData = parsed.editingTargets[key];
+                    const hasUserInput = savedData.some((target: any) => target.kinerja_fisik !== '' || target.keuangan !== '');
+
+                    if (hasUserInput) {
+                        editingTargets.value[key] = savedData;
+                    }
+                });
+
+                // Hapus backup setelah digunakan
+                localStorage.removeItem('rencana_awal_editing_backup');
+            }
+        }
+    } catch (error) {
+        console.error('Error restoring from localStorage:', error);
+        // Hapus backup yang corrupt
+        localStorage.removeItem('rencana_awal_editing_backup');
     }
 }
 
-onMounted(ensureEditingTargets);
+onMounted(() => {
+    ensureEditingTargets();
+    // PERBAIKAN: Restore data dari localStorage jika ada
+    restoreFromLocalStorage();
+});
 
-watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensureEditingTargets, { immediate: true, deep: true });
+// PERBAIKAN: Watch untuk memastikan editingTargets selalu ter-update saat data berubah
+watch(
+    [() => props.subkegiatanTugas, () => formattedSubKegiatanData.value],
+    () => {
+        nextTick(() => {
+            ensureEditingTargets();
+        });
+    },
+    { immediate: true, deep: true },
+);
+
+// PERBAIKAN: Watch khusus untuk tahun aktif - reload editingTargets saat tahun berubah
+watch(
+    () => props.tahunAktif,
+    () => {
+        nextTick(() => {
+            ensureEditingTargets();
+        });
+    },
+    { immediate: true, deep: true },
+);
+
+// Handle PDF download dengan logging
+const handlePDFDownload = async () => {
+    if (!props.tugas?.id) return;
+
+    // 📝 Log aktivitas download PDF
+    await ActivityLogger.logPDFDownload('Rencana Awal', {
+        tugas_id: props.tugas.id,
+        skpd_name: props.skpd?.nama_dinas || props.user?.nama_skpd,
+        tahun: props.tahunAktif?.tahun,
+        periode_id: selectedPeriodeId.value,
+        total_subkegiatan: formattedSubKegiatanData.value?.length || 0,
+    });
+
+    // Lakukan download
+    router.visit(route('pdf.rencana-awal.form', props.tugas.id));
+};
 </script>
 
 <template>
@@ -1359,15 +982,37 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                         </div>
                     </div>
 
-                    <!-- Add period selector and PDF button -->
+                    <!-- Add year selector and PDF button -->
                     <div class="flex items-center gap-4">
+                        <!-- Dropdown Tahun -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-gray-700">Pilih Periode:</label>
+                            <select
+                                :value="selectedTahunId"
+                                @change="handleTahunChange"
+                                class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                            >
+                                <option value="">Pilih Tahun</option>
+                                <option v-for="tahun in allTahun" :key="tahun.id" :value="tahun.id">
+                                    {{ tahun.tahun }} {{ tahun.status === 1 ? '(Aktif)' : '' }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-blue-600">Tahun Anggaran</span>
+                            <span class="rounded-md bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                                {{ tahunAktif?.tahun || 'Belum ada' }}
+                            </span>
+                        </div>
+
                         <div class="flex items-center">
-                            <label for="periode-selector" class="mr-2 font-medium text-gray-700">Pilih Periode:</label>
                             <select
                                 id="periode-selector"
                                 class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 @change="handlePeriodeChange"
                                 :value="selectedPeriodeId"
+                                style="display: none"
                             >
                                 <option value="">Semua Periode</option>
                                 <option
@@ -1381,28 +1026,12 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                             </select>
                         </div>
 
-                        <!-- PDF Download Button -->
-                        <button
-                            v-if="props.tugas?.id"
-                            @click="router.visit(route('pdf.rencana-awal.form', props.tugas.id))"
-                            class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
-                            title="Download PDF Rencana Awal"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                                />
-                            </svg>
-                            <span class="text-sm font-medium">Download PDF</span>
-                        </button>
 
-                        <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+
+                        <!-- <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
                             <span class="text-xs font-medium text-gray-500">Tahun Anggaran</span>
                             <div class="text-center text-lg font-bold text-blue-600">{{ props.tahunAktif?.tahun || 'Belum ada' }}</div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -1460,7 +1089,7 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                         <p class="text-lg font-semibold text-gray-500">
                             {{ props.user?.name || 'Tidak tersedia' }}
                         </p>
-                        <p class="font-mono text-sm text-gray-500">NIP: {{ props.user?.user_detail?.nip || props.user?.nip || '-' }}</p>
+                        <p class="font-mono text-sm text-gray-500">NIP: {{ props.user?.nip || '-' }}</p>
                     </div>
                 </div>
             </div>
@@ -1468,117 +1097,239 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
             <!-- Program table with targets -->
             <div class="overflow-hidden rounded-lg bg-white shadow-md">
                 <div class="border-b border-gray-200 bg-gray-50 px-4 py-3">
-                    <h2 class="text-lg font-semibold text-gray-600">Detail Rencana Kinerja</h2>
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-600">Detail Rencana Kinerja</h2>
+                        
+                        <!-- Export Buttons -->
+                        <div v-if="props.tugas?.id" class="flex items-center gap-2">
+                            <!-- PDF Download Button -->
+                            <button
+                                @click="handlePDFDownload"
+                                class="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-white transition-colors hover:bg-red-700"
+                                title="Download PDF Rencana Awal"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                    />
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M16 7h-4v4"
+                                    />
+                                </svg>
+                                <span class="text-sm font-medium">PDF</span>
+                            </button>
+
+                        </div>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full border-collapse text-sm">
-                        <thead>
-                            <tr class="border-b bg-gray-50 text-center">
-                                <th rowspan="3" class="border px-2 py-1 align-middle">KODE</th>
-                                <th rowspan="3" class="border px-2 py-1 align-middle">BIDANG URUSAN/PROGRAM/KEGIATAN/SUB KEGIATAN</th>
-                                <th colspan="3" class="border bg-amber-50 px-2 py-1">PAGU ANGGARAN APBD</th>
-                                <th rowspan="3" class="border bg-amber-50 px-2 py-1 align-middle">SUMBER DANA</th>
-                                <th colspan="8" class="border bg-blue-50 px-2 py-1">TARGET</th>
-                                <th rowspan="3" class="border bg-gray-50 px-2 py-1 align-middle">AKSI</th>
+                    <table class="min-w-full table-fixed border-collapse">
+                        <colgroup>
+                            <col style="width: 120px" />
+                            <col style="width: 250px" />
+                            <col style="width: 120px" />
+                            <col style="width: 120px" />
+                            <col style="width: 120px" />
+                            <col style="width: 120px" />
+                            <col style="width: 100px" />
+                            <col style="width: 130px" />
+                            <col style="width: 100px" />
+                            <col style="width: 130px" />
+                            <col style="width: 100px" />
+                            <col style="width: 130px" />
+                            <col style="width: 100px" />
+                            <col style="width: 130px" />
+                            <col style="width: 120px" />
+                        </colgroup>
+                        <thead class="border-b border-gray-200 bg-gray-50">
+                            <tr>
+                                <th
+                                    rowspan="3"
+                                    class="border-r border-gray-200 bg-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    KODE
+                                </th>
+                                <th
+                                    rowspan="3"
+                                    class="border-r border-gray-200 bg-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    BIDANG URUSAN & PROGRAM/<br />KEGIATAN/SUB KEGIATAN
+                                </th>
+                                <th
+                                    colspan="3"
+                                    class="border-r border-gray-200 bg-amber-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    PAGU ANGGARAN APBD
+                                </th>
+                                <th
+                                    rowspan="3"
+                                    class="border-r border-gray-200 bg-amber-50 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    SUMBER DANA
+                                </th>
+                                <th
+                                    colspan="8"
+                                    class="border-r border-gray-200 bg-blue-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    TARGET
+                                </th>
+                                <th v-if="!isAdminOrOperator" rowspan="3" class="bg-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase">AKSI</th>
                             </tr>
-                            <tr class="bg-gray-50 text-center">
-                                <th rowspan="2" class="border bg-amber-50 px-2 py-1 align-middle">POKOK (RP)</th>
-                                <th rowspan="2" class="border bg-amber-50 px-2 py-1 align-middle">PARSIAL (RP)</th>
-                                <th rowspan="2" class="border bg-amber-50 px-2 py-1 align-middle">PERUBAHAN (RP)</th>
-                                <th colspan="2" class="border bg-blue-50 px-2 py-1">TRIWULAN 1</th>
-                                <th colspan="2" class="border bg-blue-50 px-2 py-1">TRIWULAN 2</th>
-                                <th colspan="2" class="border bg-blue-50 px-2 py-1">TRIWULAN 3</th>
-                                <th colspan="2" class="border bg-blue-50 px-2 py-1">TRIWULAN 4</th>
+                            <tr class="border-b border-gray-200">
+                                <th
+                                    rowspan="2"
+                                    class="border-r border-gray-200 bg-amber-50 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase"
+                                >
+                                    POKOK<br />(RP)
+                                </th>
+                                <th
+                                    rowspan="2"
+                                    class="border-r border-gray-200 bg-amber-50 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase"
+                                >
+                                    PARSIAL<br />(RP)
+                                </th>
+                                <th
+                                    rowspan="2"
+                                    class="border-r border-gray-200 bg-amber-50 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase"
+                                >
+                                    PERUBAHAN<br />(RP)
+                                </th>
+                                <th
+                                    colspan="2"
+                                    class="border-r border-gray-200 bg-green-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    TRIWULAN 1
+                                </th>
+                                <th
+                                    colspan="2"
+                                    class="border-r border-gray-200 bg-green-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    TRIWULAN 2
+                                </th>
+                                <th
+                                    colspan="2"
+                                    class="border-r border-gray-200 bg-green-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    TRIWULAN 3
+                                </th>
+                                <th
+                                    colspan="2"
+                                    class="border-r border-gray-200 bg-green-50 px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase"
+                                >
+                                    TRIWULAN 4
+                                </th>
                             </tr>
-                            <tr class="bg-blue-50 text-center">
-                                <!-- Triwulan 1 -->
-                                <th class="border bg-blue-100 px-2 py-1 text-xs">KINERJA FISIK (%)</th>
-                                <th class="border bg-green-100 px-2 py-1 text-xs">KEUANGAN (RP)</th>
-                                <!-- Triwulan 2 -->
-                                <th class="border bg-blue-100 px-2 py-1 text-xs">KINERJA FISIK (%)</th>
-                                <th class="border bg-green-100 px-2 py-1 text-xs">KEUANGAN (RP)</th>
-                                <!-- Triwulan 3 -->
-                                <th class="border bg-blue-100 px-2 py-1 text-xs">KINERJA FISIK (%)</th>
-                                <th class="border bg-green-100 px-2 py-1 text-xs">KEUANGAN (RP)</th>
-                                <!-- Triwulan 4 -->
-                                <th class="border bg-blue-100 px-2 py-1 text-xs">KINERJA FISIK (%)</th>
-                                <th class="border bg-green-100 px-2 py-1 text-xs">KEUANGAN (RP)</th>
+                            <tr class="border-b-2 border-gray-300">
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KINERJA<br />FISIK (%)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KEUANGAN<br />(RP)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KINERJA<br />FISIK (%)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KEUANGAN<br />(RP)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KINERJA<br />FISIK (%)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KEUANGAN<br />(RP)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KINERJA<br />FISIK (%)
+                                </th>
+                                <th class="bg-green-25 border-r border-gray-200 px-2 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                                    KEUANGAN<br />(RP)
+                                </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-200 bg-white">
                             <!-- Display bidang urusan from the selected urusan -->
                             <template v-for="bidangUrusan in props.bidangurusanTugas" :key="bidangUrusan.id">
-                                <tr class="bg-blue-50 font-semibold hover:bg-blue-100">
-                                    <td class="border p-2 text-left">{{ bidangUrusan.kode_nomenklatur.nomor_kode }}</td>
-                                    <td class="border p-2">{{ bidangUrusan.kode_nomenklatur.nomenklatur }}</td>
-                                    <td class="border p-2 text-right">
-                                        {{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.pokok?.toLocaleString('id-ID') || '0' }}
+                                <tr
+                                    class="border-b border-l-4 border-blue-500 border-gray-100 bg-blue-50 font-extrabold transition-colors hover:bg-blue-50"
+                                >
+                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle font-mono text-sm">
+                                        {{ bidangUrusan.kode_nomenklatur.nomor_kode }}
                                     </td>
-                                    <td class="border p-2 text-right">
-                                        {{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.parsial?.toLocaleString('id-ID') || '0' }}
+                                    <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                        <div class="line-clamp-3">BIDANG URUSAN: {{ bidangUrusan.kode_nomenklatur.nomenklatur }}</div>
                                     </td>
-                                    <td class="border p-2 text-right">
-                                        {{ calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.perubahan?.toLocaleString('id-ID') || '0' }}
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                        {{ `Rp ${calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.pokok?.toLocaleString('id-ID') || '0'}` }}
                                     </td>
-                                    <td class="border p-2 text-left">-</td>
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                        {{ `Rp ${calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.parsial?.toLocaleString('id-ID') || '0'}` }}
+                                    </td>
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                        {{
+                                            `Rp ${calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.perubahan?.toLocaleString('id-ID') || '0'}`
+                                        }}
+                                    </td>
+                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                        <span class="text-gray-400">-</span>
+                                    </td>
                                     <!-- Triwulan 1 -->
-                                    <td class="border p-2 text-center">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                         {{
                                             calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[0]?.kinerja_fisik?.toFixed(2) ||
                                             '0.00'
                                         }}%
                                     </td>
-                                    <td class="border p-2 text-right">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
                                         {{
-                                            (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[0]?.keuangan || 0).toLocaleString(
-                                                'id-ID',
-                                            )
+                                            `Rp ${(calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID')}`
                                         }}
                                     </td>
                                     <!-- Triwulan 2 -->
-                                    <td class="border p-2 text-center">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                         {{
                                             calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[1]?.kinerja_fisik?.toFixed(2) ||
                                             '0.00'
                                         }}%
                                     </td>
-                                    <td class="border p-2 text-right">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
                                         {{
-                                            (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[1]?.keuangan || 0).toLocaleString(
-                                                'id-ID',
-                                            )
+                                            `Rp ${(calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID')}`
                                         }}
                                     </td>
                                     <!-- Triwulan 3 -->
-                                    <td class="border p-2 text-center">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                         {{
                                             calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[2]?.kinerja_fisik?.toFixed(2) ||
                                             '0.00'
                                         }}%
                                     </td>
-                                    <td class="border p-2 text-right">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
                                         {{
-                                            (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[2]?.keuangan || 0).toLocaleString(
-                                                'id-ID',
-                                            )
+                                            `Rp ${(calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID')}`
                                         }}
                                     </td>
                                     <!-- Triwulan 4 -->
-                                    <td class="border p-2 text-center">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                         {{
                                             calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[3]?.kinerja_fisik?.toFixed(2) ||
                                             '0.00'
                                         }}%
                                     </td>
-                                    <td class="border p-2 text-right">
+                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
                                         {{
-                                            (calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[3]?.keuangan || 0).toLocaleString(
-                                                'id-ID',
-                                            )
+                                            `Rp ${(calculateBidangUrusan[bidangUrusan.kode_nomenklatur.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID')}`
                                         }}
                                     </td>
-                                    <td></td>
+                                    <td v-if="!isAdminOrOperator" class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                        <span class="text-gray-400">-</span>
+                                    </td>
                                 </tr>
 
                                 <!-- Display programs that belong to this bidang urusan -->
@@ -1588,48 +1339,72 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                                     )"
                                     :key="program.id"
                                 >
-                                    <tr class="border bg-gray-50 font-medium hover:bg-gray-100">
-                                        <td class="border p-2 text-left">{{ program.kode_nomenklatur.nomor_kode }}</td>
-                                        <td class="border p-2 text-left">{{ program.kode_nomenklatur.nomenklatur }}</td>
-                                        <td class="border p-2 text-right">
-                                            {{ calculateProgram[program.kode_nomenklatur.id]?.pokok?.toLocaleString('id-ID') || '0' }}
+                                    <tr
+                                        class="border-b border-l-4 border-gray-100 border-gray-400 bg-gray-50 font-bold transition-colors hover:bg-gray-50"
+                                    >
+                                        <td class="border-r border-gray-200 px-3 py-3 text-center align-middle font-mono text-sm">
+                                            {{ program.kode_nomenklatur.nomor_kode }}
                                         </td>
-                                        <td class="border p-2 text-right">
-                                            {{ calculateProgram[program.kode_nomenklatur.id]?.parsial?.toLocaleString('id-ID') || '0' }}
+                                        <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                            <div class="line-clamp-3">{{ program.kode_nomenklatur.nomenklatur }}</div>
                                         </td>
-                                        <td class="border p-2 text-right">
-                                            {{ calculateProgram[program.kode_nomenklatur.id]?.perubahan?.toLocaleString('id-ID') || '0' }}
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{ `Rp ${calculateProgram[program.kode_nomenklatur.id]?.pokok?.toLocaleString('id-ID') || '0'}` }}
                                         </td>
-                                        <td class="border p-2 text-center">{{ program.monitoring?.sumber_dana || '-' }}</td>
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{ `Rp ${calculateProgram[program.kode_nomenklatur.id]?.parsial?.toLocaleString('id-ID') || '0'}` }}
+                                        </td>
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{ `Rp ${calculateProgram[program.kode_nomenklatur.id]?.perubahan?.toLocaleString('id-ID') || '0'}` }}
+                                        </td>
+                                        <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                            <div
+                                                v-if="program.monitoring?.sumber_dana"
+                                                class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700"
+                                            >
+                                                {{ program.monitoring.sumber_dana }}
+                                            </div>
+                                            <span v-else class="text-gray-400">-</span>
+                                        </td>
                                         <!-- Triwulan 1 -->
-                                        <td class="border p-2 text-center">
+                                        <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                             {{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[0]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                         </td>
-                                        <td class="border p-2 text-right">
-                                            {{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID') }}
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{
+                                                `Rp ${(calculateProgram[program.kode_nomenklatur.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID')}`
+                                            }}
                                         </td>
                                         <!-- Triwulan 2 -->
-                                        <td class="border p-2 text-center">
+                                        <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                             {{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[1]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                         </td>
-                                        <td class="border p-2 text-right">
-                                            {{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID') }}
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{
+                                                `Rp ${(calculateProgram[program.kode_nomenklatur.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID')}`
+                                            }}
                                         </td>
                                         <!-- Triwulan 3 -->
-                                        <td class="border p-2 text-center">
+                                        <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                             {{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[2]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                         </td>
-                                        <td class="border p-2 text-right">
-                                            {{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID') }}
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{
+                                                `Rp ${(calculateProgram[program.kode_nomenklatur.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID')}`
+                                            }}
                                         </td>
                                         <!-- Triwulan 4 -->
-                                        <td class="border p-2 text-center">
+                                        <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                             {{ calculateProgram[program.kode_nomenklatur.id]?.targets?.[3]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                         </td>
-                                        <td class="border p-2 text-right">
-                                            {{ (calculateProgram[program.kode_nomenklatur.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID') }}
+                                        <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                            {{
+                                                `Rp ${(calculateProgram[program.kode_nomenklatur.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID')}`
+                                            }}
                                         </td>
-                                        <td></td>
+                                        <td v-if="!isAdminOrOperator" class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                            <span class="text-gray-400">-</span>
+                                        </td>
                                     </tr>
 
                                     <!-- Display kegiatan for this program -->
@@ -1639,378 +1414,449 @@ watch([() => props.subkegiatanTugas, () => formattedSubKegiatanData.value], ensu
                                         )"
                                         :key="kegiatan.id"
                                     >
-                                        <tr class="border hover:bg-gray-50">
-                                            <td class="border p-2 text-left">{{ kegiatan.kode_nomenklatur.nomor_kode }}</td>
-                                            <td class="border p-2 text-left">{{ kegiatan.kode_nomenklatur.nomenklatur }}</td>
-                                            <td class="border p-2 text-right">
-                                                {{ calculateKegiatan[kegiatan.id]?.pokok?.toLocaleString('id-ID') || '0' }}
+                                        <tr
+                                            class="bg-orange-25 border-b border-l-4 border-gray-100 border-orange-400 font-semibold transition-colors hover:bg-orange-50"
+                                        >
+                                            <td class="border-r border-gray-200 px-3 py-3 text-center align-middle font-mono text-sm">
+                                                {{ kegiatan.kode_nomenklatur.nomor_kode }}
                                             </td>
-                                            <td class="border p-2 text-right">
-                                                {{ calculateKegiatan[kegiatan.id]?.parsial?.toLocaleString('id-ID') || '0' }}
+                                            <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                                <div class="line-clamp-3">{{ kegiatan.kode_nomenklatur.nomenklatur }}</div>
                                             </td>
-                                            <td class="border p-2 text-right">
-                                                {{ calculateKegiatan[kegiatan.id]?.perubahan?.toLocaleString('id-ID') || '0' }}
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${calculateKegiatan[kegiatan.id]?.pokok?.toLocaleString('id-ID') || '0'}` }}
                                             </td>
-                                            <td class="border p-2 text-left">{{ kegiatan.monitoring?.sumber_dana || '-' }}</td>
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${calculateKegiatan[kegiatan.id]?.parsial?.toLocaleString('id-ID') || '0'}` }}
+                                            </td>
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${calculateKegiatan[kegiatan.id]?.perubahan?.toLocaleString('id-ID') || '0'}` }}
+                                            </td>
+                                            <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                <div
+                                                    v-if="kegiatan.monitoring?.sumber_dana"
+                                                    class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700"
+                                                >
+                                                    {{ kegiatan.monitoring.sumber_dana }}
+                                                </div>
+                                                <span v-else class="text-gray-400">-</span>
+                                            </td>
                                             <!-- Triwulan 1 -->
-                                            <td class="border p-2 text-center">
+                                            <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                                 {{ calculateKegiatan[kegiatan.id]?.targets?.[0]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                             </td>
-                                            <td class="border p-2 text-right">
-                                                {{ (calculateKegiatan[kegiatan.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID') }}
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${(calculateKegiatan[kegiatan.id]?.targets?.[0]?.keuangan || 0).toLocaleString('id-ID')}` }}
                                             </td>
                                             <!-- Triwulan 2 -->
-                                            <td class="border p-2 text-center">
+                                            <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                                 {{ calculateKegiatan[kegiatan.id]?.targets?.[1]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                             </td>
-                                            <td class="border p-2 text-right">
-                                                {{ (calculateKegiatan[kegiatan.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID') }}
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${(calculateKegiatan[kegiatan.id]?.targets?.[1]?.keuangan || 0).toLocaleString('id-ID')}` }}
                                             </td>
                                             <!-- Triwulan 3 -->
-                                            <td class="border p-2 text-center">
+                                            <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                                 {{ calculateKegiatan[kegiatan.id]?.targets?.[2]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                             </td>
-                                            <td class="border p-2 text-right">
-                                                {{ (calculateKegiatan[kegiatan.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID') }}
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${(calculateKegiatan[kegiatan.id]?.targets?.[2]?.keuangan || 0).toLocaleString('id-ID')}` }}
                                             </td>
                                             <!-- Triwulan 4 -->
-                                            <td class="border p-2 text-center">
+                                            <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                                 {{ calculateKegiatan[kegiatan.id]?.targets?.[3]?.kinerja_fisik?.toFixed(2) || '0.00' }}%
                                             </td>
-                                            <td class="border p-2 text-right">
-                                                {{ (calculateKegiatan[kegiatan.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID') }}
+                                            <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                {{ `Rp ${(calculateKegiatan[kegiatan.id]?.targets?.[3]?.keuangan || 0).toLocaleString('id-ID')}` }}
                                             </td>
-                                            <td></td>
+                                            <td v-if="!isAdminOrOperator" class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                <span class="text-gray-400">-</span>
+                                            </td>
                                         </tr>
 
-                                        <!-- Display subkegiatan data for this kegiatan with funding details -->
+                                        <!-- Display hierarchical subkegiatan data for this kegiatan -->
                                         <template
                                             v-for="item in formattedSubKegiatanData.filter((sk) => sk.kegiatan.id === kegiatan.id)"
                                             :key="item.id"
                                         >
+                                            <!-- Main row for sub-activity (if it's a main row) -->
                                             <tr
-                                                class="border transition-all hover:bg-blue-50"
+                                                v-if="item.isMain"
+                                                class="border-b border-l-4 border-gray-100 border-yellow-500 bg-yellow-50 transition-colors hover:bg-yellow-50"
                                                 :class="{
                                                     'bg-green-50': successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
                                                     'bg-red-50': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
                                                     'opacity-75': loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana),
                                                 }"
                                             >
-                                                <td class="border p-2 text-left">
-                                                    <div class="inline-block rounded bg-blue-100 px-2 py-1 text-xs font-medium text-gray-500">
-                                                        {{ item.subKegiatan.kode_nomenklatur.nomor_kode }}
-                                                    </div>
-                                                </td>
-                                                <td class="border p-2">{{ item.subKegiatan.kode_nomenklatur.nomenklatur }}</td>
-                                                <td class="border p-2 text-right font-medium text-green-600">
-                                                    {{ item.pokok.toLocaleString('id-ID') }}
-                                                </td>
-                                                <td class="border p-2 text-right">{{ item.parsial.toLocaleString('id-ID') || '0' }}</td>
-                                                <td class="border p-2 text-right">{{ item.perubahan.toLocaleString('id-ID') || '0' }}</td>
-                                                <td class="border p-2 text-center">
-                                                    <div class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                                                        {{ item.sumberDana }}
-                                                    </div>
-                                                </td>
-                                                <!-- Target Triwulan 1-4, Fisik & Keuangan -->
-                                                <td class="border !bg-blue-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-16 rounded border !bg-blue-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatPercent(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[0].kinerja_fisik,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                0,
-                                                                'kinerja_fisik',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="0.00%"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[0]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.normalizedTargets[0].kinerja_fisik.toFixed(2) }}%</span>
-                                                    </div>
-                                                </td>
-                                                <td class="border !bg-green-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-20 rounded border !bg-green-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatRupiah(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[0].keuangan,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                0,
-                                                                'keuangan',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="Rp 0"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[0]?.keuangan">
-                                                        <span
-                                                            >Tersimpan: {{ Number(item.normalizedTargets[0].keuangan).toLocaleString('id-ID') }}</span
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle font-mono text-sm">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <span>{{ item.subKegiatan.kode_nomenklatur.nomor_kode }}</span>
+                                                        <!-- Static hierarchy icon (always expanded like triwulan) -->
+                                                        <svg
+                                                            v-if="item.children && item.children.length > 0"
+                                                            class="h-4 w-4 text-gray-400"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
                                                         >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M19 9l-7 7-7-7"
+                                                            ></path>
+                                                        </svg>
                                                     </div>
                                                 </td>
-
-                                                <!-- Triwulan 2 -->
-                                                <td class="border !bg-blue-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-16 rounded border !bg-blue-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatPercent(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[1].kinerja_fisik,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                1,
-                                                                'kinerja_fisik',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="0.00%"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[1]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.normalizedTargets[1].kinerja_fisik.toFixed(2) }}%</span>
+                                                <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                                    <div class="line-clamp-3 font-medium">{{ item.subKegiatan.kode_nomenklatur.nomenklatur }}</div>
+                                                </td>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm font-medium">
+                                                    {{ `Rp ${item.pokok.toLocaleString('id-ID')}` }}
+                                                </td>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm font-medium">
+                                                    {{ `Rp ${item.parsial.toLocaleString('id-ID') || '0'}` }}
+                                                </td>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm font-medium">
+                                                    {{ `Rp ${item.perubahan.toLocaleString('id-ID') || '0'}` }}
+                                                </td>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <div class="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                                                        {{ item.children?.length || 0 }} Sumber Dana
                                                     </div>
                                                 </td>
-                                                <td class="border !bg-green-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-20 rounded border !bg-green-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatRupiah(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[1].keuangan,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                1,
-                                                                'keuangan',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="Rp 0"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[1]?.keuangan">
-                                                        <span
-                                                            >Tersimpan: {{ Number(item.normalizedTargets[1].keuangan).toLocaleString('id-ID') }}</span
-                                                        >
-                                                    </div>
+                                                <!-- Aggregated target columns for main row -->
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >{{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[0]?.kinerja_fisik ||
+                                                                item.normalizedTargets?.[0]?.kinerja_fisik ||
+                                                                0
+                                                            ).toFixed(1)
+                                                        }}%</span
+                                                    >
                                                 </td>
-
-                                                <!-- Triwulan 3 -->
-                                                <td class="border !bg-blue-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-16 rounded border !bg-blue-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatPercent(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[2].kinerja_fisik,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                2,
-                                                                'kinerja_fisik',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="0.00%"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[2]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.normalizedTargets[2].kinerja_fisik.toFixed(2) }}%</span>
-                                                    </div>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >Rp
+                                                        {{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[0]?.keuangan ||
+                                                                item.normalizedTargets?.[0]?.keuangan ||
+                                                                0
+                                                            ).toLocaleString('id-ID')
+                                                        }}</span
+                                                    >
                                                 </td>
-                                                <td class="border !bg-green-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-20 rounded border !bg-green-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatRupiah(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[2].keuangan,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                2,
-                                                                'keuangan',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="Rp 0"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[2]?.keuangan">
-                                                        <span
-                                                            >Tersimpan: {{ Number(item.normalizedTargets[2].keuangan).toLocaleString('id-ID') }}</span
-                                                        >
-                                                    </div>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >{{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[1]?.kinerja_fisik ||
+                                                                item.normalizedTargets?.[1]?.kinerja_fisik ||
+                                                                0
+                                                            ).toFixed(1)
+                                                        }}%</span
+                                                    >
                                                 </td>
-
-                                                <!-- Triwulan 4 -->
-                                                <td class="border !bg-blue-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-16 rounded border !bg-blue-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatPercent(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[3].kinerja_fisik,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                3,
-                                                                'kinerja_fisik',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="0.00%"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[3]?.kinerja_fisik">
-                                                        <span>Tersimpan: {{ item.normalizedTargets[3].kinerja_fisik.toFixed(2) }}%</span>
-                                                    </div>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >Rp
+                                                        {{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[1]?.keuangan ||
+                                                                item.normalizedTargets?.[1]?.keuangan ||
+                                                                0
+                                                            ).toLocaleString('id-ID')
+                                                        }}</span
+                                                    >
                                                 </td>
-                                                <td class="border !bg-green-50 px-1 py-1 text-center">
-                                                    <input
-                                                        type="text"
-                                                        class="w-20 rounded border !bg-green-50 px-1 py-0.5 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                                                        :class="{
-                                                            'border-green-400 bg-green-100':
-                                                                successRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-red-400 bg-red-100': errorRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                            'border-gray-300': !successRow && !errorRow,
-                                                        }"
-                                                        :value="
-                                                            formatRupiah(
-                                                                editingTargets[getUniqueKey(item.subKegiatan, item.sumberDana)]?.[3].keuangan,
-                                                            )
-                                                        "
-                                                        @input="
-                                                            onInputTarget(
-                                                                getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                3,
-                                                                'keuangan',
-                                                                ($event.target as HTMLInputElement)?.value,
-                                                            )
-                                                        "
-                                                        :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                        placeholder="Rp 0"
-                                                    />
-                                                    <div class="mt-1 text-xs text-gray-500" v-if="item.normalizedTargets?.[3]?.keuangan">
-                                                        <span
-                                                            >Tersimpan: {{ Number(item.normalizedTargets[3].keuangan).toLocaleString('id-ID') }}</span
-                                                        >
-                                                    </div>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >{{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[2]?.kinerja_fisik ||
+                                                                item.normalizedTargets?.[2]?.kinerja_fisik ||
+                                                                0
+                                                            ).toFixed(1)
+                                                        }}%</span
+                                                    >
                                                 </td>
-                                                <!-- Kolom aksi -->
-                                                <td class="w-40 border p-2 text-center">
-                                                    <div class="flex flex-col items-center gap-1">
-                                                        <div class="flex gap-1">
-                                                            <button
-                                                                class="mr-1 flex items-center rounded bg-green-600 px-3 py-1 text-xs text-white transition-all hover:bg-green-700"
-                                                                :class="{
-                                                                    'cursor-not-allowed opacity-50':
-                                                                        loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana),
-                                                                }"
-                                                                :disabled="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                                @click="saveTargets(item.subKegiatan, item.sumberDana)"
-                                                            >
-                                                                <svg
-                                                                    v-if="loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)"
-                                                                    class="mr-2 -ml-1 h-3 w-3 animate-spin text-white"
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <circle
-                                                                        class="opacity-25"
-                                                                        cx="12"
-                                                                        cy="12"
-                                                                        r="10"
-                                                                        stroke="currentColor"
-                                                                        stroke-width="4"
-                                                                    ></circle>
-                                                                    <path
-                                                                        class="opacity-75"
-                                                                        fill="currentColor"
-                                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                                    ></path>
-                                                                </svg>
-                                                                <span>{{
-                                                                    loadingRow === getUniqueKey(item.subKegiatan, item.sumberDana)
-                                                                        ? 'Menyimpan...'
-                                                                        : 'Simpan'
-                                                                }}</span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >Rp
+                                                        {{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[2]?.keuangan ||
+                                                                item.normalizedTargets?.[2]?.keuangan ||
+                                                                0
+                                                            ).toLocaleString('id-ID')
+                                                        }}</span
+                                                    >
+                                                </td>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >{{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[3]?.kinerja_fisik ||
+                                                                item.normalizedTargets?.[3]?.kinerja_fisik ||
+                                                                0
+                                                            ).toFixed(1)
+                                                        }}%</span
+                                                    >
+                                                </td>
+                                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                    <span class="font-medium text-gray-600"
+                                                        >Rp
+                                                        {{
+                                                            (
+                                                                aggregatedTargets[item.subKegiatan.id]?.[3]?.keuangan ||
+                                                                item.normalizedTargets?.[3]?.keuangan ||
+                                                                0
+                                                            ).toLocaleString('id-ID')
+                                                        }}</span
+                                                    >
+                                                </td>
+                                                <td v-if="!isAdminOrOperator" class="px-3 py-3 text-center align-middle">
+                                                    <span class="text-gray-500">-</span>
                                                 </td>
                                             </tr>
+
+                                            <!-- Child rows for funding sources (always show like in triwulan) -->
+                                            <template v-if="item.isMain && item.children">
+                                                <tr
+                                                    v-for="child in item.children"
+                                                    :key="child.id"
+                                                    class="bg-blue-25 border-b border-gray-100 transition-colors hover:bg-blue-50"
+                                                    :class="{
+                                                        'bg-green-50': successRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                        'bg-red-50': errorRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                        'opacity-75': loadingRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                    }"
+                                                >
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle font-mono text-sm">
+                                                        <!-- Empty for child rows -->
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                                        <div class="flex items-center gap-2 pl-4">
+                                                            <span class="text-gray-400">└─</span>
+                                                            <span class="text-sm font-medium text-gray-700">{{ child.sumberDana }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                        {{ `Rp ${child.pokok.toLocaleString('id-ID')}` }}
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                        {{ `Rp ${child.parsial.toLocaleString('id-ID') || '0'}` }}
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-right align-middle text-sm">
+                                                        {{ `Rp ${child.perubahan.toLocaleString('id-ID') || '0'}` }}
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                                        <div class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+                                                            {{ child.sumberDana }}
+                                                        </div>
+                                                    </td>
+                                                    <!-- Target columns for child rows -->
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :class="{
+                                                                'border-red-300 bg-red-50':
+                                                                    errorRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                'border-green-300 bg-green-50':
+                                                                    successRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                            }"
+                                                            :value="
+                                                                editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[0]
+                                                                    ?.kinerja_fisik || ''
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    0,
+                                                                    'kinerja_fisik',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :class="{
+                                                                'border-red-300 bg-red-50':
+                                                                    errorRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                'border-green-300 bg-green-50':
+                                                                    successRow === getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                            }"
+                                                            :value="
+                                                                formatRupiah(
+                                                                    editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[0]
+                                                                        ?.keuangan || '',
+                                                                )
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    0,
+                                                                    'keuangan',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="Rp 0"
+                                                        />
+                                                    </td>
+                                                    <!-- Continue with other triwulan columns... -->
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :value="
+                                                                editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[1]
+                                                                    ?.kinerja_fisik || ''
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    1,
+                                                                    'kinerja_fisik',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :value="
+                                                                formatRupiah(
+                                                                    editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[1]
+                                                                        ?.keuangan || '',
+                                                                )
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    1,
+                                                                    'keuangan',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="Rp 0"
+                                                        />
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :value="
+                                                                editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[2]
+                                                                    ?.kinerja_fisik || ''
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    2,
+                                                                    'kinerja_fisik',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :value="
+                                                                formatRupiah(
+                                                                    editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[2]
+                                                                        ?.keuangan || '',
+                                                                )
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    2,
+                                                                    'keuangan',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="Rp 0"
+                                                        />
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :value="
+                                                                editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[3]
+                                                                    ?.kinerja_fisik || ''
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    3,
+                                                                    'kinerja_fisik',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                    <td class="border-r border-gray-200 px-3 py-3 text-center align-middle">
+                                                        <input
+                                                            type="text"
+                                                            class="h-8 w-20 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-center text-xs transition-all duration-200 hover:bg-blue-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                            :value="
+                                                                formatRupiah(
+                                                                    editingTargets[getUniqueKey(child.subKegiatan, child.sumberDana)]?.[3]
+                                                                        ?.keuangan || '',
+                                                                )
+                                                            "
+                                                            @input="
+                                                                onInputTarget(
+                                                                    getUniqueKey(child.subKegiatan, child.sumberDana),
+                                                                    3,
+                                                                    'keuangan',
+                                                                    ($event.target as HTMLInputElement)?.value,
+                                                                )
+                                                            "
+                                                            :disabled="isAdminOrOperator"
+                                                            placeholder="Rp 0"
+                                                        />
+                                                    </td>
+                                                    <td v-if="!isAdminOrOperator" class="px-3 py-3 text-center align-middle">
+                                                        <div class="flex items-center justify-center gap-2">
+                                                            <button
+                                                                @click="saveTargets(child.subKegiatan, child.sumberDana)"
+                                                                class="rounded bg-blue-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                                :disabled="loadingRow === getUniqueKey(child.subKegiatan, child.sumberDana) || isAdminOrOperator"
+                                                            >
+                                                                <span v-if="loadingRow === getUniqueKey(child.subKegiatan, child.sumberDana)"
+                                                                    >...</span
+                                                                >
+                                                                <span v-else>Simpan</span>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
                                         </template>
                                     </template>
                                 </template>

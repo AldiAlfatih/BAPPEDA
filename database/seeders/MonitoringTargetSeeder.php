@@ -44,7 +44,7 @@ class MonitoringTargetSeeder extends Seeder
             $periodePerTahun[$tahun] = collect();
             foreach ($periodeTahap as $nama => $tahap) {
                $tanggalMulai = match ($nama) {
-                    'Rencana' => "$tahun-01-01",
+                    'Rencana Awal' => "$tahun-01-01",
                     'Triwulan 1' => "$tahun-02-01",
                     'Triwulan 2' => "$tahun-04-01",
                     'Triwulan 3' => "$tahun-06-01",
@@ -53,7 +53,7 @@ class MonitoringTargetSeeder extends Seeder
                 };
 
                 $tanggalSelesai = match ($nama) {
-                    'Rencana' => "$tahun-01-01",
+                    'Rencana Awal' => "$tahun-01-01",
                     'Triwulan 1' => "$tahun-03-31",
                     'Triwulan 2' => "$tahun-06-30",
                     'Triwulan 3' => "$tahun-09-30",

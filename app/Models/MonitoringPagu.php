@@ -20,7 +20,7 @@ class MonitoringPagu extends Model
 
     public function anggaran(): BelongsTo
     {
-        return $this->belongsTo(MonitoringAnggaran::class);
+        return $this->belongsTo(MonitoringAnggaran::class, 'monitoring_anggaran_id');
     }
 
     public function periode(): BelongsTo

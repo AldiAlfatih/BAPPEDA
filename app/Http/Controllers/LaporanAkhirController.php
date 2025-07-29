@@ -13,6 +13,8 @@ use App\Models\MonitoringRealisasi;
 use App\Models\MonitoringTarget;
 use App\Models\SumberAnggaran;
 use App\Models\ArsipMonitoring;
+use App\Models\PeriodeTahun;
+use App\Services\UserActivityService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
@@ -22,9 +24,93 @@ use Inertia\Inertia;
 class LaporanAkhirController extends Controller
 {
     /**
+     * Get tahun aktif atau tahun yang dipilih
+     */
+    private function getTahunAktif(Request $request)
+    {
+        if ($request->has('tahun_id') && $request->tahun_id) {
+            return PeriodeTahun::find($request->tahun_id);
+        }
+
+        return PeriodeTahun::getTahunAktif();
+    }
+
+    /**
+     * Get semua tahun untuk dropdown
+     */
+    private function getAllTahun()
+    {
+        return PeriodeTahun::orderByDesc('tahun')->get();
+    }
+
+    /**
+     * Get the correct User ID for breadcrumb navigation to arsip-monitoring.show
+     * This should be the user with 'perangkat_daerah' role for the same SKPD as the tugas
+     */
+    private function getBreadcrumbUserId($tugas)
+    {
+        // Method 1: Cari user dengan role perangkat_daerah untuk SKPD ini
+        $perangkatDaerahUser = \App\Models\User::whereHas('skpd', function($query) use ($tugas) {
+                $query->where('skpd.id', $tugas->skpd_id);
+            })
+            ->whereHas('roles', function($query) {
+                $query->where('name', 'perangkat_daerah');
+            })
+            ->first();
+
+        if ($perangkatDaerahUser) {
+            \Log::info('Found perangkat_daerah user for arsip breadcrumb', [
+                'user_id' => $perangkatDaerahUser->id,
+                'user_name' => $perangkatDaerahUser->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $perangkatDaerahUser->id;
+        }
+
+        // Method 2: Fallback ke kepala SKPD aktif
+        $kepalaAktif = \App\Models\SkpdKepala::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with('user')
+            ->first();
+
+        if ($kepalaAktif && $kepalaAktif->user) {
+            \Log::info('Using kepala SKPD for arsip breadcrumb fallback', [
+                'user_id' => $kepalaAktif->user->id,
+                'user_name' => $kepalaAktif->user->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $kepalaAktif->user->id;
+        }
+
+        // Method 3: Fallback ke operator tim kerja
+        $timKerja = \App\Models\TimKerja::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with('operator')
+            ->first();
+
+        if ($timKerja && $timKerja->operator) {
+            \Log::info('Using tim kerja operator for arsip breadcrumb fallback', [
+                'user_id' => $timKerja->operator->id,
+                'user_name' => $timKerja->operator->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $timKerja->operator->id;
+        }
+
+        \Log::warning('Could not find appropriate user for arsip breadcrumb', [
+            'skpd_id' => $tugas->skpd_id,
+            'tugas_id' => $tugas->id
+        ]);
+
+        return null;
+    }
+    /**
      * Display listing of SKPD for laporan akhir (tampilan pertama)
      */
-    public function index()
+    public function index(Request $request, $tahun = null)
     {
         $user = auth()->user();
 
@@ -195,16 +281,25 @@ class LaporanAkhirController extends Controller
     /**
      * Display arsip monitoring page with upload/download functionality
      */
-    public function detail(string $tugasId)
+    public function detail(Request $request, string $tugasId, $tahun = null)
     {
         $skpdTugas = SkpdTugas::with([
-            'kodeNomenklatur', 
+            'kodeNomenklatur',
             'skpd.kepalaAktif.user',
             'skpd.operatorAktif.operator'
         ])->findOrFail($tugasId);
 
-        // Get current year
-        $currentYear = date('Y');
+        // Get tahun aktif atau tahun yang dipilih
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            $tahunAktif = $this->getTahunAktif($request);
+        }
+        $allTahun = $this->getAllTahun();
+        $currentYear = $tahunAktif ? $tahunAktif->tahun : date('Y');
 
         // Get arsip monitoring data for all periods
         $arsipData = [];
@@ -252,12 +347,18 @@ class LaporanAkhirController extends Controller
             ]
         ];
 
+        // Get the correct user ID for breadcrumb navigation
+        $breadcrumbUserId = $this->getBreadcrumbUserId($skpdTugas);
+
         return Inertia::render('LaporanAkhir/Detail', [
             'skpd' => $skpdData,
             'tugas' => $tugasData,
             'arsipData' => $arsipData,
             'tahun' => $currentYear,
-            'periodeOptions' => $periodeOptions
+            'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
+            'periodeOptions' => $periodeOptions,
+            'breadcrumbUserId' => $breadcrumbUserId, // Add breadcrumb user ID for correct navigation
         ]);
     }
 
@@ -292,7 +393,7 @@ class LaporanAkhirController extends Controller
             if ($existingArsip) {
                 // Delete old file
                 $existingArsip->deleteFile();
-                
+
                 // Update existing record
                 $existingArsip->update([
                     'nama_file' => $file->getClientOriginalName(),
@@ -320,6 +421,19 @@ class LaporanAkhirController extends Controller
                     'keterangan' => $request->keterangan
                 ]);
             }
+
+            // Log aktivitas upload file
+            UserActivityService::logFileUpload($file->getClientOriginalName(), [
+                'arsip_id' => $arsip->id,
+                'skpd_tugas_id' => $request->skpd_tugas_id,
+                'periode' => $request->periode,
+                'tahun' => $request->tahun,
+                'nama_file' => $file->getClientOriginalName(),
+                'ukuran_file' => $file->getSize(),
+                'tipe_file' => $file->getClientOriginalExtension(),
+                'path_file' => $filePath,
+                'keterangan' => $request->keterangan
+            ]);
 
             return back()->with('success', 'File berhasil diunggah!');
 
@@ -350,10 +464,10 @@ class LaporanAkhirController extends Controller
     {
         try {
             $arsip = ArsipMonitoring::findOrFail($id);
-            
+
             // Delete file from storage
             $arsip->deleteFile();
-            
+
             // Delete record from database
             $arsip->delete();
 
@@ -372,7 +486,7 @@ class LaporanAkhirController extends Controller
     {
         try {
             $arsip = ArsipMonitoring::findOrFail($id);
-            
+
             Log::info('ViewArsip Debug - Arsip found:', [
                 'id' => $arsip->id,
                 'nama_file' => $arsip->nama_file,
@@ -394,21 +508,21 @@ class LaporanAkhirController extends Controller
             // For PDF files, return inline view
             if (strtolower($arsip->tipe_file) === 'pdf') {
                 Log::info('ViewArsip - Serving PDF file:', ['file' => $arsip->nama_file]);
-                
+
                 try {
                     // Try to get file content directly
                     $fileContent = Storage::disk('public')->get($arsip->path_file);
-                    
+
                     return response($fileContent, 200)
                         ->header('Content-Type', 'application/pdf')
                         ->header('Content-Disposition', 'inline; filename="' . $arsip->nama_file . '"')
                         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
                         ->header('Pragma', 'no-cache')
                         ->header('Expires', '0');
-                        
+
                 } catch (\Exception $e) {
                     Log::error('ViewArsip - Failed to get file content:', ['error' => $e->getMessage()]);
-                    
+
                     // Fallback to Storage response method
                     return Storage::disk('public')->response($arsip->path_file, $arsip->nama_file, [
                         'Content-Type' => 'application/pdf',
@@ -420,7 +534,7 @@ class LaporanAkhirController extends Controller
             // For other files, force download
             Log::info('ViewArsip - Downloading non-PDF file:', ['file' => $arsip->nama_file]);
             return $this->downloadArsip($id);
-            
+
         } catch (\Exception $e) {
             Log::error('ViewArsip Exception:', [
                 'id' => $id,
@@ -430,4 +544,4 @@ class LaporanAkhirController extends Controller
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
-} 
+}

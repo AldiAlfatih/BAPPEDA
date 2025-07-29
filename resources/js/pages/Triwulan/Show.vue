@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import TabelTugasPD from '@/components/data/TabelTugasPD.vue';
+import TabelDetail from '@/components/Triwulan/TabelDetail.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import TabelTugasPD from '@/components/data/TabelTugasPD.vue';
-import TabelDetail from '@/components/Triwulan/TabelDetail.vue';
 
 const props = defineProps<{
     user: {
@@ -60,13 +60,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 function getUserNip(user: any): string {
-  if (!user) return '-';
-  
-  if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
-    return user.user_detail.nip;
-  }
+    if (!user) return '-';
 
-  return '-';
+    if (user.user_detail && typeof user.user_detail.nip === 'string' && user.user_detail.nip.trim() !== '') {
+        return user.user_detail.nip;
+    }
+
+    return '-';
 }
 </script>
 
@@ -75,13 +75,16 @@ function getUserNip(user: any): string {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-4 p-4">
+            <!-- Header -->
+            <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Detail {{ triwulanName }}</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ user?.nama_skpd || skpd.nama_dinas || skpd.nama_skpd || 'SKPD' }}</p>
+                </div>
+            </div>
 
             <!-- SKPD Info -->
-            <TabelDetail
-                :skpd="skpd"
-                :triwulan-name="triwulanName"
-                :tahun="tahun"
-            />
+            <TabelDetail :skpd="skpd" :triwulan-name="triwulanName" :tahun="tahun" />
 
             <!-- Tabel Tugas PD -->
             <TabelTugasPD
@@ -95,7 +98,6 @@ function getUserNip(user: any): string {
                 :tid="props.tid"
                 :tahun="props.tahun"
             ></TabelTugasPD>
-
         </div>
     </AppLayout>
-</template> 
+</template>

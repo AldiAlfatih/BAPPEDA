@@ -70,11 +70,11 @@ class ArsipMonitoring extends Model
     {
         $bytes = $this->ukuran_file;
         $units = ['B', 'KB', 'MB', 'GB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, 2) . ' ' . $units[$i];
     }
 
@@ -109,4 +109,4 @@ class ArsipMonitoring extends Model
     {
         return $query->where('skpd_tugas_id', $skpdTugasId);
     }
-} 
+}

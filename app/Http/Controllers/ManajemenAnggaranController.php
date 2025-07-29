@@ -15,13 +15,36 @@ use App\Models\MonitoringAnggaran;
 use App\Models\MonitoringPagu;
 use App\Models\SumberAnggaran;
 use App\Models\Periode;
+use App\Models\PeriodeTahun;
+use App\Services\UserActivityService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
 class ManajemenAnggaranController extends Controller
 {
-    public function index()
+    /**
+     * Get tahun aktif atau tahun yang dipilih
+     */
+    private function getTahunAktif(Request $request)
+    {
+        // Jika ada parameter tahun_id di request, gunakan itu
+        if ($request->has('tahun_id') && $request->tahun_id) {
+            return PeriodeTahun::find($request->tahun_id);
+        }
+
+        // Jika tidak, ambil tahun aktif
+        return PeriodeTahun::getTahunAktif();
+    }
+
+    /**
+     * Get semua tahun untuk dropdown
+     */
+    private function getAllTahun()
+    {
+        return PeriodeTahun::orderByDesc('tahun')->get();
+    }
+    public function index(Request $request, $tahun = null)
     {
         $user = auth()->user();
 
@@ -67,11 +90,25 @@ class ManajemenAnggaranController extends Controller
             })
             ->first();
 
+        // Get tahun aktif dan semua tahun untuk dropdown
+        // Jika ada parameter tahun, gunakan tahun tersebut
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            $tahunAktif = $this->getTahunAktif($request);
+        }
+        $allTahun = $this->getAllTahun();
+
         return Inertia::render('ManajemenAnggaran', [
             'users' => $transformedUsers,
             'enabledParsialUsers' => session('enabled_parsial_users', []),
             'triwulan4Aktif' => $triwulan4Aktif,
-            'isBudgetChangeAvailable' => $triwulan4Aktif !== null
+            'isBudgetChangeAvailable' => $triwulan4Aktif !== null,
+            'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
         ]);
     }
 
@@ -168,39 +205,40 @@ class ManajemenAnggaranController extends Controller
      */
     private function showRencanaAwalData($user, $skpdTugas, $urusanList, $bidangUrusanList, $request)
     {
-        // PERBAIKAN 1: Get active periods dengan logika yang lebih fleksibel
+        // Get tahun aktif atau tahun yang dipilih
+        $tahunAktif = $this->getTahunAktif($request);
+        $allTahun = $this->getAllTahun();
+
+        // PERBAIKAN 1: Get active periods dengan filtering tahun (WAJIB filter berdasarkan tahun aktif)
         $periodeAktif = Periode::with(['tahap', 'tahun'])
             ->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->where('tahap', 'Rencana');
             })
+            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
             ->get();
 
-        \Log::debug('Periode aktif:', ['count' => $periodeAktif->count(), 'data' => $periodeAktif->toArray()]);
+        \Log::debug('Periode aktif:', ['count' => $periodeAktif->count(), 'data' => $periodeAktif->toArray(), 'tahun_aktif' => $tahunAktif->tahun]);
 
-        // PERBAIKAN 2: Get all periods for the dropdown (tidak hanya yang aktif)
+        // PERBAIKAN 2: Get all periods for the dropdown dengan filtering tahun (WAJIB filter berdasarkan tahun aktif)
         $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
-            ->orderBy('tahun_id', 'desc')
+            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
+            ->whereHas('tahap', function($query) {
+                $query->whereIn('tahap', ['Rencana', 'Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
+            })
             ->orderBy('tahap_id', 'asc')
             ->get();
 
-        // PERBAIKAN 3: Jika tidak ada periode Rencana aktif, ambil periode Rencana terakhir
+        // PERBAIKAN 3: Jika tidak ada periode Rencana aktif, ambil periode Rencana terakhir untuk tahun aktif
         $periodeRencanaFallback = null;
         if ($periodeAktif->isEmpty()) {
             $periodeRencanaFallback = Periode::with(['tahap', 'tahun'])
                 ->whereHas('tahap', function($query) {
                     $query->where('tahap', 'Rencana');
                 })
+                ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
                 ->latest('created_at')
                 ->first();
-        }
-
-        // Get current year
-        $tahunAktif = null;
-        if ($semuaPeriodeAktif->isNotEmpty()) {
-            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
-        } elseif ($periodeRencanaFallback) {
-            $tahunAktif = $periodeRencanaFallback->tahun;
         }
 
         // Get funding data for each subkegiatan
@@ -227,64 +265,142 @@ class ManajemenAnggaranController extends Controller
 
         foreach ($skpdTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Hanya ambil sub kegiatan
-                // Cari monitoring yang terkait dengan SKPD tugas
-                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
-                    ->latest()
-                    ->first();
+                // ✅ FIXED: Ambil monitoring yang memiliki data anggaran paling lengkap
+                $monitoringCandidates = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $tahunAktif->tahun)
+                    ->whereHas('anggaran') // ✅ FIXED: Nama relasi yang benar adalah 'anggaran'
+                    ->get();
+
+                // Pilih monitoring dengan data anggaran paling lengkap (paling banyak sumber anggaran)
+                $monitoring = $monitoringCandidates->sortByDesc(function($mon) {
+                    return $mon->anggaran()->count();
+                })->first();
+
+
 
                 if ($monitoring) {
-                    // Ambil data anggaran untuk monitoring ini berdasarkan periode
-                    $sumberAnggaranData = [];
+                    // PERBAIKAN: Ambil data sumber anggaran untuk rencana awal dan parsial
+                    $sumberAnggaranData = [
+                        'rencana_awal' => [],
+                        'parsial' => []
+                    ];
 
-                    $monitoringAnggaranQuery = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
-                        ->with(['sumberAnggaran']);
+                    // Get rencana awal data (kategori 1) - PERBAIKAN: Ambil semua data rencana awal, tidak filter berdasarkan periode
+                    $monitoringAnggaranRencana = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                        ->with(['sumberAnggaran'])
+                        ->with(['pagu' => function($query) {
+                            $query->where('kategori', 1) // Kategori 1 = rencana awal
+                                  ->latest('created_at'); // Ambil data terbaru untuk setiap sumber anggaran
+                        }])
+                        ->get();
 
-                    // PERBAIKAN 5: Hanya filter berdasarkan periode jika ada periode yang dipilih
-                    if ($periodeId) {
-                        $monitoringAnggaranQuery->with(['pagu' => function($query) use ($periodeId) {
-                            $query->where('kategori', 1) // Kategori 1 = pokok
-                                  ->where('periode_id', $periodeId); // Filter berdasarkan periode
-                        }]);
-                    } else {
-                        // Jika tidak ada periode spesifik, ambil data terbaru
-                        $monitoringAnggaranQuery->with(['pagu' => function($query) {
-                            $query->where('kategori', 1) // Kategori 1 = pokok
-                                  ->latest('created_at'); // Ambil yang terbaru
-                        }]);
-                    }
-
-                    $monitoringAnggaran = $monitoringAnggaranQuery->get();
-
-                    foreach ($monitoringAnggaran as $anggaran) {
-                        if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
+                    foreach ($monitoringAnggaranRencana as $anggaran) {
+                        if ($anggaran->sumberAnggaran) {
                             $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
                             if ($key) {
-                                $sumberAnggaranData[$key] = $anggaran->pagu->first()->dana ?? 0;
+                                // PERBAIKAN: Ambil data terbaru untuk setiap sumber anggaran, bahkan jika pagu kosong
+                                if ($anggaran->pagu->isNotEmpty()) {
+                                    // Ambil data pagu terbaru untuk sumber anggaran ini
+                                    $latestPagu = $anggaran->pagu->sortByDesc('created_at')->first();
+                                    $sumberAnggaranData['rencana_awal'][$key] = $latestPagu->dana ?? 0;
+                                } else {
+                                    // Jika tidak ada pagu, tetap masukkan dengan nilai 0 untuk menunjukkan sumber anggaran sudah dipilih
+                                    $sumberAnggaranData['rencana_awal'][$key] = 0;
+                                }
                             }
                         }
                     }
 
-                    // Simpan data per SKPD tugas
+                    // Get ALL parsial data (kategori 2) from any triwulan periode (not just active)
+                    $monitoringAnggaranParsial = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                        ->with(['sumberAnggaran'])
+                        ->with(['pagu' => function($query) {
+                            $query->where('kategori', 2); // Kategori 2 = parsial
+                        }])
+                        ->get();
+
+                    // Aggregate all parsial data regardless of periode
+                    foreach ($monitoringAnggaranParsial as $anggaran) {
+                        if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
+                            $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
+                            if ($key) {
+                                // Sum up parsial values from all triwulan periods
+                                $currentValue = $sumberAnggaranData['parsial'][$key] ?? 0;
+                                foreach ($anggaran->pagu as $pagu) {
+                                    $currentValue += $pagu->dana ?? 0;
+                                }
+                                $sumberAnggaranData['parsial'][$key] = $currentValue;
+                            }
+                        }
+                    }
+
+                    \Log::debug("Sumber anggaran data for task {$tugas->id}:", $sumberAnggaranData);
+                    \Log::debug("Monitoring anggaran rencana count:", ['count' => $monitoringAnggaranRencana->count()]);
+                    \Log::debug("Monitoring anggaran parsial count:", ['count' => $monitoringAnggaranParsial->count()]);
+
+                    // Check if there's any parsial data in database (historical data)
+                    $hasParsialHistory = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                        ->whereHas('pagu', function($query) {
+                            $query->where('kategori', 2); // kategori 2 = parsial
+                        })
+                        ->exists();
+
+                    // Prepare data structure for frontend (normal mode with parsial history)
+                    $allKeys = ['dau', 'dau_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud']; // ✅ FIXED: dau, dau_peruntukan
+                    $sumberAnggaranFlags = [];
+
+                    foreach ($allKeys as $key) {
+                        // PERBAIKAN: Pastikan flag sumber anggaran menunjukkan apakah sumber anggaran pernah dipilih
+                        $sumberAnggaranFlags[$key] = array_key_exists($key, $sumberAnggaranData['rencana_awal']) || array_key_exists($key, $sumberAnggaranData['parsial']);
+                    }
+
+                    // PERBAIKAN: Untuk mode normal, kirim struktur data sederhana yang diharapkan frontend
                     $dataAnggaranTerakhir[$tugas->id] = [
+                        'monitoring_id' => $monitoring->id,
+                        'sumber_anggaran' => $sumberAnggaranFlags, // Flags boolean untuk checkbox
+                        'sumber_anggaran_flags' => $sumberAnggaranFlags,
+                        'values' => [
+                            // Kirim data rencana_awal sebagai struktur sederhana untuk mode normal
+                            'dau' => $sumberAnggaranData['rencana_awal']['dau'] ?? 0, // ✅ FIXED: dau
+                            'dau_peruntukan' => $sumberAnggaranData['rencana_awal']['dau_peruntukan'] ?? 0, // ✅ FIXED: dau_peruntukan
+                            'dak_fisik' => $sumberAnggaranData['rencana_awal']['dak_fisik'] ?? 0,
+                            'dak_non_fisik' => $sumberAnggaranData['rencana_awal']['dak_non_fisik'] ?? 0,
+                            'blud' => $sumberAnggaranData['rencana_awal']['blud'] ?? 0,
+                            // Simpan juga data lengkap untuk keperluan lain
+                            'rencana_awal' => $sumberAnggaranData['rencana_awal'],
+                            'parsial' => $sumberAnggaranData['parsial']
+                        ],
+                        'is_parsial_enabled' => false, // Normal mode but with parsial history
+                        'is_budget_change_enabled' => false,
+                        'has_parsial_history' => $hasParsialHistory // Flag untuk frontend
+                    ];
+                } else {
+                    // No monitoring data found
+                    $dataAnggaranTerakhir[$tugas->id] = [
+                        'monitoring_id' => null,
                         'sumber_anggaran' => [
-                            'dak' => isset($sumberAnggaranData['dak']),
-                            'dak_peruntukan' => isset($sumberAnggaranData['dak_peruntukan']),
-                            'dak_fisik' => isset($sumberAnggaranData['dak_fisik']),
-                            'dak_non_fisik' => isset($sumberAnggaranData['dak_non_fisik']),
-                            'blud' => isset($sumberAnggaranData['blud']),
+                            'dau' => false, // ✅ FIXED: dau
+                            'dau_peruntukan' => false, // ✅ FIXED: dau_peruntukan
+                            'dak_fisik' => false,
+                            'dak_non_fisik' => false,
+                            'blud' => false,
                         ],
                         'values' => [
-                            'dak' => $sumberAnggaranData['dak'] ?? 0,
-                            'dak_peruntukan' => $sumberAnggaranData['dak_peruntukan'] ?? 0,
-                            'dak_fisik' => $sumberAnggaranData['dak_fisik'] ?? 0,
-                            'dak_non_fisik' => $sumberAnggaranData['dak_non_fisik'] ?? 0,
-                            'blud' => $sumberAnggaranData['blud'] ?? 0,
-                        ]
+                            'rencana_awal' => [],
+                            'parsial' => []
+                        ],
+                        'is_parsial_enabled' => false,
+                        'is_budget_change_enabled' => false,
+                        'has_parsial_history' => false // TAMBAHAN: No parsial history
                     ];
                 }
             }
         }
-        \Log::debug('Data anggaran terakhir:', ['data' => $dataAnggaranTerakhir]);
+        \Log::info('🚨 DEBUG showRencanaAwalData - Data anggaran terakhir:', ['data' => $dataAnggaranTerakhir]);
+        \Log::info('🚨 DEBUG showRencanaAwalData - Periode ID yang digunakan:', ['periode_id' => $periodeId]);
+        \Log::info('🚨 DEBUG showRencanaAwalData - Periode aktif count:', ['count' => $periodeAktif->count()]);
+        \Log::info('🚨 DEBUG showRencanaAwalData - Semua periode aktif count:', ['count' => $semuaPeriodeAktif->count()]);
+        \Log::info('🚨 DEBUG showRencanaAwalData - isParsialMode:', ['isParsialMode' => false]);
 
         return Inertia::render('MonitoringAnggaran/Sumberdana', [
             'user' => $user,
@@ -307,19 +423,24 @@ class ManajemenAnggaranController extends Controller
      */
     private function showParsialData($user, $skpdTugas, $urusanList, $bidangUrusanList, $request)
     {
-        // Get periods for parsial (should be triwulan periods, not rencana)
+        // Get tahun aktif atau tahun yang dipilih
+        $tahunAktif = $this->getTahunAktif($request);
+        $allTahun = $this->getAllTahun();
+
+        // Get periods for parsial (should be triwulan periods, not rencana) dengan filtering tahun
         $periodeAktif = Periode::with(['tahap', 'tahun'])
             ->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
             })
+            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
             ->get();
 
         $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
             ->whereHas('tahap', function($query) {
                 $query->whereIn('tahap', ['Rencana', 'Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
             })
-            ->orderBy('tahun_id', 'desc')
+            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
             ->orderBy('tahap_id', 'asc')
             ->get();
 
@@ -341,10 +462,16 @@ class ManajemenAnggaranController extends Controller
 
         foreach ($skpdTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Only sub kegiatan
-                // Find monitoring related to this SKPD tugas
+                // ✅ FIXED: Ambil monitoring yang memiliki data anggaran, bukan yang terbaru
+                \Log::info("🚨 DEBUG PARSIAL: Looking for monitoring with anggaran for task {$tugas->id}, tahun {$tahunAktif->tahun}");
+
                 $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $tahunAktif->tahun)
+                    ->whereHas('anggaran') // ✅ FIXED: Nama relasi yang benar adalah 'anggaran'
                     ->latest()
                     ->first();
+
+                \Log::info("🚨 DEBUG PARSIAL: Selected monitoring_id: " . ($monitoring ? $monitoring->id : 'NULL'));
 
                 if ($monitoring) {
                     // Get funding data for both rencana awal (kategori 1) and parsial (kategori 2)
@@ -400,9 +527,11 @@ class ManajemenAnggaranController extends Controller
                         ->exists();
 
                     // Prepare data structure for frontend (parsial mode)
-                    $allKeys = ['dak', 'dak_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud'];
+                    $allKeys = ['dau', 'dau_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud']; // ✅ FIXED: dau, dau_peruntukan
                     $sumberAnggaranFlags = [];
-                    
+
+                    // ✅ PERBAIKAN: Di mode parsial, tampilkan checkbox jika ada data rencana_awal ATAU parsial
+                    // Ini memungkinkan user untuk mengisi parsial berdasarkan data rencana awal yang sudah ada
                     foreach ($allKeys as $key) {
                         $sumberAnggaranFlags[$key] = isset($sumberAnggaranData['rencana_awal'][$key]) || isset($sumberAnggaranData['parsial'][$key]);
                     }
@@ -421,8 +550,8 @@ class ManajemenAnggaranController extends Controller
                     // No monitoring data exists, create empty structure
                     $dataAnggaranTerakhir[$tugas->id] = [
                         'sumber_anggaran' => [
-                            'dak' => false,
-                            'dak_peruntukan' => false,
+                            'dau' => false, // ✅ FIXED: dau
+                            'dau_peruntukan' => false, // ✅ FIXED: dau_peruntukan
                             'dak_fisik' => false,
                             'dak_non_fisik' => false,
                             'blud' => false,
@@ -452,7 +581,7 @@ class ManajemenAnggaranController extends Controller
         ]);
     }
 
-    public function showRencanaAwal($id, Request $request)
+    public function showRencanaAwal($id, Request $request, $tahun = null)
     {
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',
@@ -520,13 +649,27 @@ class ManajemenAnggaranController extends Controller
                 ->first();
         }
 
-        // Get current year
-        $tahunAktif = null;
-        if ($semuaPeriodeAktif->isNotEmpty()) {
-            $tahunAktif = $semuaPeriodeAktif->first()->tahun;
-        } elseif ($periodeRencanaFallback) {
-            $tahunAktif = $periodeRencanaFallback->tahun;
+        // Get tahun aktif atau tahun yang dipilih
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            // Get current year
+            $tahunAktif = null;
+            if ($semuaPeriodeAktif->isNotEmpty()) {
+                $tahunAktif = $semuaPeriodeAktif->first()->tahun;
+            } elseif ($periodeRencanaFallback) {
+                $tahunAktif = $periodeRencanaFallback->tahun;
+            }
         }
+
+        // Get all tahun for dropdown
+        $allTahun = PeriodeTahun::orderByDesc('tahun')->get();
+
+        // Tentukan tahun yang akan digunakan untuk filtering data
+        $currentYear = $tahunAktif ? $tahunAktif->tahun : date('Y');
 
         // Get funding data for each subkegiatan filtered by active period
         $dataAnggaranTerakhir = [];
@@ -547,8 +690,10 @@ class ManajemenAnggaranController extends Controller
 
         foreach ($subkegiatanTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Only get sub kegiatan
-                // Find monitoring related to this SKPD tugas
+                // ✅ FIXED: Ambil monitoring yang memiliki data anggaran, bukan yang terbaru
                 $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $currentYear)
+                    ->whereHas('anggaran') // ✅ FIXED: Nama relasi yang benar adalah 'anggaran'
                     ->latest()
                     ->first();
 
@@ -637,13 +782,13 @@ class ManajemenAnggaranController extends Controller
                         ->exists();
 
                     // Prepare data structure for frontend - include rencana awal, parsial, and budget change data
-                    $allKeys = ['dak', 'dak_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud'];
+                    $allKeys = ['dau', 'dau_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud']; // ✅ FIXED: dau, dau_peruntukan
                     $sumberAnggaranFlags = [];
                     $normalizedValues = [];
-                    
+
                     foreach ($allKeys as $key) {
-                        $sumberAnggaranFlags[$key] = isset($sumberAnggaranData['rencana_awal'][$key]) || 
-                                                   isset($sumberAnggaranData['parsial'][$key]) || 
+                        $sumberAnggaranFlags[$key] = isset($sumberAnggaranData['rencana_awal'][$key]) ||
+                                                   isset($sumberAnggaranData['parsial'][$key]) ||
                                                    isset($sumberAnggaranData['budget_change'][$key]);
                         $normalizedValues[$key] = $sumberAnggaranData['rencana_awal'][$key] ?? 0;
                     }
@@ -660,22 +805,24 @@ class ManajemenAnggaranController extends Controller
                         'is_budget_change_enabled' => $isBudgetChangeEnabled
                     ];
 
-                    \Log::debug("DEBUG: RencanaAwal data for task {$tugas->id}:", [
+                    \Log::info("🚨 DEBUG: RencanaAwal data for task {$tugas->id}:", [
                         'rencana_awal' => $sumberAnggaranData['rencana_awal'],
                         'parsial' => $sumberAnggaranData['parsial'],
                         'budget_change' => $sumberAnggaranData['budget_change'],
                         'is_parsial_enabled' => $isParsialEnabled,
                         'is_budget_change_enabled' => $isBudgetChangeEnabled,
-                        'final_data_structure' => array_keys($dataAnggaranTerakhir[$tugas->id])
+                        'final_data_structure' => $dataAnggaranTerakhir[$tugas->id],
+                        'sumber_anggaran_flags' => $sumberAnggaranFlags
                     ]);
                 }
             }
         }
 
         // Load target data for each subkegiatan with separate targets per sumber anggaran
-        $subkegiatanWithTargets = $subkegiatanTugas->map(function($subkegiatan) {
-            // Find monitoring for this subkegiatan
+        $subkegiatanWithTargets = $subkegiatanTugas->map(function($subkegiatan) use ($tahunAktif) {
+            // Find monitoring for this subkegiatan filtered by year
             $monitoring = Monitoring::where('skpd_tugas_id', $subkegiatan->id)
+                ->where('tahun', $tahunAktif->tahun)
                 ->latest()
                 ->first();
 
@@ -757,6 +904,7 @@ class ManajemenAnggaranController extends Controller
             ],
             'periodeAktif' => $periodeAktif,
             'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
             'semuaPeriodeAktif' => $semuaPeriodeAktif, // Sudah mencakup semua periode
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'bidangUrusanList' => $bidangurusanTugas,
@@ -922,6 +1070,17 @@ class ManajemenAnggaranController extends Controller
             ]);
         }
 
+        // Log aktivitas mengisi manajemen anggaran
+        UserActivityService::logManajemenAnggaran('menyimpan data monitoring anggaran', [
+            'monitoring_id' => $monitoring->id,
+            'skpd_id' => $validated['skpd_id'],
+            'tahun' => $validated['tahun'],
+            'pagu_pokok' => $validated['pagu_pokok'],
+            'pagu_parsial' => $validated['pagu_parsial'] ?? 0,
+            'pagu_perubahan' => $validated['pagu_perubahan'] ?? 0,
+            'jumlah_targets' => count($validated['targets'])
+        ]);
+
         return back()->with('success', 'Data monitoring berhasil disimpan.');
     }
 
@@ -951,10 +1110,14 @@ class ManajemenAnggaranController extends Controller
         \Log::info('Request data:', $request->all());
 
         // Cek apakah ada periode yang aktif (status 1 = buka) dengan tahap "Rencana"
-        $aktivPeriode = Periode::where('status', 1)
+        $aktivPeriode = Periode::with(['tahun', 'tahap'])->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->where('tahap', 'Rencana');
             })
+            ->whereHas('tahun', function($query) {
+                $query->where('status', 1); // Tahun harus aktif
+            })
+            ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
             ->first();
 
         \Log::info('Active periode found:', ['periode' => $aktivPeriode ? $aktivPeriode->toArray() : null]);
@@ -963,24 +1126,24 @@ class ManajemenAnggaranController extends Controller
             \Log::warning('No active Rencana periode found');
             return response()->json([
                 'success' => false,
-                'message' => 'Periode Rencana belum dibuka. Sumber dana hanya dapat diisi pada periode Rencana.'
+                'message' => 'Periode Rencana sudah selesai atau belum dibuka. Sumber dana hanya dapat diisi pada periode Rencana yang aktif.'
             ], 422);
         }
 
         $validated = $request->validate([
             'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
             'sumber_anggaran' => 'required|array',
-            'sumber_anggaran.dak' => 'required|boolean',
-            'sumber_anggaran.dak_peruntukan' => 'required|boolean',
-            'sumber_anggaran.dak_fisik' => 'required|boolean',
-            'sumber_anggaran.dak_non_fisik' => 'required|boolean',
-            'sumber_anggaran.blud' => 'required|boolean',
+            'sumber_anggaran.dau' => 'boolean',                             // ✅ FIXED: Optional boolean
+            'sumber_anggaran.dau_peruntukan' => 'boolean',                  // ✅ FIXED: Optional boolean
+            'sumber_anggaran.dak_fisik' => 'boolean',
+            'sumber_anggaran.dak_non_fisik' => 'boolean',
+            'sumber_anggaran.blud' => 'boolean',
             'values' => 'required|array',
-            'values.dak' => 'required|numeric',
-            'values.dak_peruntukan' => 'required|numeric',
-            'values.dak_fisik' => 'required|numeric',
-            'values.dak_non_fisik' => 'required|numeric',
-            'values.blud' => 'required|numeric',
+            'values.dau' => 'numeric|min:0',                                // ✅ FIXED: Optional numeric
+            'values.dau_peruntukan' => 'numeric|min:0',                     // ✅ FIXED: Optional numeric
+            'values.dak_fisik' => 'numeric|min:0',
+            'values.dak_non_fisik' => 'numeric|min:0',
+            'values.blud' => 'numeric|min:0',
         ]);
 
         \Log::info('Validation passed, validated data:', ['validated' => $validated]);
@@ -992,7 +1155,7 @@ class ManajemenAnggaranController extends Controller
             \Log::info('SKPD Tugas found:', ['skpd_tugas' => $skpdTugas->toArray()]);
 
             $monitoring = Monitoring::where('skpd_tugas_id', $validated['skpd_tugas_id'])
-                ->where('tahun', date('Y'))
+                ->where('tahun', $aktivPeriode->tahun->tahun)
                 ->first();
 
             \Log::info('Existing monitoring:', ['monitoring' => $monitoring ? $monitoring->toArray() : null]);
@@ -1002,7 +1165,7 @@ class ManajemenAnggaranController extends Controller
                 $monitoring = new Monitoring();
                 $monitoring->skpd_tugas_id = $validated['skpd_tugas_id'];
                 $monitoring->periode_id = $aktivPeriode->id; // ← FIX: Set periode_id
-                $monitoring->tahun = date('Y');
+                $monitoring->tahun = $aktivPeriode->tahun->tahun;
                 // Set field minimal untuk manajemen anggaran - deskripsi dan nama_pptk harus diisi karena NOT NULL
                 $monitoring->deskripsi = ''; // Empty string karena field NOT NULL, akan diisi saat input triwulan
                 $monitoring->nama_pptk = ''; // Empty string karena field NOT NULL, akan diisi saat input triwulan
@@ -1164,8 +1327,8 @@ class ManajemenAnggaranController extends Controller
     private function mapNamaSumberAnggaran(string $key): string
     {
         $mapping = [
-            'dak' => 'DAU',
-            'dak_peruntukan' => 'DAU Peruntukan',
+            'dau' => 'DAU',                    // ✅ FIXED: dau -> DAU (bukan dak)
+            'dau_peruntukan' => 'DAU Peruntukan',
             'dak_fisik' => 'DAK Fisik',
             'dak_non_fisik' => 'DAK Non Fisik',
             'blud' => 'BLUD',
@@ -1177,8 +1340,8 @@ class ManajemenAnggaranController extends Controller
     private function reverseMapNamaSumberAnggaran(string $nama): string
     {
         $reverseMapping = [
-            'DAU' => 'dak',
-            'DAU Peruntukan' => 'dak_peruntukan',
+            'DAU' => 'dau',                    // ✅ FIXED: DAU -> dau (bukan dak)
+            'DAU Peruntukan' => 'dau_peruntukan', // ✅ FIXED: DAU Peruntukan -> dau_peruntukan
             'DAK Fisik' => 'dak_fisik',
             'DAK Non Fisik' => 'dak_non_fisik',
             'BLUD' => 'blud',
@@ -1267,12 +1430,38 @@ class ManajemenAnggaranController extends Controller
             $periodeId = $periodeAktif->first()->id;
         }
 
+        // Debug log
+        \Log::info("=== SHOW PARSIAL DEBUG ===");
+        \Log::info("Periode aktif count: " . $periodeAktif->count());
+        \Log::info("Selected periode_id: " . ($periodeId ?? 'NULL'));
+        \Log::info("Tahun aktif: " . ($tahunAktif->tahun ?? 'NULL'));
+
         foreach ($skpdTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Only sub kegiatan
-                // Find monitoring related to this SKPD tugas
-                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
-                    ->latest()
-                    ->first();
+                // Find monitoring related to this SKPD tugas filtered by year
+                // ✅ PERBAIKAN: Pilih monitoring dengan data rencana awal paling lengkap
+                $monitoringCandidates = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $tahunAktif->tahun)
+                    ->get();
+
+                $monitoring = null;
+                $maxRencanaAwalCount = 0;
+
+                foreach ($monitoringCandidates as $candidate) {
+                    $rencanaAwalCount = MonitoringPagu::whereHas('anggaran', function($query) use ($candidate) {
+                        $query->where('monitoring_id', $candidate->id);
+                    })->where('kategori', 1)->count();
+
+                    if ($rencanaAwalCount > $maxRencanaAwalCount) {
+                        $maxRencanaAwalCount = $rencanaAwalCount;
+                        $monitoring = $candidate;
+                    }
+                }
+
+                // Fallback ke latest jika tidak ada yang memiliki rencana awal
+                if (!$monitoring) {
+                    $monitoring = $monitoringCandidates->sortByDesc('created_at')->first();
+                }
 
                 if ($monitoring) {
                     // Get funding data for both rencana awal (kategori 1) and parsial (kategori 2)
@@ -1304,6 +1493,8 @@ class ManajemenAnggaranController extends Controller
 
                     // Get parsial data (kategori 2) if periode is selected
                     if ($periodeId) {
+                        \Log::info("Fetching parsial data for monitoring_id: {$monitoring->id}, periode_id: {$periodeId}");
+
                         $monitoringAnggaranParsial = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
                             ->with(['sumberAnggaran'])
                             ->with(['pagu' => function($query) use ($periodeId) {
@@ -1312,29 +1503,40 @@ class ManajemenAnggaranController extends Controller
                             }])
                             ->get();
 
+                        \Log::info("Found " . $monitoringAnggaranParsial->count() . " monitoring anggaran records");
+
                         foreach ($monitoringAnggaranParsial as $anggaran) {
+                            \Log::info("Processing anggaran ID: {$anggaran->id}, sumber: " . ($anggaran->sumberAnggaran->nama ?? 'NULL') . ", pagu count: " . $anggaran->pagu->count());
+
                             if ($anggaran->sumberAnggaran && $anggaran->pagu->isNotEmpty()) {
                                 $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
                                 if ($key) {
-                                    $sumberAnggaranData['parsial'][$key] = $anggaran->pagu->first()->dana ?? 0;
+                                    $dana = $anggaran->pagu->first()->dana ?? 0;
+                                    $sumberAnggaranData['parsial'][$key] = $dana;
+                                    \Log::info("Set parsial data: {$key} = {$dana}");
                                 }
                             }
                         }
+                    } else {
+                        \Log::warning("No periode_id selected, skipping parsial data fetch");
                     }
 
                     \Log::debug("Parsial data for task {$tugas->id}:", $sumberAnggaranData['parsial']);
 
-                    // Check if parsial is enabled for this subkegiatan
+                    // ✅ PERBAIKAN: Di mode parsial, enable jika ada data rencana_awal ATAU parsial
+                    // Ini memungkinkan user untuk membuat parsial berdasarkan rencana awal yang sudah ada
                     $isParsialEnabled = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
                         ->whereHas('pagu', function($query) {
-                            $query->where('kategori', 2); // Check if any parsial data exists
+                            $query->whereIn('kategori', [1, 2]); // Enable if rencana_awal OR parsial data exists
                         })
                         ->exists();
 
                     // Prepare data structure for frontend (parsial mode)
-                    $allKeys = ['dak', 'dak_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud'];
+                    $allKeys = ['dau', 'dau_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud']; // ✅ FIXED: dau, dau_peruntukan
                     $sumberAnggaranFlags = [];
-                    
+
+                    // ✅ PERBAIKAN: Di mode parsial, tampilkan checkbox jika ada data rencana_awal ATAU parsial
+                    // Ini memungkinkan user untuk mengisi parsial berdasarkan data rencana awal yang sudah ada
                     foreach ($allKeys as $key) {
                         $sumberAnggaranFlags[$key] = isset($sumberAnggaranData['rencana_awal'][$key]) || isset($sumberAnggaranData['parsial'][$key]);
                     }
@@ -1354,8 +1556,8 @@ class ManajemenAnggaranController extends Controller
                     // No monitoring data exists, create empty structure
                     $dataAnggaranTerakhir[$tugas->id] = [
                         'sumber_anggaran' => [
-                            'dak' => false,
-                            'dak_peruntukan' => false,
+                            'dau' => false, // ✅ FIXED: dau
+                            'dau_peruntukan' => false, // ✅ FIXED: dau_peruntukan
                             'dak_fisik' => false,
                             'dak_non_fisik' => false,
                             'blud' => false,
@@ -1368,6 +1570,14 @@ class ManajemenAnggaranController extends Controller
                     ];
                 }
             }
+        }
+
+        // 🚨 DEBUG: Log data yang dikirim ke frontend
+        \Log::info("=== DATA SENT TO FRONTEND ===");
+        \Log::info("dataAnggaranTerakhir count: " . count($dataAnggaranTerakhir));
+        \Log::info("dataAnggaranTerakhir keys: " . implode(', ', array_keys($dataAnggaranTerakhir)));
+        foreach ($dataAnggaranTerakhir as $taskId => $data) {
+            \Log::info("Task {$taskId} data: " . json_encode($data));
         }
 
         return Inertia::render('MonitoringAnggaran/Sumberdana', [
@@ -1397,16 +1607,20 @@ class ManajemenAnggaranController extends Controller
 
         try {
             // Check if there's an active triwulan period
-            $aktivPeriode = Periode::where('status', 1)
+            $aktivPeriode = Periode::with(['tahun', 'tahap'])->where('status', 1)
                 ->whereHas('tahap', function($query) {
                     $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
                 })
+                ->whereHas('tahun', function($query) {
+                    $query->where('status', 1); // Tahun harus aktif
+                })
+                ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
                 ->first();
 
             if (!$aktivPeriode) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tidak ada periode triwulan yang aktif untuk membuka pagu parsial.'
+                    'message' => 'Periode triwulan sudah selesai atau tidak ada yang aktif untuk membuka pagu parsial.'
                 ], 422);
             }
 
@@ -1441,34 +1655,38 @@ class ManajemenAnggaranController extends Controller
         \Log::info('Request data:', $request->all());
 
         // Check if there's an active triwulan period
-        $aktivPeriode = Periode::where('status', 1)
+        $aktivPeriode = Periode::with(['tahun', 'tahap'])->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
             })
+            ->whereHas('tahun', function($query) {
+                $query->where('status', 1); // Tahun harus aktif
+            })
+            ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
             ->first();
 
         if (!$aktivPeriode) {
             \Log::warning('No active triwulan periode found');
             return response()->json([
                 'success' => false,
-                'message' => 'Periode triwulan belum dibuka. Pagu parsial hanya dapat diisi pada periode triwulan yang aktif.'
+                'message' => 'Periode triwulan sudah selesai atau belum dibuka. Pagu parsial hanya dapat diisi pada periode triwulan yang aktif.'
             ], 422);
         }
 
         $validated = $request->validate([
             'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
             'sumber_anggaran' => 'required|array',
-            'sumber_anggaran.dak' => 'required|boolean',
-            'sumber_anggaran.dak_peruntukan' => 'required|boolean',
-            'sumber_anggaran.dak_fisik' => 'required|boolean',
-            'sumber_anggaran.dak_non_fisik' => 'required|boolean',
-            'sumber_anggaran.blud' => 'required|boolean',
+            'sumber_anggaran.dau' => 'boolean',                             // ✅ FIXED: Optional boolean
+            'sumber_anggaran.dau_peruntukan' => 'boolean',                  // ✅ FIXED: Optional boolean
+            'sumber_anggaran.dak_fisik' => 'boolean',
+            'sumber_anggaran.dak_non_fisik' => 'boolean',
+            'sumber_anggaran.blud' => 'boolean',
             'values' => 'required|array',
-            'values.dak' => 'required|numeric',
-            'values.dak_peruntukan' => 'required|numeric',
-            'values.dak_fisik' => 'required|numeric',
-            'values.dak_non_fisik' => 'required|numeric',
-            'values.blud' => 'required|numeric',
+            'values.dau' => 'numeric|min:0',                                // ✅ FIXED: Optional numeric
+            'values.dau_peruntukan' => 'numeric|min:0',                     // ✅ FIXED: Optional numeric
+            'values.dak_fisik' => 'numeric|min:0',
+            'values.dak_non_fisik' => 'numeric|min:0',
+            'values.blud' => 'numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -1477,7 +1695,7 @@ class ManajemenAnggaranController extends Controller
             $skpdTugas = SkpdTugas::findOrFail($validated['skpd_tugas_id']);
 
             $monitoring = Monitoring::where('skpd_tugas_id', $validated['skpd_tugas_id'])
-                ->where('tahun', date('Y'))
+                ->where('tahun', $aktivPeriode->tahun->tahun)
                 ->first();
 
             if (!$monitoring) {
@@ -1485,7 +1703,7 @@ class ManajemenAnggaranController extends Controller
                 $monitoring = new Monitoring();
                 $monitoring->skpd_tugas_id = $validated['skpd_tugas_id'];
                 $monitoring->periode_id = $aktivPeriode->id;
-                $monitoring->tahun = date('Y');
+                $monitoring->tahun = $aktivPeriode->tahun->tahun;
                 $monitoring->deskripsi = '';
                 $monitoring->nama_pptk = '';
                 $monitoring->save();
@@ -1582,7 +1800,7 @@ class ManajemenAnggaranController extends Controller
     /**
      * Show rencana awal page in parsial mode for detailed editing
      */
-    public function showRencanaAwalParsial($id, Request $request)
+    public function showRencanaAwalParsial($id, Request $request, $tahun = null)
     {
         $tugas = SkpdTugas::with([
             'kodeNomenklatur',
@@ -1641,8 +1859,22 @@ class ManajemenAnggaranController extends Controller
             ->orderBy('tahap_id', 'asc')
             ->get();
 
-        // Get current year
-        $tahunAktif = $semuaPeriodeAktif->isNotEmpty() ? $semuaPeriodeAktif->first()->tahun : null;
+        // Get tahun aktif atau tahun yang dipilih
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            // Get current year
+            $tahunAktif = $semuaPeriodeAktif->isNotEmpty() ? $semuaPeriodeAktif->first()->tahun : null;
+        }
+
+        // Get all tahun for dropdown
+        $allTahun = PeriodeTahun::orderByDesc('tahun')->get();
+
+        // Tentukan tahun yang akan digunakan untuk filtering data
+        $currentYear = $tahunAktif ? $tahunAktif->tahun : date('Y');
 
         // Get funding data for each subkegiatan including both rencana awal and parsial
         $dataAnggaranTerakhir = [];
@@ -1657,8 +1889,9 @@ class ManajemenAnggaranController extends Controller
 
         foreach ($subkegiatanTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Only get sub kegiatan
-                // Find monitoring related to this SKPD tugas
+                // Find monitoring related to this SKPD tugas filtered by year
                 $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $currentYear)
                     ->latest()
                     ->first();
 
@@ -1671,19 +1904,11 @@ class ManajemenAnggaranController extends Controller
                             $query->orderBy('periode_id');
                         }]);
 
-                    // PERBAIKAN 5: Hanya filter berdasarkan periode jika ada periode yang dipilih
-                    if ($periodeId) {
-                        $monitoringAnggaranQuery->with(['pagu' => function($query) use ($periodeId) {
-                            $query->where('kategori', 1) // Category 1 = pokok
-                                  ->where('periode_id', $periodeId); // Filter by period
-                        }]);
-                    } else {
-                        // Jika tidak ada periode spesifik, ambil data terbaru
-                        $monitoringAnggaranQuery->with(['pagu' => function($query) {
-                            $query->where('kategori', 1) // Category 1 = pokok
-                                  ->latest('created_at'); // Ambil yang terbaru
-                        }]);
-                    }
+                    // PERBAIKAN: Ambil semua data rencana awal tanpa filter periode untuk menghindari data hilang
+                    $monitoringAnggaranQuery->with(['pagu' => function($query) {
+                        $query->where('kategori', 1) // Category 1 = pokok (rencana awal)
+                              ->latest('created_at'); // Ambil data terbaru untuk setiap sumber anggaran
+                    }]);
 
                     $monitoringAnggaran = $monitoringAnggaranQuery->get();
 
@@ -1691,9 +1916,15 @@ class ManajemenAnggaranController extends Controller
                         if ($anggaran->sumberAnggaran) {
                             $key = $this->reverseMapNamaSumberAnggaran($anggaran->sumberAnggaran->nama);
                             if ($key) {
-                                // PERBAIKAN: Selalu masukkan sumber anggaran, meskipun pagu kosong
-                                $sumberAnggaranData[$key] = $anggaran->pagu->isNotEmpty() ?
-                                    ($anggaran->pagu->first()->dana ?? 0) : 0;
+                                // PERBAIKAN: Ambil data terbaru dan selalu masukkan sumber anggaran
+                                if ($anggaran->pagu->isNotEmpty()) {
+                                    // Ambil data pagu terbaru untuk sumber anggaran ini
+                                    $latestPagu = $anggaran->pagu->sortByDesc('created_at')->first();
+                                    $sumberAnggaranData[$key] = $latestPagu->dana ?? 0;
+                                } else {
+                                    // Jika tidak ada pagu, tetap masukkan dengan nilai 0
+                                    $sumberAnggaranData[$key] = 0;
+                                }
                             }
                         }
                     }
@@ -1733,6 +1964,7 @@ class ManajemenAnggaranController extends Controller
             ],
             'periodeAktif' => $periodeAktif,
             'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
             'semuaPeriodeAktif' => $semuaPeriodeAktif,
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
             'bidangUrusanList' => $bidangurusanTugas,
@@ -1747,24 +1979,64 @@ class ManajemenAnggaranController extends Controller
      */
     public function enableParsialForUser(Request $request)
     {
+        \Log::info('enableParsialForUser called', [
+            'request_data' => $request->all(),
+            'headers' => $request->headers->all(),
+            'method' => $request->method(),
+            'url' => $request->url(),
+            'content_type' => $request->header('Content-Type'),
+            'accept' => $request->header('Accept')
+        ]);
+
+        // Test response to check if we reach this point
+        if ($request->has('test')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Test endpoint reached successfully',
+                'data' => $request->all()
+            ]);
+        }
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'confirm' => 'required|boolean|accepted'
         ]);
 
         try {
-            // Check if there's an active triwulan period
-            $aktivPeriode = Periode::where('status', 1)
+            // Check if there's an active triwulan period (1, 2, or 3 for parsial)
+            $aktivPeriode = Periode::with(['tahun', 'tahap'])->where('status', 1)
                 ->whereHas('tahap', function($query) {
-                    $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
+                    $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3']); // Only allow parsial for Triwulan 1-3
                 })
+                ->whereHas('tahun', function($query) {
+                    $query->where('status', 1); // Tahun harus aktif
+                })
+                ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
                 ->first();
 
             if (!$aktivPeriode) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak ada periode triwulan yang aktif untuk membuka mode parsial.'
-                ], 422);
+                // Check if there are any Triwulan 1-3 periods available but not active
+                $availablePeriods = Periode::with(['tahun', 'tahap'])
+                    ->whereHas('tahap', function($query) {
+                        $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3']);
+                    })
+                    ->whereHas('tahun', function($query) {
+                        $query->where('status', 1);
+                    })
+                    ->get();
+
+                if ($availablePeriods->isNotEmpty()) {
+                    $periodNames = $availablePeriods->pluck('tahap.tahap')->unique()->implode(', ');
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Mode parsial hanya dapat diaktifkan saat periode Triwulan 1, 2, atau 3 sedang aktif. Periode yang tersedia: {$periodNames}. Silakan hubungi administrator untuk mengaktifkan periode yang diperlukan."
+                    ], 422);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tidak ada periode Triwulan 1, 2, atau 3 yang tersedia untuk tahun aktif. Mode parsial hanya dapat digunakan pada periode tersebut.'
+                    ], 422);
+                }
             }
 
             // Get user and SKPD name for better message
@@ -1781,13 +2053,89 @@ class ManajemenAnggaranController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Mode parsial berhasil diaktifkan untuk {$skpdName}.",
-                'periode' => $aktivPeriode
+                'message' => "Mode parsial berhasil diaktifkan untuk {$skpdName}. Anda sekarang dapat mengakses data {$aktivPeriode->tahap->tahap} dalam mode parsial.",
+                'periode' => $aktivPeriode,
+                'available_triwulan' => $aktivPeriode->tahap->tahap
             ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in enableParsialForUser', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak valid: ' . implode(', ', array_flatten($e->errors()))
+            ], 422);
 
         } catch (\Exception $e) {
             \Log::error('Error enabling parsial for user', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Disable parsial mode for specific user/SKPD
+     */
+    public function disableParsialForUser(Request $request)
+    {
+        \Log::info('disableParsialForUser called', [
+            'request_data' => $request->all(),
+            'headers' => $request->headers->all(),
+            'method' => $request->method(),
+            'url' => $request->url()
+        ]);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'confirm' => 'required|boolean|accepted'
+        ]);
+
+        try {
+            // Get user and SKPD name for better message
+            $user = User::with('skpd')->findOrFail($validated['user_id']);
+            $skpd = $user->skpd->first();
+            $skpdName = $skpd ? $skpd->nama_skpd : 'SKPD';
+
+            // Remove user from enabled parsial list in session
+            $enabledParsialUsers = session('enabled_parsial_users', []);
+            $enabledParsialUsers = array_filter($enabledParsialUsers, function($id) use ($validated) {
+                return (int)$id !== (int)$validated['user_id'];
+            });
+
+            // Re-index array to avoid gaps
+            $enabledParsialUsers = array_values($enabledParsialUsers);
+            session(['enabled_parsial_users' => $enabledParsialUsers]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Mode parsial berhasil ditutup untuk {$skpdName}.",
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in disableParsialForUser', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak valid: ' . implode(', ', array_flatten($e->errors()))
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('Error disabling parsial for user', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
 
@@ -1819,12 +2167,16 @@ class ManajemenAnggaranController extends Controller
                 ->whereHas('tahap', function($query) {
                     $query->where('tahap', 'Triwulan 4');
                 })
+                ->whereHas('tahun', function($query) {
+                    $query->where('status', 1); // Tahun harus aktif
+                })
+                ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
                 ->first();
 
             if (!$triwulan4Aktif) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Periode Triwulan 4 belum dibuka. Perubahan anggaran hanya dapat dilakukan pada periode Triwulan 4.'
+                    'message' => 'Periode Triwulan 4 sudah selesai atau belum dibuka. Perubahan anggaran hanya dapat dilakukan pada periode Triwulan 4 yang aktif.'
                 ], 422);
             }
 
@@ -1893,10 +2245,14 @@ class ManajemenAnggaranController extends Controller
             ->whereHas('tahap', function($query) {
                 $query->where('tahap', 'Triwulan 4');
             })
+            ->whereHas('tahun', function($query) {
+                $query->where('status', 1); // Tahun harus aktif
+            })
+            ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
             ->first();
 
         if (!$triwulan4Aktif) {
-            return redirect()->back()->with('error', 'Periode Triwulan 4 tidak aktif. Perubahan anggaran tidak dapat dilakukan.');
+            return redirect()->back()->with('error', 'Periode Triwulan 4 sudah selesai atau tidak aktif. Perubahan anggaran tidak dapat dilakukan.');
         }
 
         $user = User::with([
@@ -1951,10 +2307,30 @@ class ManajemenAnggaranController extends Controller
 
         foreach ($skpdTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Only sub kegiatan
-                // Find monitoring related to this SKPD tugas
-                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
-                    ->latest()
-                    ->first();
+                // Find monitoring related to this SKPD tugas filtered by year
+                // ✅ PERBAIKAN: Pilih monitoring dengan data rencana awal paling lengkap
+                $monitoringCandidates = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $tahunAktif->tahun)
+                    ->get();
+
+                $monitoring = null;
+                $maxRencanaAwalCount = 0;
+
+                foreach ($monitoringCandidates as $candidate) {
+                    $rencanaAwalCount = MonitoringPagu::whereHas('anggaran', function($query) use ($candidate) {
+                        $query->where('monitoring_id', $candidate->id);
+                    })->where('kategori', 1)->count();
+
+                    if ($rencanaAwalCount > $maxRencanaAwalCount) {
+                        $maxRencanaAwalCount = $rencanaAwalCount;
+                        $monitoring = $candidate;
+                    }
+                }
+
+                // Fallback ke latest jika tidak ada yang memiliki rencana awal
+                if (!$monitoring) {
+                    $monitoring = $monitoringCandidates->sortByDesc('created_at')->first();
+                }
 
                 if ($monitoring) {
                     // Get funding data for rencana awal (kategori 1), parsial (kategori 2), and budget change (kategori 3)
@@ -2045,12 +2421,12 @@ class ManajemenAnggaranController extends Controller
                     }
 
                     // Prepare data structure for frontend (budget change mode) - similar to parsial mode
-                    $allKeys = ['dak', 'dak_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud'];
+                    $allKeys = ['dau', 'dau_peruntukan', 'dak_fisik', 'dak_non_fisik', 'blud'];
                     $sumberAnggaranFlags = [];
-                    
+
                     foreach ($allKeys as $key) {
-                        $sumberAnggaranFlags[$key] = isset($sumberAnggaranData['rencana_awal'][$key]) || 
-                                                   isset($sumberAnggaranData['parsial'][$key]) || 
+                        $sumberAnggaranFlags[$key] = isset($sumberAnggaranData['rencana_awal'][$key]) ||
+                                                   isset($sumberAnggaranData['parsial'][$key]) ||
                                                    isset($sumberAnggaranData['budget_change'][$key]);
                     }
 
@@ -2069,8 +2445,8 @@ class ManajemenAnggaranController extends Controller
                     // No monitoring data exists, create empty structure
                     $dataAnggaranTerakhir[$tugas->id] = [
                         'sumber_anggaran' => [
-                            'dak' => false,
-                            'dak_peruntukan' => false,
+                            'dau' => false,
+                            'dau_peruntukan' => false,
                             'dak_fisik' => false,
                             'dak_non_fisik' => false,
                             'blud' => false,
@@ -2110,34 +2486,38 @@ class ManajemenAnggaranController extends Controller
         \Log::info('Request data:', $request->all());
 
         // Check if Triwulan 4 is active
-        $triwulan4Aktif = Periode::where('status', 1)
+        $triwulan4Aktif = Periode::with(['tahun', 'tahap'])->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->where('tahap', 'Triwulan 4');
             })
+            ->whereHas('tahun', function($query) {
+                $query->where('status', 1); // Tahun harus aktif
+            })
+            ->where('tanggal_selesai', '>=', now()->toDateString()) // Periode belum selesai
             ->first();
 
         if (!$triwulan4Aktif) {
             \Log::warning('No active Triwulan 4 periode found');
             return response()->json([
                 'success' => false,
-                'message' => 'Periode Triwulan 4 belum dibuka. Perubahan anggaran hanya dapat dilakukan pada periode Triwulan 4 yang aktif.'
+                'message' => 'Periode Triwulan 4 sudah selesai atau belum dibuka. Perubahan anggaran hanya dapat dilakukan pada periode Triwulan 4 yang aktif.'
             ], 422);
         }
 
         $validated = $request->validate([
             'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
             'sumber_anggaran' => 'required|array',
-            'sumber_anggaran.dak' => 'required|boolean',
-            'sumber_anggaran.dak_peruntukan' => 'required|boolean',
-            'sumber_anggaran.dak_fisik' => 'required|boolean',
-            'sumber_anggaran.dak_non_fisik' => 'required|boolean',
-            'sumber_anggaran.blud' => 'required|boolean',
+            'sumber_anggaran.dau' => 'boolean',                             // ✅ FIXED: Optional boolean
+            'sumber_anggaran.dau_peruntukan' => 'boolean',                  // ✅ FIXED: Optional boolean
+            'sumber_anggaran.dak_fisik' => 'boolean',
+            'sumber_anggaran.dak_non_fisik' => 'boolean',
+            'sumber_anggaran.blud' => 'boolean',
             'values' => 'required|array',
-            'values.dak' => 'required|numeric',
-            'values.dak_peruntukan' => 'required|numeric',
-            'values.dak_fisik' => 'required|numeric',
-            'values.dak_non_fisik' => 'required|numeric',
-            'values.blud' => 'required|numeric',
+            'values.dau' => 'numeric|min:0',                                // ✅ FIXED: Optional numeric
+            'values.dau_peruntukan' => 'numeric|min:0',                     // ✅ FIXED: Optional numeric
+            'values.dak_fisik' => 'numeric|min:0',
+            'values.dak_non_fisik' => 'numeric|min:0',
+            'values.blud' => 'numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -2146,7 +2526,7 @@ class ManajemenAnggaranController extends Controller
             $skpdTugas = SkpdTugas::findOrFail($validated['skpd_tugas_id']);
 
             $monitoring = Monitoring::where('skpd_tugas_id', $validated['skpd_tugas_id'])
-                ->where('tahun', date('Y'))
+                ->where('tahun', $triwulan4Aktif->tahun->tahun)
                 ->first();
 
             if (!$monitoring) {
@@ -2154,7 +2534,7 @@ class ManajemenAnggaranController extends Controller
                 $monitoring = new Monitoring();
                 $monitoring->skpd_tugas_id = $validated['skpd_tugas_id'];
                 $monitoring->periode_id = $triwulan4Aktif->id;
-                $monitoring->tahun = date('Y');
+                $monitoring->tahun = $triwulan4Aktif->tahun->tahun;
                 $monitoring->deskripsi = '';
                 $monitoring->nama_pptk = '';
                 $monitoring->save();
@@ -2248,5 +2628,240 @@ class ManajemenAnggaranController extends Controller
         }
     }
 
- 
+    /**
+     * Export Rencana Awal data to CSV
+     */
+    public function exportRencanaAwalCsv($tugasId, $tahun = null)
+    {
+        try {
+            // Get SKPD data with proper relationships
+            $skpdTugas = SkpdTugas::with([
+                'kodeNomenklatur',
+                'skpd' => function($query) {
+                    $query->with([
+                        'kepala' => function($q) {
+                            $q->with(['user' => function($u) {
+                                $u->with('userDetail');
+                            }]);
+                        }
+                    ]);
+                }
+            ])->find($tugasId);
+            
+            if (!$skpdTugas) {
+                throw new \Exception("SKPD Tugas dengan ID {$tugasId} tidak ditemukan");
+            }
+            
+            // Determine year
+            $tahunRecord = $tahun ? PeriodeTahun::where('tahun', $tahun)->first() : PeriodeTahun::getTahunAktif();
+            $currentYear = $tahunRecord ? $tahunRecord->tahun : date('Y');
+            
+            // Get monitoring data
+            $monitoring = Monitoring::where('skpd_tugas_id', $tugasId)
+                ->where('tahun', $currentYear)
+                ->with([
+                    'monitoring_target',
+                    'monitoring_anggaran' => function($query) {
+                        $query->with([
+                            'sumberAnggaran',
+                            'pagu' => function($q) {
+                                $q->orderBy('kategori');
+                            }
+                        ]);
+                    }
+                ])
+                ->first();
+            
+            // Get periode rencana
+            $periodeRencana = null;
+            if ($tahunRecord) {
+                $periodeRencana = Periode::with(['tahap', 'tahun'])
+                    ->whereHas('tahap', function($query) {
+                        $query->where('tahap', 'Rencana');
+                    })
+                    ->where('tahun_id', $tahunRecord->id)
+                    ->first();
+            }
+            
+            // Generate CSV content
+            $csvContent = "\xEF\xBB\xBF"; // UTF-8 BOM
+            
+            // Header information
+            $csvContent .= "Data Rencana Awal\n";
+            $csvContent .= "SKPD: " . ($skpdTugas->skpd->nama_dinas ?? $skpdTugas->skpd->nama_skpd ?? 'Tidak tersedia') . "\n";
+            $csvContent .= "Kode Organisasi: " . ($skpdTugas->skpd->kode_organisasi ?? 'Tidak tersedia') . "\n";
+            $csvContent .= "Tahun: {$currentYear}\n";
+            
+            if ($periodeRencana && $periodeRencana->tahap) {
+                $csvContent .= "Periode: {$periodeRencana->tahap->tahap}\n";
+            }
+            
+            $csvContent .= "Tanggal Export: " . date('d/m/Y H:i:s') . "\n";
+            
+            // Safe kepala SKPD access
+            $kepalaSkpd = 'Tidak tersedia';
+            $nipKepalaSkpd = 'Tidak tersedia';
+            
+            try {
+                if ($skpdTugas->skpd && 
+                    is_object($skpdTugas->skpd->kepala) && 
+                    $skpdTugas->skpd->kepala->count() > 0) {
+                    
+                    $kepala = $skpdTugas->skpd->kepala->first();
+                    if ($kepala && $kepala->user) {
+                        $kepalaSkpd = $kepala->user->name ?? 'Tidak tersedia';
+                        if ($kepala->user->userDetail) {
+                            $nipKepalaSkpd = $kepala->user->userDetail->nip ?? 'Tidak tersedia';
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Keep default values if any error in accessing kepala SKPD
+                \Log::warning('Error accessing kepala SKPD: ' . $e->getMessage());
+            }
+            
+            $csvContent .= "Kepala SKPD: {$kepalaSkpd}\n";
+            $csvContent .= "NIP Kepala SKPD: {$nipKepalaSkpd}\n\n";
+            
+            // CSV headers
+            $headers = [
+                'No',
+                'Kode',
+                'Bidang Urusan/Program/Kegiatan/Sub Kegiatan',
+                'Sumber Dana',
+                'Pagu Pokok (Rp)',
+                'Pagu Parsial (Rp)',
+                'Pagu Perubahan (Rp)',
+                'Target Fisik (%)',
+                'Target Keuangan (Rp)',
+                'Indikator',
+                'Target Capaian'
+            ];
+            
+            $csvContent .= implode(',', array_map(function($header) {
+                return '"' . str_replace('"', '""', $header) . '"';
+            }, $headers)) . "\n";
+            
+            // Data row
+            $no = 1;
+            if ($monitoring) {
+                // Initialize program data
+                $programData = [
+                    'kode' => $skpdTugas->kodeNomenklatur->nomor_kode ?? '',
+                    'program' => $skpdTugas->kodeNomenklatur->nomenklatur ?? '',
+                    'pokok' => 0,
+                    'parsial' => 0,
+                    'perubahan' => 0,
+                    'sumber_dana' => [],
+                    'target_fisik' => 0,
+                    'target_keuangan' => 0,
+                    'indikator' => '',
+                    'target' => ''
+                ];
+                
+                // Get monitoring target data safely
+                if ($monitoring->monitoring_target) {
+                    $programData['target_fisik'] = $monitoring->monitoring_target->target_kinerja_fisik ?? 0;
+                    $programData['target_keuangan'] = $monitoring->monitoring_target->target_keuangan ?? 0;
+                    $programData['indikator'] = $monitoring->monitoring_target->indikator ?? '';
+                    $programData['target'] = $monitoring->monitoring_target->target ?? '';
+                }
+                
+                // Calculate pagu from monitoring anggaran
+                try {
+                    if ($monitoring->monitoring_anggaran && $monitoring->monitoring_anggaran->count() > 0) {
+                        foreach ($monitoring->monitoring_anggaran as $anggaran) {
+                            // Collect sumber dana
+                            if ($anggaran && $anggaran->sumberAnggaran) {
+                                $programData['sumber_dana'][] = $anggaran->sumberAnggaran->nama;
+                            }
+                            
+                            // Calculate pagu by category
+                            if ($anggaran && $anggaran->pagu && $anggaran->pagu->count() > 0) {
+                                foreach ($anggaran->pagu as $pagu) {
+                                    if ($pagu && isset($pagu->kategori) && isset($pagu->dana)) {
+                                        switch ($pagu->kategori) {
+                                            case 1: // Pokok
+                                                $programData['pokok'] += (float)$pagu->dana;
+                                                break;
+                                            case 2: // Parsial
+                                                $programData['parsial'] += (float)$pagu->dana;
+                                                break;
+                                            case 3: // Perubahan
+                                                $programData['perubahan'] += (float)$pagu->dana;
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Error processing monitoring anggaran: ' . $e->getMessage());
+                }
+                
+                $row = [
+                    $no++,
+                    $programData['kode'],
+                    $programData['program'],
+                    implode(', ', array_unique($programData['sumber_dana'])),
+                    number_format($programData['pokok'], 0, ',', '.'),
+                    number_format($programData['parsial'], 0, ',', '.'),
+                    number_format($programData['perubahan'], 0, ',', '.'),
+                    number_format($programData['target_fisik'], 2, ',', '.'),
+                    number_format($programData['target_keuangan'], 0, ',', '.'),
+                    $programData['indikator'],
+                    $programData['target']
+                ];
+            } else {
+                // No monitoring data
+                $row = [
+                    $no++,
+                    $skpdTugas->kodeNomenklatur->nomor_kode ?? '',
+                    $skpdTugas->kodeNomenklatur->nomenklatur ?? '',
+                    'Belum ada data',
+                    '0',
+                    '0',
+                    '0',
+                    '0.00',
+                    '0',
+                    'Belum ada data',
+                    'Belum ada data'
+                ];
+            }
+            
+            $csvContent .= implode(',', array_map(function($cell) {
+                return '"' . str_replace('"', '""', $cell) . '"';
+            }, $row)) . "\n";
+            
+            // Generate filename
+            $skpdName = str_replace([' ', '/', '\\'], '_', $skpdTugas->skpd->nama_dinas ?? $skpdTugas->skpd->nama_skpd ?? 'SKPD');
+            $filename = "Rencana_Awal_{$skpdName}_{$currentYear}.csv";
+            
+            // Log activity
+            UserActivityService::logExportData('CSV Rencana Awal', [
+                'tugas_id' => $tugasId,
+                'skpd_id' => $skpdTugas->skpd->id ?? 0,
+                'tahun' => $currentYear,
+                'filename' => $filename
+            ]);
+            
+            // Return CSV download
+            return response($csvContent, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error exporting Rencana Awal CSV: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['error' => 'Export failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+
+
 }

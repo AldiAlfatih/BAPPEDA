@@ -10,6 +10,7 @@ use App\Models\MonitoringAnggaran;
 use App\Models\MonitoringPagu;
 use App\Models\SumberAnggaran;
 use App\Models\Periode;
+use App\Models\PeriodeTahun;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,32 +18,83 @@ use Inertia\Inertia;
 
 class RencanaAwalController extends Controller
 {
-    public function show($id, Request $request)
+    /**
+     * Get tahun aktif atau tahun yang dipilih
+     */
+    private function getTahunAktif(Request $request)
     {
+        if ($request->has('tahun_id') && $request->tahun_id) {
+            return PeriodeTahun::find($request->tahun_id);
+        }
+
+        return PeriodeTahun::getTahunAktif();
+    }
+
+    /**
+     * Get semua tahun untuk dropdown
+     */
+    private function getAllTahun()
+    {
+        return PeriodeTahun::orderByDesc('tahun')->get();
+    }
+    public function show($id, Request $request, $tahun = null)
+    {
+        \Log::info('RencanaAwalController.show called', [
+            'id' => $id,
+            'tahun' => $tahun,
+            'url' => request()->url(),
+            'method' => request()->method()
+        ]);
+
         $requestedUrusanId = $request->input('urusan_id');
+
+        // Get tahun aktif atau tahun yang dipilih
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            $tahunAktif = $this->getTahunAktif($request);
+        }
+        $allTahun = $this->getAllTahun();
 
         // Load basic data using helper methods
         $tugas = $this->loadSkpdData($id);
 
-        // DEBUG: Log relasi yang ter-load
-        \Log::info('=== TUGAS DATA LOADED ===', [
-            'tugas_id' => $tugas->id,
-            'skpd_id' => $tugas->skpd_id,
-            'skpd_exists' => $tugas->skpd ? true : false,
-            'kepala_count' => $tugas->skpd && $tugas->skpd->kepala ? $tugas->skpd->kepala->count() : 0,
-            'tim_kerja_count' => $tugas->skpd && $tugas->skpd->timKerja ? $tugas->skpd->timKerja->count() : 0,
-            'kepala_first' => $tugas->skpd && $tugas->skpd->kepala && $tugas->skpd->kepala->first() ? [
-                'id' => $tugas->skpd->kepala->first()->id,
-                'is_aktif' => $tugas->skpd->kepala->first()->is_aktif,
-                'user_exists' => $tugas->skpd->kepala->first()->user ? true : false,
-                'user_name' => $tugas->skpd->kepala->first()->user ? $tugas->skpd->kepala->first()->user->name : null,
-                'user_detail_exists' => $tugas->skpd->kepala->first()->user && $tugas->skpd->kepala->first()->user->userDetail ? true : false,
-                'user_nip' => $tugas->skpd->kepala->first()->user && $tugas->skpd->kepala->first()->user->userDetail ? $tugas->skpd->kepala->first()->user->userDetail->nip : null
-            ] : null
-        ]);
 
-        $periodeAktif = $this->getActivePeriode();
-        $skpdTugas = $this->loadSkpdTugasWithMonitoring($tugas->skpd_id, $periodeAktif);
+
+        // PERBAIKAN: Ambil semua periode aktif dan cari yang paling relevan
+        $allActivePeriode = $this->getAllActivePeriode();
+        $periodeAktif = $this->getActivePeriode($tahunAktif); // Default periode untuk tahun aktif
+
+        // PERBAIKAN: Cari periode yang sesuai dengan tahun yang dipilih user
+        $bestPeriode = $periodeAktif;
+        if ($allActivePeriode->count() > 1) {
+            foreach ($allActivePeriode as $periode) {
+                // PERBAIKAN: Pastikan relasi tahun ada dan sesuai dengan tahun yang dipilih
+                if ($periode->tahun && $periode->tahun->tahun == $tahunAktif->tahun) {
+                    $hasRecentData = \App\Models\Monitoring::where('skpd_tugas_id', $tugas->id)
+                        ->where('tahun', $tahunAktif->tahun) // Gunakan tahun yang dipilih user
+                        ->exists();
+                    if ($hasRecentData) {
+                        $bestPeriode = $periode;
+                        break; // Ambil periode pertama yang memiliki data untuk tahun yang dipilih
+                    }
+                }
+            }
+        }
+
+        // PERBAIKAN: Pastikan bestPeriode tidak null sebelum mengakses tahun
+        if (!$bestPeriode) {
+            // Fallback: gunakan tahun aktif jika tidak ada periode yang cocok
+            $bestPeriode = $periodeAktif ?: $allActivePeriode->first();
+        }
+
+
+
+        // PERBAIKAN: Pastikan bestPeriode dan tahun ada sebelum memanggil loadSkpdTugasWithMonitoring
+        $skpdTugas = $this->loadSkpdTugasWithMonitoring($tugas->skpd_id, $bestPeriode, $tahunAktif);
 
         // Get available urusan and determine current urusan
         $availableUrusans = $this->getAvailableUrusans($skpdTugas);
@@ -140,15 +192,21 @@ class RencanaAwalController extends Controller
         // Get user penanggung jawab (operator)
         $penanggungJawab = $this->getPenanggungJawabData($tugas);
 
+        // Get the correct user ID for breadcrumb navigation
+        $breadcrumbUserId = $this->getBreadcrumbUserId($tugas);
+
         // DEBUG: Log data yang akan dikirim ke frontend
         \Log::info('=== FINAL DATA TO FRONTEND ===', [
             'kepalaSkpd' => $kepalaSkpd,
             'skpdData' => $skpdData,
             'penanggungJawab' => $penanggungJawab,
+            'breadcrumbUserId' => $breadcrumbUserId,
             'skpd_kepala_structure' => $skpdData['skpd_kepala'] ?? 'NULL',
             'tugas_skpd_kepala' => $tugas->skpd->kepala->toArray(),
             'tugas_skpd_timkerja' => $tugas->skpd->timKerja->toArray()
         ]);
+
+
 
         // Mengirimkan data ke tampilan
         return Inertia::render('Monitoring/RencanaAwal', [
@@ -160,11 +218,15 @@ class RencanaAwalController extends Controller
             'kepalaSkpd' => $kepalaSkpd,
             'bidangUrusan' => $bidangUrusan,
             'dataAnggaranTerakhir' => $dataAnggaranTerakhir,
-            'periodeAktif' => $periodeAktif ? [$periodeAktif] : [],
+            'periodeAktif' => $bestPeriode ? [$bestPeriode] : [], // Gunakan periode terbaik
+            'allActivePeriode' => $allActivePeriode, // Kirim semua periode aktif untuk dropdown
             'availableUrusans' => $allUrusans,
             'selectedUrusanId' => $urusanId,
             'skpd' => $skpdData,
             'user' => $penanggungJawab,
+            'breadcrumbUserId' => $breadcrumbUserId, // Add breadcrumb user ID for correct navigation
+            'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
             'flash' => [
                 'success' => session('success'),
                 'error' => session('error'),
@@ -178,14 +240,8 @@ class RencanaAwalController extends Controller
     private function normalizeKey($key) {
         $key = strtolower($key);
 
-        // Map DAU to dak for compatibility with existing code
-        if ($key === 'dau') {
-            return 'dak';
-        }
-        if ($key === 'dau_peruntukan') {
-            return 'dak_peruntukan';
-        }
-
+        // ✅ FIXED: Konsisten dengan ManajemenAnggaranController
+        // Tidak perlu mapping lagi karena sudah benar dari awal
         return $key;
     }
 
@@ -212,45 +268,156 @@ class RencanaAwalController extends Controller
     /**
      * Get active periode for Rencana phase
      */
-    private function getActivePeriode()
+    private function getActivePeriode($tahunAktif = null)
     {
+        // Jika tidak ada tahun aktif yang diberikan, ambil tahun aktif dari sistem
+        if (!$tahunAktif) {
+            $tahunAktif = PeriodeTahun::getTahunAktif();
+        }
+
+        // PERBAIKAN: Cari periode aktif untuk tahun aktif, tidak harus bertahap "Rencana"
+        // Karena Rencana Awal bisa diisi di periode apapun
         return Periode::where('status', 1)
-            ->whereHas('tahap', function($query) {
-                $query->where('tahap', 'like', '%Rencana%');
-            })
+            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
             ->with(['tahap', 'tahun'])
             ->first();
     }
 
     /**
+     * Get all active periode for Rencana phase (untuk menangani multiple active periode)
+     */
+    private function getAllActivePeriode()
+    {
+        // PERBAIKAN: Ambil semua periode aktif, tidak harus bertahap "Rencana"
+        return Periode::where('status', 1)
+            ->with(['tahap', 'tahun'])
+            ->orderByDesc('id') // Ambil periode terbaru dulu
+            ->get();
+    }
+
+    /**
      * Load SKPD tugas with monitoring data (optimized to prevent N+1)
      */
-    private function loadSkpdTugasWithMonitoring($skpdId, $periodeAktif = null)
+    private function loadSkpdTugasWithMonitoring($skpdId, $periodeAktif = null, $tahunAktif = null)
     {
-        return SkpdTugas::where('skpd_id', $skpdId)
+        // Gunakan tahun dari periode aktif jika ada, fallback ke tahun aktif
+        $tahunFilter = $periodeAktif && $periodeAktif->tahun ? $periodeAktif->tahun->tahun : date('Y');
+        if ($tahunAktif) {
+            $tahunFilter = $tahunAktif->tahun;
+        }
+
+        // ✅ PERBAIKAN: Load SKPD tugas tanpa monitoring dulu, lalu pilih monitoring terbaik secara manual
+        $skpdTugas = SkpdTugas::where('skpd_id', $skpdId)
             ->where('is_aktif', 1)
-            ->with([
-                'kodeNomenklatur.details',
-                'monitoring' => function($query) use ($periodeAktif) {
-                    $query->where('deskripsi', 'Rencana Awal')
-                        ->where('tahun', date('Y'))
-                        ->when($periodeAktif, function($q) use ($periodeAktif) {
-                            return $q->where('periode_id', $periodeAktif->id);
-                        })
-                        ->with([
-                            'anggaran.sumberAnggaran',
-                            'anggaran.pagu' => function($query) use ($periodeAktif) {
-                                $query->when($periodeAktif, function($q) use ($periodeAktif) {
-                                    return $q->where('periode_id', $periodeAktif->id);
-                                });
-                            },
-                            'anggaran.target' => function($query) {
-                                $query->orderBy('periode_id');
-                            }
-                        ]);
-                }
-            ])
+            ->with(['kodeNomenklatur.details'])
             ->get();
+
+        // Untuk setiap tugas, pilih monitoring dengan data rencana awal paling lengkap
+        foreach ($skpdTugas as $tugas) {
+            if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Sub kegiatan
+                // Ambil semua monitoring candidates
+                $monitoringCandidates = \App\Models\Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->where('tahun', $tahunFilter)
+                    ->get();
+
+                $bestMonitoring = null;
+                $maxScore = 0;
+
+                foreach ($monitoringCandidates as $candidate) {
+                    // Hitung jumlah rencana awal (kategori 1)
+                    $rencanaAwalCount = \App\Models\MonitoringPagu::whereHas('anggaran', function($query) use ($candidate) {
+                        $query->where('monitoring_id', $candidate->id);
+                    })->where('kategori', 1)->count();
+
+                    // Hitung jumlah target data
+                    $targetCount = \App\Models\MonitoringTarget::whereHas('anggaran', function($query) use ($candidate) {
+                        $query->where('monitoring_id', $candidate->id);
+                    })->count();
+
+                    // Hitung jumlah sumber anggaran
+                    $anggaranCount = \App\Models\MonitoringAnggaran::where('monitoring_id', $candidate->id)->count();
+
+                    // Score berdasarkan kelengkapan data: rencana awal (bobot 3) + target (bobot 2) + anggaran (bobot 1)
+                    $score = ($rencanaAwalCount * 3) + ($targetCount * 2) + ($anggaranCount * 1);
+
+
+
+                    if ($score > $maxScore) {
+                        $maxScore = $score;
+                        $bestMonitoring = $candidate;
+                    }
+                }
+
+                // Fallback ke latest jika tidak ada yang memiliki rencana awal
+                if (!$bestMonitoring && $monitoringCandidates->isNotEmpty()) {
+                    $bestMonitoring = $monitoringCandidates->sortByDesc('created_at')->first();
+                }
+
+                // Load monitoring dengan relasi lengkap
+                if ($bestMonitoring) {
+                    $monitoring = \App\Models\Monitoring::with([
+                        'anggaran.sumberAnggaran',
+                        'anggaran.pagu',
+                        'anggaran.target' => function($query) {
+                            $query->orderBy('periode_id');
+                        }
+                    ])->find($bestMonitoring->id);
+
+                    // Debug: Log monitoring data yang dimuat
+                    \Log::info('Monitoring data loaded for subkegiatan ' . $tugas->id, [
+                        'monitoring_found' => !!$monitoring,
+                        'monitoring_id' => $monitoring ? $monitoring->id : null,
+                        'anggaran_count' => $monitoring ? $monitoring->anggaran->count() : 0,
+                        'targets_count' => $monitoring ? $monitoring->anggaran->sum(function($anggaran) {
+                            return $anggaran->target->count();
+                        }) : 0
+                    ]);
+
+                    // PERBAIKAN: Transform data untuk frontend - kelompokkan target berdasarkan sumber anggaran
+                    if ($monitoring && $monitoring->anggaran) {
+                        $targetsBySumberAnggaran = [];
+
+                        foreach ($monitoring->anggaran as $anggaran) {
+                            $sumberAnggaranId = $anggaran->sumber_anggaran_id;
+                            $sumberAnggaranNama = $anggaran->sumberAnggaran->nama ?? 'Unknown';
+
+                            // Urutkan target berdasarkan periode_id untuk memastikan urutan triwulan yang benar
+                            $sortedTargets = $anggaran->target->sortBy('periode_id');
+
+                            // Kelompokkan target berdasarkan sumber anggaran
+                            $targetsBySumberAnggaran[$sumberAnggaranId] = [
+                                'sumber_anggaran_id' => $sumberAnggaranId,
+                                'sumber_anggaran_nama' => $sumberAnggaranNama,
+                                'targets' => $sortedTargets->map(function($target) {
+                                    return [
+                                        'periode_id' => $target->periode_id,
+                                        'kinerja_fisik' => (float) $target->kinerja_fisik,
+                                        'keuangan' => (float) $target->keuangan
+                                    ];
+                                })->values()->toArray()
+                            ];
+                        }
+
+                        // Set data yang sudah ditransform ke monitoring
+                        $monitoring->targets_by_sumber_anggaran = $targetsBySumberAnggaran;
+
+                        // Debug: Log data yang ditransform
+                        \Log::info('Targets by sumber anggaran for subkegiatan ' . $tugas->id, [
+                            'targets_by_sumber_anggaran' => $targetsBySumberAnggaran
+                        ]);
+                    }
+
+                    $tugas->setRelation('monitoring', collect([$monitoring]));
+
+                } else {
+                    $tugas->setRelation('monitoring', collect([]));
+                }
+            } else {
+                $tugas->setRelation('monitoring', collect([]));
+            }
+        }
+
+        return $skpdTugas;
     }
 
     /**
@@ -343,138 +510,7 @@ class RencanaAwalController extends Controller
         ];
     }
 
-    /**
-     * Get penanggung jawab (operator) data
-     */
-    private function getPenanggungJawabData($tugas)
-    {
-        $penanggungJawab = null;
-        $method = 'none';
 
-        // Method 1: Cari tim kerja aktif untuk SKPD ini
-        $timKerja = \App\Models\TimKerja::where('skpd_id', $tugas->skpd_id)
-            ->where('is_aktif', 1)
-            ->with(['operator.userDetail'])
-            ->first();
-
-        if ($timKerja && $timKerja->operator) {
-            $penanggungJawab = [
-                'id' => $timKerja->operator->id,
-                'name' => $timKerja->operator->name,
-                'nip' => $timKerja->operator->userDetail ? $timKerja->operator->userDetail->nip : null,
-                'nama_skpd' => $tugas->skpd->nama_skpd
-            ];
-            $method = 'tim_kerja';
-        }
-
-        // Method 2: Fallback ke user SKPD jika tidak ada tim kerja
-        if (!$penanggungJawab && $tugas->skpd->user_id) {
-            $user = \App\Models\User::with('userDetail')->find($tugas->skpd->user_id);
-            if ($user) {
-                $penanggungJawab = [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'nip' => $user->userDetail ? $user->userDetail->nip : null,
-                    'nama_skpd' => $tugas->skpd->nama_skpd
-                ];
-                $method = 'skpd_user';
-            }
-        }
-
-        // Method 3: Coba cari user yang memiliki role perangkat_daerah untuk SKPD ini
-        if (!$penanggungJawab) {
-            $perangkatDaerah = \App\Models\User::whereHas('skpd', function($query) use ($tugas) {
-                    $query->where('skpd.id', $tugas->skpd_id);
-                })
-                ->whereHas('roles', function($query) {
-                    $query->where('name', 'perangkat_daerah');
-                })
-                ->with('userDetail')
-                ->first();
-
-            if ($perangkatDaerah) {
-                $penanggungJawab = [
-                    'id' => $perangkatDaerah->id,
-                    'name' => $perangkatDaerah->name,
-                    'nip' => $perangkatDaerah->userDetail ? $perangkatDaerah->userDetail->nip : null,
-                    'nama_skpd' => $tugas->skpd->nama_skpd
-                ];
-                $method = 'perangkat_daerah_role';
-            }
-        }
-
-        // Method 4: Coba cari user berdasarkan SkpdKepala (kepala sebagai fallback)
-        if (!$penanggungJawab) {
-            $kepalaAktif = \App\Models\SkpdKepala::where('skpd_id', $tugas->skpd_id)
-                ->where('is_aktif', 1)
-                ->with(['user.userDetail'])
-                ->first();
-
-            if ($kepalaAktif && $kepalaAktif->user) {
-                $penanggungJawab = [
-                    'id' => $kepalaAktif->user->id,
-                    'name' => $kepalaAktif->user->name,
-                    'nip' => $kepalaAktif->user->userDetail ? $kepalaAktif->user->userDetail->nip : null,
-                    'nama_skpd' => $tugas->skpd->nama_skpd
-                ];
-                $method = 'kepala_as_fallback';
-            }
-        }
-
-        // Method 5: Coba cari user yang punya role perangkat_daerah dari semua user
-        if (!$penanggungJawab) {
-            $anyPerangkatDaerah = \App\Models\User::whereHas('roles', function($query) {
-                    $query->where('name', 'perangkat_daerah');
-                })
-                ->with('userDetail')
-                ->first();
-
-            if ($anyPerangkatDaerah) {
-                $penanggungJawab = [
-                    'id' => $anyPerangkatDaerah->id,
-                    'name' => $anyPerangkatDaerah->name,
-                    'nip' => $anyPerangkatDaerah->userDetail ? $anyPerangkatDaerah->userDetail->nip : null,
-                    'nama_skpd' => $tugas->skpd->nama_skpd
-                ];
-                $method = 'any_perangkat_daerah';
-            }
-        }
-
-        \Log::info('RencanaAwal getPenanggungJawabData COMPREHENSIVE', [
-            'skpd_id' => $tugas->skpd_id,
-            'method_used' => $method,
-            'tim_kerja_exists' => $timKerja ? true : false,
-            'tim_kerja_operator_exists' => $timKerja && $timKerja->operator ? true : false,
-            'skpd_user_id' => $tugas->skpd->user_id ?? 'null',
-            'final_penanggung_jawab' => $penanggungJawab,
-            'result_name' => $penanggungJawab ? $penanggungJawab['name'] : 'NOT_FOUND',
-            'result_nip' => $penanggungJawab ? $penanggungJawab['nip'] : 'NOT_FOUND'
-        ]);
-
-        // Return result atau default fallback dengan struktur yang sesuai untuk frontend
-        if ($penanggungJawab) {
-            return [
-                'id' => $penanggungJawab['id'],
-                'name' => $penanggungJawab['name'],
-                'nip' => $penanggungJawab['nip'],
-                'nama_skpd' => $penanggungJawab['nama_skpd'],
-                // Tambahan untuk kompatibilitas dengan frontend
-                'user_detail' => [
-                    'nip' => $penanggungJawab['nip']
-                ]
-            ];
-        }
-
-        return [
-            'id' => $tugas->skpd_id,
-            'name' => 'Tidak tersedia',
-            'nip' => null,
-            'nama_skpd' => $tugas->skpd->nama_skpd,
-            'user_detail' => [
-                'nip' => null
-            ]
-        ];
-    }
 
     /**
      * Get available urusan IDs for SKPD
@@ -502,13 +538,19 @@ class RencanaAwalController extends Controller
         foreach ($subkegiatanTugas as $subkegiatan) {
             $monitoring = $subkegiatan->monitoring->first();
 
+
+
             if (!$monitoring) {
                 $dataAnggaranTerakhir[$subkegiatan->id] = $this->getEmptyAnggaranData();
                 continue;
             }
 
             $sumberAnggaranValues = $this->getEmptyAnggaranStructure();
-            $sumberDanaValues = $this->getEmptyAnggaranStructure();
+            $sumberDanaValues = [
+                'rencana_awal' => $this->getEmptyNumericStructure(),
+                'parsial' => $this->getEmptyNumericStructure(),
+                'budget_change' => $this->getEmptyNumericStructure()
+            ];
 
             // Use already loaded relations instead of querying again
             foreach ($monitoring->anggaran as $anggaran) {
@@ -519,17 +561,36 @@ class RencanaAwalController extends Controller
                 if (array_key_exists($key, $sumberAnggaranValues)) {
                     $sumberAnggaranValues[$key] = true;
 
-                    // Use already loaded pagu relations
-                    $latestPagu = $anggaran->pagu
+                    // Get rencana awal data (kategori 1) - PERBAIKAN: Hapus filter periode untuk rencana awal
+                    $rencanaAwalPagu = $anggaran->pagu
                         ->where('kategori', 1)
+                        ->sortByDesc('created_at')
+                        ->first();
+
+                    if ($rencanaAwalPagu) {
+                        $sumberDanaValues['rencana_awal'][$key] = $rencanaAwalPagu->dana;
+                    }
+
+                    // Get parsial data (kategori 2) - sum from all periods
+                    $parsialPagu = $anggaran->pagu
+                        ->where('kategori', 2)
+                        ->sum('dana');
+
+                    if ($parsialPagu > 0) {
+                        $sumberDanaValues['parsial'][$key] = $parsialPagu;
+                    }
+
+                    // Get budget change data (kategori 3)
+                    $budgetChangePagu = $anggaran->pagu
+                        ->where('kategori', 3)
                         ->when($periodeAktif, function($collection) use ($periodeAktif) {
                             return $collection->where('periode_id', $periodeAktif->id);
                         })
                         ->sortByDesc('created_at')
                         ->first();
 
-                    if ($latestPagu) {
-                        $sumberDanaValues[$key] = $latestPagu->dana;
+                    if ($budgetChangePagu) {
+                        $sumberDanaValues['budget_change'][$key] = $budgetChangePagu->dana;
                     }
                 }
             }
@@ -538,6 +599,8 @@ class RencanaAwalController extends Controller
                 'sumber_anggaran' => $sumberAnggaranValues,
                 'values' => $sumberDanaValues
             ];
+
+
         }
 
         return $dataAnggaranTerakhir;
@@ -550,7 +613,11 @@ class RencanaAwalController extends Controller
     {
         return [
             'sumber_anggaran' => $this->getEmptyAnggaranStructure(),
-            'values' => $this->getEmptyAnggaranStructure()
+            'values' => [
+                'rencana_awal' => $this->getEmptyNumericStructure(),
+                'parsial' => $this->getEmptyNumericStructure(),
+                'budget_change' => $this->getEmptyNumericStructure()
+            ]
         ];
     }
 
@@ -560,11 +627,25 @@ class RencanaAwalController extends Controller
     private function getEmptyAnggaranStructure()
     {
         return [
-            'dak' => false,
-            'dak_peruntukan' => false,
+            'dau' => false, // ✅ FIXED: dau
+            'dau_peruntukan' => false, // ✅ FIXED: dau_peruntukan
             'dak_fisik' => false,
             'dak_non_fisik' => false,
             'blud' => false
+        ];
+    }
+
+    /**
+     * Get empty numeric structure for values
+     */
+    private function getEmptyNumericStructure()
+    {
+        return [
+            'dau' => 0,
+            'dau_peruntukan' => 0,
+            'dak_fisik' => 0,
+            'dak_non_fisik' => 0,
+            'blud' => 0
         ];
     }
 
@@ -856,12 +937,22 @@ class RencanaAwalController extends Controller
             // Log input untuk debugging
             Log::info('Received data for saveTarget', $request->all());
 
+            // PERBAIKAN: Gunakan tahun yang sesuai dengan periode yang dipilih
+            $periode = Periode::with('tahun')->find($validated['periode_id']);
+            $correctTahun = $periode && $periode->tahun ? $periode->tahun->tahun : $validated['tahun'];
+
+            Log::info('Tahun correction', [
+                'frontend_tahun' => $validated['tahun'],
+                'periode_id' => $validated['periode_id'],
+                'periode_tahun' => $correctTahun
+            ]);
+
             // PERBAIKAN: Cari monitoring yang sudah ada dari Manajemen Anggaran
             // Prioritas: 1) Monitoring dengan deskripsi kosong (dari Manajemen Anggaran)
             //           2) Monitoring dengan deskripsi "Rencana Awal"
             //           3) Buat baru jika tidak ada
             $monitoring = Monitoring::where('skpd_tugas_id', $validated['skpd_tugas_id'])
-                ->where('tahun', $validated['tahun'])
+                ->where('tahun', $correctTahun) // Gunakan tahun yang benar
                 ->orderByRaw("CASE WHEN deskripsi = '' THEN 1 WHEN deskripsi = 'Rencana Awal' THEN 2 ELSE 3 END")
                 ->first();
 
@@ -871,7 +962,7 @@ class RencanaAwalController extends Controller
                 // Field ini hanya boleh diisi di TriwulanController
                 $monitoring = Monitoring::create([
                     'skpd_tugas_id' => $validated['skpd_tugas_id'],
-                    'tahun' => $validated['tahun'],
+                    'tahun' => $correctTahun, // Gunakan tahun yang benar
                     'periode_id' => $validated['periode_id'],
                     // deskripsi dan nama_pptk akan diisi nanti di TriwulanController
                 ]);
@@ -913,13 +1004,31 @@ class RencanaAwalController extends Controller
 
             // Update atau buat target baru untuk setiap triwulan
             foreach ($validated['targets'] as $target) {
-                // Pemetaan triwulan ke periode_id yang benar
-                $periode_id = $target['triwulan'] + 1; // Triwulan 1 -> periode_id 2, Triwulan 2 -> periode_id 3, dst
+                // PERBAIKAN: Frontend sudah mengirim triwulan dengan nomor yang benar (1, 2, 3, 4)
+                $triwulanNumber = $target['triwulan']; // Langsung gunakan tanpa increment
+                $triwulanName = "Triwulan {$triwulanNumber}";
+
+                // Cari periode yang sesuai dengan tahun dan triwulan
+                $periode = \App\Models\Periode::whereHas('tahap', function($query) use ($triwulanName) {
+                        $query->where('tahap', $triwulanName);
+                    })
+                    ->whereHas('tahun', function($query) use ($validated) {
+                        $query->where('tahun', $validated['tahun']);
+                    })
+                    ->first();
+
+                if (!$periode) {
+                    Log::warning("Periode tidak ditemukan untuk {$triwulanName} tahun {$validated['tahun']}");
+                    continue; // Skip jika periode tidak ditemukan
+                }
+
+                // Debug log untuk memastikan mapping benar
+                Log::info("Menyimpan target: {$triwulanName} (periode_id: {$periode->id}) - Fisik: {$target['kinerja_fisik']}%, Keuangan: {$target['keuangan']}");
 
                 MonitoringTarget::updateOrCreate(
                     [
                         'monitoring_anggaran_id' => $monitoringAnggaran->id,
-                        'periode_id' => $periode_id, // Gunakan periode_id yang sudah dipetakan
+                        'periode_id' => $periode->id, // Gunakan periode_id yang benar sesuai tahun
                     ],
                     [
                         'kinerja_fisik' => $target['kinerja_fisik'],
@@ -1107,5 +1216,179 @@ class RencanaAwalController extends Controller
             ]);
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get user penanggung jawab data for the tugas
+     */
+    private function getPenanggungJawabData($tugas)
+    {
+        $penanggungJawab = null;
+        $method = 'none';
+
+        // Method 1: Cari tim kerja aktif untuk SKPD ini
+        $timKerja = \App\Models\TimKerja::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with(['operator.userDetail'])
+            ->first();
+
+        if ($timKerja && $timKerja->operator) {
+            $penanggungJawab = [
+                'id' => $timKerja->operator->id,
+                'name' => $timKerja->operator->name,
+                'nip' => $timKerja->operator->userDetail ? $timKerja->operator->userDetail->nip : null,
+                'nama_skpd' => $tugas->skpd->nama_skpd
+            ];
+            $method = 'tim_kerja';
+        }
+
+        // Method 2: Fallback ke user SKPD jika tidak ada tim kerja
+        if (!$penanggungJawab && $tugas->skpd->user_id) {
+            $user = \App\Models\User::with('userDetail')->find($tugas->skpd->user_id);
+            if ($user) {
+                $penanggungJawab = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'nip' => $user->userDetail ? $user->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'skpd_user';
+            }
+        }
+
+        // Method 3: Coba cari user yang memiliki role perangkat_daerah untuk SKPD ini
+        if (!$penanggungJawab) {
+            $perangkatDaerah = \App\Models\User::whereHas('skpd', function($query) use ($tugas) {
+                    $query->where('skpd.id', $tugas->skpd_id);
+                })
+                ->whereHas('roles', function($query) {
+                    $query->where('name', 'perangkat_daerah');
+                })
+                ->with('userDetail')
+                ->first();
+
+            if ($perangkatDaerah) {
+                $penanggungJawab = [
+                    'id' => $perangkatDaerah->id,
+                    'name' => $perangkatDaerah->name,
+                    'nip' => $perangkatDaerah->userDetail ? $perangkatDaerah->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'perangkat_daerah_role';
+            }
+        }
+
+        // Method 4: Coba cari user berdasarkan SkpdKepala (kepala sebagai fallback)
+        if (!$penanggungJawab) {
+            $kepalaAktif = \App\Models\SkpdKepala::where('skpd_id', $tugas->skpd_id)
+                ->where('is_aktif', 1)
+                ->with(['user.userDetail'])
+                ->first();
+
+            if ($kepalaAktif && $kepalaAktif->user) {
+                $penanggungJawab = [
+                    'id' => $kepalaAktif->user->id,
+                    'name' => $kepalaAktif->user->name,
+                    'nip' => $kepalaAktif->user->userDetail ? $kepalaAktif->user->userDetail->nip : null,
+                    'nama_skpd' => $tugas->skpd->nama_skpd
+                ];
+                $method = 'kepala_skpd';
+            }
+        }
+
+        // Final fallback: minimal data from tugas
+        if (!$penanggungJawab) {
+            $penanggungJawab = [
+                'id' => $tugas->skpd_id,
+                'name' => 'Tidak tersedia',
+                'nip' => null,
+                'nama_skpd' => $tugas->skpd->nama_skpd
+            ];
+            $method = 'fallback';
+        }
+
+        \Log::info('getPenanggungJawabData result', [
+            'method' => $method,
+            'penanggung_jawab' => $penanggungJawab,
+            'tugas_id' => $tugas->id,
+            'skpd_id' => $tugas->skpd_id
+        ]);
+
+        // Return result dengan format yang sesuai untuk frontend
+        return [
+            'id' => $penanggungJawab['id'],
+            'name' => $penanggungJawab['name'],
+            'nip' => $penanggungJawab['nip'],
+            'nama_skpd' => $penanggungJawab['nama_skpd'],
+            // Tambahan untuk kompatibilitas dengan frontend
+            'user_detail' => [
+                'nip' => $penanggungJawab['nip']
+            ]
+        ];
+    }
+
+    /**
+     * Get the correct User ID for breadcrumb navigation to monitoring.show
+     * This should be the user with 'perangkat_daerah' role for the same SKPD as the tugas
+     */
+    private function getBreadcrumbUserId($tugas)
+    {
+        // Method 1: Cari user dengan role perangkat_daerah untuk SKPD ini
+        $perangkatDaerahUser = \App\Models\User::whereHas('skpd', function($query) use ($tugas) {
+                $query->where('skpd.id', $tugas->skpd_id);
+            })
+            ->whereHas('roles', function($query) {
+                $query->where('name', 'perangkat_daerah');
+            })
+            ->first();
+
+        if ($perangkatDaerahUser) {
+            \Log::info('Found perangkat_daerah user for breadcrumb', [
+                'user_id' => $perangkatDaerahUser->id,
+                'user_name' => $perangkatDaerahUser->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $perangkatDaerahUser->id;
+        }
+
+        // Method 2: Fallback ke kepala SKPD aktif
+        $kepalaAktif = \App\Models\SkpdKepala::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with('user')
+            ->first();
+
+        if ($kepalaAktif && $kepalaAktif->user) {
+            \Log::info('Using kepala SKPD for breadcrumb fallback', [
+                'user_id' => $kepalaAktif->user->id,
+                'user_name' => $kepalaAktif->user->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $kepalaAktif->user->id;
+        }
+
+        // Method 3: Fallback ke operator tim kerja
+        $timKerja = \App\Models\TimKerja::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with('operator')
+            ->first();
+
+        if ($timKerja && $timKerja->operator) {
+            \Log::info('Using tim kerja operator for breadcrumb fallback', [
+                'user_id' => $timKerja->operator->id,
+                'user_name' => $timKerja->operator->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $timKerja->operator->id;
+        }
+
+        \Log::warning('Could not find appropriate user for breadcrumb', [
+            'skpd_id' => $tugas->skpd_id,
+            'tugas_id' => $tugas->id
+        ]);
+
+        return null;
     }
 }

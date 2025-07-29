@@ -2,8 +2,11 @@
 import { useTriwulanData } from '@/composables/useTriwulanData';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import ActivityLogger from '@/services/activityLogger';
 
 // Props utama, pastikan tid, triwulanName, dan periode_id dinamis
 const props = defineProps<{
@@ -32,19 +35,60 @@ const props = defineProps<{
     monitoringRealisasi: Array<any>;
     tid: number;
     tahun: number;
+    tahunAktif?: { id: number; tahun: string; status: number };
+    allTahun?: Array<{ id: number; tahun: string; status: number }>;
     periode: { id: number; nama: string };
+    periodeStatus: { canInput: boolean; reason: string; status: string };
     triwulanName: string;
+    breadcrumbUserId?: number | null;
 }>();
+
+// Get current user role from global auth
+const page = usePage();
+const auth = page.props.auth as {
+    user: {
+        role?: string;
+    };
+};
+
+// Check if current user is Admin or Operator (hide actions for these roles)
+const isAdminOrOperator = computed(() => {
+    const userRole = auth?.user?.role?.toLowerCase();
+    return userRole === 'admin' || userRole === 'operator';
+});
 
 // Breadcrumbs dinamis
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
-    const showHref = props.user && props.user.id ? route('triwulan.show', { tid: props.tid, id: props.user.id }) : '#';
+    const showHref = props.breadcrumbUserId ? route('triwulan.show', { tid: props.tid, id: props.breadcrumbUserId }) : '';
 
     return [
         { title: `Monitoring ${props.triwulanName}`, href: route('triwulan.index', { tid: props.tid }) },
         { title: `Monitoring Detail ${props.user?.nama_skpd || 'SKPD'}`, href: showHref },
         { title: 'Rencana Awal PD', href: '' },
     ];
+});
+
+// Computed untuk status periode - apakah masih bisa input
+const canInputData = computed(() => {
+    // Cek apakah periodeStatus ada dan canInput true
+    if (props.periodeStatus && !props.periodeStatus.canInput) {
+        return false;
+    }
+
+    // Fallback check jika periodeStatus tidak ada
+    if (!props.periode) {
+        return false;
+    }
+
+    return true;
+});
+
+// Computed untuk pesan status periode
+const periodeStatusMessage = computed(() => {
+    if (props.periodeStatus) {
+        return props.periodeStatus.reason;
+    }
+    return 'Status periode tidak diketahui';
 });
 
 // Tambahkan fungsi-fungsi yang hilang
@@ -85,6 +129,54 @@ const goToDetail = (taskId: number) => {
 const editedItems = ref<Record<string, any>>({});
 const savingItems = ref<Record<string, boolean>>({});
 
+// Dialog state management
+const alertDialog = ref({
+    open: false,
+    title: '',
+    message: '',
+    type: 'info' as 'info' | 'success' | 'error',
+    onConfirm: () => {}
+});
+
+function showAlert(title: string, message: string, type: 'info' | 'success' | 'error' = 'info') {
+    alertDialog.value = {
+        open: true,
+        title,
+        message,
+        type,
+        onConfirm: () => {
+            alertDialog.value.open = false;
+        }
+    };
+}
+
+// Reactive state for selected year - menggunakan computed agar selalu sinkron dengan props
+const selectedTahunId = computed(() => props.tahunAktif?.id || null);
+
+// Handler for year change
+const handleTahunChange = (event: Event) => {
+    const target = event.target as HTMLSelectElement;
+    const newTahunId = target.value ? parseInt(target.value) : null;
+
+    if (selectedTahunId.value !== newTahunId) {
+        // Reload data with the new year
+        const selectedTahun = props.allTahun?.find((t) => t.id === newTahunId);
+        if (selectedTahun && props.tugas?.id) {
+            router.visit(
+                route('triwulan.detail.tahun', {
+                    tid: props.tid,
+                    id: props.user.id,
+                    taskId: props.tugas.id,
+                    tahun: selectedTahun.tahun,
+                }),
+                {
+                    preserveState: false,
+                },
+            );
+        }
+    }
+};
+
 // Gunakan composable untuk data triwulan dengan multiple sumber dana
 const { formattedSubKegiatanData } = useTriwulanData(props);
 
@@ -109,10 +201,19 @@ console.log('Props monitoringRealisasi:', props.monitoringRealisasi);
 console.log('Props periode:', props.periode);
 console.log('================================');
 
-// Fungsi untuk menghitung persentase keuangan
+// Fungsi untuk menentukan pagu terakhir yang tersedia
+// Prioritas: pagu_perubahan > pagu_parsial > pagu_pokok
+const getLatestAvailablePagu = (paguPokok: number, paguParsial: number, paguPerubahan: number): number => {
+    if (paguPerubahan > 0) return paguPerubahan;
+    if (paguParsial > 0) return paguParsial;
+    return paguPokok;
+};
+
+// Fungsi untuk menghitung persentase keuangan (maksimal 100%)
 const calculateKeuanganPersentase = (realisasiKeuangan: number, paguAnggaran: number): number => {
     if (paguAnggaran === 0) return 0;
-    return (realisasiKeuangan / paguAnggaran) * 100;
+    const percentage = (realisasiKeuangan / paguAnggaran) * 100;
+    return Math.min(percentage, 100); // Batasi maksimal 100%
 };
 
 // Fungsi untuk mendapatkan realisasi keuangan yang sudah diedit atau dari data asli
@@ -127,26 +228,36 @@ const getRealisasiKeuangan = (id: string, originalValue: number): number => {
 // Computed function untuk mendapatkan persentase keuangan real-time
 const getKeuanganPersentase = (id: string): string => {
     // Cari item dari programData untuk mendapatkan pagu
-    const item = programData.value.find(item => item.id === id);
+    const item = programData.value.find((item) => item.id === id);
     if (!item || item.type !== 'subkegiatan_sumber_dana') {
         return item?.realisasiKeuanganPersen || '0%';
     }
 
     // Untuk subkegiatan_sumber_dana, hitung berdasarkan input yang sedang diedit
     const currentRealisasi = getRealisasiKeuangan(id, 0);
-    
-    // Ekstrak pagu pokok dari format "Rp 1,000,000" menjadi number
+
+    // Ekstrak semua jenis pagu dari format "Rp 1,000,000" menjadi number
     const paguPokokStr = item.paguPokok || 'Rp 0';
+    const paguParsialStr = item.paguParsial || 'Rp 0';
+    const paguPerubahanStr = item.paguPerubahan || 'Rp 0';
+
     const paguPokok = parseInt(paguPokokStr.replace(/[^\d]/g, '')) || 0;
-    
-    const persentase = calculateKeuanganPersentase(currentRealisasi, paguPokok);
-    
+    const paguParsial = parseInt(paguParsialStr.replace(/[^\d]/g, '')) || 0;
+    const paguPerubahan = parseInt(paguPerubahanStr.replace(/[^\d]/g, '')) || 0;
+
+    // Gunakan pagu terakhir yang tersedia (prioritas: perubahan > parsial > pokok)
+    const latestPagu = getLatestAvailablePagu(paguPokok, paguParsial, paguPerubahan);
+    const persentase = calculateKeuanganPersentase(currentRealisasi, latestPagu);
+
     console.log(`📊 Calculating percentage for ${id}:`, {
         currentRealisasi,
         paguPokok,
-        persentase: persentase.toFixed(2)
+        paguParsial,
+        paguPerubahan,
+        latestPagu,
+        persentase: persentase.toFixed(2),
     });
-    
+
     return `${persentase.toFixed(2)}%`;
 };
 
@@ -183,8 +294,9 @@ const programData = computed(() => {
     const totalPaguParsial = allSubkegiatanTargets.reduce((sum, t) => sum + (t.pagu_parsial || 0), 0);
     const totalPaguPerubahan = allSubkegiatanTargets.reduce((sum, t) => sum + (t.pagu_perubahan || 0), 0);
 
-    // Hitung persentase keuangan untuk level agregasi
-    const totalRealisasiKeuanganPersen = calculateKeuanganPersentase(totalRealisasiKeuangan, totalPaguPokok);
+    // Hitung persentase keuangan untuk level agregasi menggunakan pagu terakhir yang tersedia
+    const totalLatestPagu = getLatestAvailablePagu(totalPaguPokok, totalPaguParsial, totalPaguPerubahan);
+    const totalRealisasiKeuanganPersen = calculateKeuanganPersentase(totalRealisasiKeuangan, totalLatestPagu);
 
     // Tambahkan data bidang urusan dengan data real
     if (props.bidangUrusan) {
@@ -387,8 +499,13 @@ const programData = computed(() => {
                 const totalSubkegiatanPaguParsial = targetsForSubkegiatan.reduce((sum, t) => sum + (t.pagu_parsial || 0), 0);
                 const totalSubkegiatanPaguPerubahan = targetsForSubkegiatan.reduce((sum, t) => sum + (t.pagu_perubahan || 0), 0);
 
-                // Hitung persentase keuangan untuk level agregasi
-                const totalRealisasiKeuanganPersen = calculateKeuanganPersentase(totalRealisasiKeuangan, totalSubkegiatanPaguPokok);
+                // Hitung persentase keuangan untuk level agregasi menggunakan pagu terakhir yang tersedia
+                const totalSubkegiatanLatestPagu = getLatestAvailablePagu(
+                    totalSubkegiatanPaguPokok,
+                    totalSubkegiatanPaguParsial,
+                    totalSubkegiatanPaguPerubahan,
+                );
+                const totalRealisasiKeuanganPersen = calculateKeuanganPersentase(totalRealisasiKeuangan, totalSubkegiatanLatestPagu);
 
                 // Subkegiatan utama dengan data akumulasi
                 const subkegiatanKode =
@@ -470,7 +587,10 @@ const programData = computed(() => {
                         targetKeuangan: `Rp ${(target.keuangan || 0).toLocaleString('id-ID')}`,
                         realisasiFisik: `${matchingRealisasi?.kinerja_fisik || 0}%`,
                         realisasiKeuangan: `Rp ${(matchingRealisasi?.keuangan || 0).toLocaleString('id-ID')}`,
-                        realisasiKeuanganPersen: `${calculateKeuanganPersentase(matchingRealisasi?.keuangan || 0, target.pagu_pokok || 0).toFixed(2)}%`,
+                        realisasiKeuanganPersen: `${calculateKeuanganPersentase(
+                            matchingRealisasi?.keuangan || 0,
+                            getLatestAvailablePagu(target.pagu_pokok || 0, target.pagu_parsial || 0, target.pagu_perubahan || 0),
+                        ).toFixed(2)}%`,
                         keterangan: matchingRealisasi?.deskripsi || '',
                         pptk: matchingRealisasi?.nama_pptk || '',
                         type: 'subkegiatan_sumber_dana',
@@ -568,7 +688,7 @@ const handleInputChange = (id: string, field: string, value: string) => {
 
             // Validasi setelah konversi
             if (numValue < 0) {
-                alert('Kinerja fisik tidak boleh kurang dari 0%');
+                showAlert('Validasi Error', 'Kinerja fisik tidak boleh kurang dari 0%', 'error');
                 return;
             }
         }
@@ -578,7 +698,7 @@ const handleInputChange = (id: string, field: string, value: string) => {
     if (field === 'realisasiKeuangan') {
         const numValue = parseInt(value.replace(/[^\d]/g, ''));
         if (!isNaN(numValue) && numValue < 0) {
-            alert('Realisasi keuangan tidak boleh kurang dari 0');
+            showAlert('Validasi Error', 'Realisasi keuangan tidak boleh kurang dari 0', 'error');
             return;
         }
     }
@@ -673,8 +793,21 @@ const saveData = async (id: string) => {
                 router.post(`/triwulan/${props.tid}/save-realisasi`, savePayload, {
                     preserveState: true,
                     preserveScroll: true,
-                    onSuccess: (page) => {
+                    onSuccess: async (page) => {
                         console.log(`✅ Save successful for ID: ${id}`, page);
+
+                        // 📝 Log aktivitas triwulan
+                        await ActivityLogger.logTriwulan('Menyimpan realisasi', props.triwulanName, {
+                            subkegiatan_id: originalSubkegiatanId,
+                            sumber_anggaran_id: sumberAnggaranId,
+                            realisasi_fisik: savePayload.realisasi_fisik,
+                            realisasi_keuangan: savePayload.realisasi_keuangan,
+                            keterangan: savePayload.keterangan,
+                            nama_pptk: savePayload.nama_pptk,
+                            periode_id: props.periode?.id,
+                            tahun: props.tahun,
+                            triwulan_id: props.tid,
+                        });
 
                         // PENTING: Hanya clear data untuk ID yang spesifik ini
                         console.log(`🗑️ Clearing editedItems for ID: ${id}`);
@@ -687,14 +820,18 @@ const saveData = async (id: string) => {
                         // Show success message from backend
                         const flash = (page.props as any).flash;
                         if (flash?.success) {
-                            alert(flash.success);
+                            showAlert('Berhasil!', flash.success, 'success');
                         } else {
-                            alert('Data berhasil disimpan!');
+                            showAlert('Berhasil!', 'Data berhasil disimpan!', 'success');
                         }
                     },
                     onError: (errors) => {
                         console.error('Save failed:', errors);
-                        alert('Gagal menyimpan data: ' + Object.values(errors).join(', '));
+                        showAlert(
+                            'Gagal Menyimpan',
+                            'Gagal menyimpan data: ' + Object.values(errors).join(', '),
+                            'error'
+                        );
                     },
                     onFinish: () => {
                         // Clear loading state
@@ -712,13 +849,12 @@ const saveData = async (id: string) => {
         }
     } catch (error) {
         console.error('Error in saveData:', error);
-        alert('Terjadi kesalahan saat menyimpan data');
+        showAlert('Terjadi Kesalahan', 'Terjadi kesalahan saat menyimpan data', 'error');
         savingItems.value[id] = false;
     }
 };
 
-// ...lanjutkan dengan logic utama, computed, dan fungsi yang digunakan di template...
-// (Bagian ini akan diisi bertahap jika perlu, agar tidak overload token)
+
 </script>
 
 <template>
@@ -731,7 +867,13 @@ const saveData = async (id: string) => {
                 <div class="mb-6 flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="mr-4 rounded-full bg-blue-100 p-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-6 w-6 text-blue-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
                                 <path
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -742,30 +884,53 @@ const saveData = async (id: string) => {
                         </div>
                         <h2 class="text-2xl font-bold text-gray-600">{{ triwulanName }}</h2>
                     </div>
-                    
-                    <!-- PDF Download Button -->
-                    <button
-                        v-if="tugas?.id"
-                        @click="router.visit(route('pdf.triwulan.form', { tid: tid, tugasId: tugas.id }))"
-                        class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
-                        :title="`Download PDF ${triwulanName}`"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                            />
-                        </svg>
-                        <span class="text-sm font-medium">Download PDF</span>
-                    </button>
+
+                    <div class="flex items-center gap-4">
+                        <!-- Dropdown Periode dan Tahun -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-gray-700">Pilih Periode:</label>
+                            <select
+                                :value="selectedTahunId"
+                                @change="handleTahunChange"
+                                class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                            >
+                                <option value="">Pilih Tahun</option>
+                                <option v-for="tahun in allTahun" :key="tahun.id" :value="tahun.id">
+                                    {{ tahun.tahun }} {{ tahun.status === 1 ? '(Aktif)' : '' }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-blue-600">Tahun Anggaran</span>
+                            <span class="rounded-md bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                                {{ tahunAktif?.tahun || tahun }}
+                            </span>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <!-- Periode Status Alert -->
+                <div v-if="periodeStatus && !periodeStatus.canInput" class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Input Data Dinonaktifkan</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>{{ periodeStatus.reason }}. Anda tidak dapat menginput atau mengubah data pada periode ini.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -809,6 +974,66 @@ const saveData = async (id: string) => {
                 <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-600">Data Monitoring {{ triwulanName }}</h2>
+                    </div>
+                    
+                    <!-- Download Buttons -->
+                    <div v-if="tugas?.id" class="flex items-center gap-2">
+                        <!-- PDF Download Button -->
+                        <a
+                            :href="route('pdf.triwulan.form', { tid: tid, tugasId: tugas.id })"
+                            class="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-white transition-colors hover:bg-red-700"
+                            :title="`Download PDF ${triwulanName}`"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                />
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M16 7h-4v4"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">PDF</span>
+                        </a>
+
+                        <!-- Excel Download Button -->
+                        <a
+                            :href="route('triwulan.export.excel', { tid: tid, tugasId: tugas.id, tahun: tahunAktif?.tahun || tahun })"
+                            class="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-white transition-colors hover:bg-green-700"
+                            :title="`Download Excel ${triwulanName}`"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">Excel</span>
+                        </a>
+
+                        <!-- CSV Download Button -->
+                        <!-- <a
+                            :href="route('triwulan.export.csv', { tid: tid, tugasId: tugas.id, tahun: tahunAktif?.tahun || tahun })"
+                            class="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white transition-colors hover:bg-blue-700"
+                            :title="`Download CSV ${triwulanName}`"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012-2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">CSV</span>
+                        </a> -->
                     </div>
                 </div>
 
@@ -873,7 +1098,7 @@ const saveData = async (id: string) => {
                                 >
                                     PPTK
                                 </th>
-                                <th rowspan="3" class="bg-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase">AKSI</th>
+                                <th v-if="!isAdminOrOperator" rowspan="3" class="bg-gray-100 px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase">AKSI</th>
                             </tr>
                             <tr class="border-b border-gray-200">
                                 <th
@@ -929,7 +1154,7 @@ const saveData = async (id: string) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
-                                                            <tr v-if="programData.length === 0">
+                            <tr v-if="programData.length === 0">
                                 <td colspan="12" class="px-4 py-8 text-center text-sm text-gray-500">
                                     <div class="flex flex-col items-center justify-center space-y-3">
                                         <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1029,6 +1254,7 @@ const saveData = async (id: string) => {
                                                 @input="
                                                     (e: Event) => handleInputChange(item.id, 'realisasiFisik', (e.target as HTMLInputElement).value)
                                                 "
+                                                :disabled="isAdminOrOperator"
                                                 placeholder="60"
                                                 title="Masukkan angka 0-100. Auto-convert: 550% → 55%, 1000% → 100%"
                                             />
@@ -1043,16 +1269,14 @@ const saveData = async (id: string) => {
                                 <td class="border-r border-gray-200 px-2 py-3 text-center align-middle text-sm">
                                     <template v-if="item.type === 'subkegiatan_sumber_dana'">
                                         <div class="relative">
-                                            <span 
-                                                class="inline-flex h-8 w-16 items-center justify-center rounded bg-blue-50 text-xs font-semibold text-blue-700 border border-blue-200"
+                                            <span
+                                                class="inline-flex h-8 w-16 items-center justify-center rounded border border-blue-200 bg-blue-50 text-xs font-semibold text-blue-700"
                                                 :class="{
-                                                    'bg-green-50 text-green-700 border-green-200': 
-                                                        parseFloat(getKeuanganPersentase(item.id)) >= 80,
-                                                    'bg-yellow-50 text-yellow-700 border-yellow-200': 
-                                                        parseFloat(getKeuanganPersentase(item.id)) >= 50 && 
+                                                    'border-green-200 bg-green-50 text-green-700': parseFloat(getKeuanganPersentase(item.id)) >= 80,
+                                                    'border-yellow-200 bg-yellow-50 text-yellow-700':
+                                                        parseFloat(getKeuanganPersentase(item.id)) >= 50 &&
                                                         parseFloat(getKeuanganPersentase(item.id)) < 80,
-                                                    'bg-red-50 text-red-700 border-red-200': 
-                                                        parseFloat(getKeuanganPersentase(item.id)) < 50
+                                                    'border-red-200 bg-red-50 text-red-700': parseFloat(getKeuanganPersentase(item.id)) < 50,
                                                 }"
                                                 :title="`Dihitung dari: (Realisasi Keuangan / Pagu Pokok) × 100`"
                                             >
@@ -1091,6 +1315,7 @@ const saveData = async (id: string) => {
                                                 "
                                                 placeholder="500000"
                                                 title="Masukkan angka tanpa titik/koma, format Rp akan ditambah otomatis. Persentase akan dihitung otomatis."
+                                                :disabled="!canInputData || isAdminOrOperator"
                                             />
                                         </div>
                                     </template>
@@ -1112,6 +1337,7 @@ const saveData = async (id: string) => {
                                             }"
                                             :value="editedItems[item.id]?.keterangan || item.keterangan"
                                             @input="(e: Event) => handleInputChange(item.id, 'keterangan', (e.target as HTMLInputElement).value)"
+                                            :disabled="isAdminOrOperator"
                                             placeholder="Masukkan keterangan..."
                                         />
                                     </template>
@@ -1134,6 +1360,7 @@ const saveData = async (id: string) => {
                                             :value="editedItems[item.id]?.pptk || item.pptk"
                                             @input="(e: Event) => handleInputChange(item.id, 'pptk', (e.target as HTMLInputElement).value)"
                                             placeholder="Masukkan nama PPTK..."
+                                            :disabled="!canInputData || isAdminOrOperator"
                                         />
                                     </template>
                                     <template v-else>
@@ -1142,9 +1369,13 @@ const saveData = async (id: string) => {
                                 </td>
 
                                 <!-- Aksi Column -->
-                                <td class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
+                                <td v-if="!isAdminOrOperator" class="border-r border-gray-200 px-3 py-3 text-center align-middle text-sm">
                                     <template v-if="item.type === 'subkegiatan_sumber_dana'">
-                                        <button @click="saveData(item.id)" :class="getButtonClass(item.id)" :disabled="savingItems[item.id]">
+                                        <button
+                                            @click="saveData(item.id)"
+                                            :class="getButtonClass(item.id)"
+                                            :disabled="savingItems[item.id] || !canInputData || isAdminOrOperator"
+                                        >
                                             {{ getButtonText(item.id) }}
                                         </button>
                                     </template>
@@ -1159,4 +1390,28 @@ const saveData = async (id: string) => {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Dialog Alert -->
+    <Dialog :open="alertDialog.open" @update:open="(value) => alertDialog.open = value">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>{{ alertDialog.title }}</DialogTitle>
+                <DialogDescription>{{ alertDialog.message }}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter class="flex justify-end gap-2 pt-4">
+                <Button 
+                    @click="alertDialog.onConfirm"
+                    :class="{
+                        'bg-blue-600 text-white hover:bg-blue-700': alertDialog.type === 'info',
+                        'bg-green-600 text-white hover:bg-green-700': alertDialog.type === 'success',
+                        'bg-red-600 text-white hover:bg-red-700': alertDialog.type === 'error'
+                    }"
+                >
+                    OK
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    
 </template>

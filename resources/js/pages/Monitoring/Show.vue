@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
-import { Eye } from 'lucide-vue-next';
+import { Binoculars } from 'lucide-vue-next';
 
 const props = defineProps<{
     user: {
@@ -50,7 +50,7 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Monitoring', href: '/rencana-awal' },
+    { title: 'Monitoring', href: route('monitoring.index') },
     { title: `Monitoring Detail ${props.user.skpd?.nama_skpd}`, href: '' },
 ];
 
@@ -190,7 +190,7 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 mb-2">Nama Penanggung Jawab</h3>
                         <p class="text-lg font-semibold text-gray-500">{{ user.skpd?.operator_name || 'Tidak tersedia' }}</p>
-                        <p class="text-sm font-mono text-gray-500">{{ user.skpd?.nip_operator || '-' }}</p>
+                        <p class="text-sm font-mono text-gray-500">{{ user.skpd?.operator_nip || '-' }}</p>
                     </div>
 
 
@@ -219,8 +219,7 @@ function getTaskLabel(task: { kode_nomenklatur: { nomor_kode: any; nomenklatur: 
                                             class="flex items-center gap-1 bg-orange-500 hover:bg-orange-700 text-white text-sm font-medium px-3 py-1 rounded"
                                             @click="ShowTugas(tugas.id)"
                                         >
-                                            <Eye class="w-4 h-4 mr-1" />
-                                            Detail
+                                            <Binoculars class="w-4 h-4 mr-2 ml-2" />
                                         </button>
                                     </div>
                                 </td>

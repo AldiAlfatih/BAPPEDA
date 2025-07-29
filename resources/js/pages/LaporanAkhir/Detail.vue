@@ -1,34 +1,13 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { AlertCircle, Building2, Calendar, CheckCircle, Download, Binoculars, FileText, FolderOpen, Trash2, Upload, User } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-import { 
-    ArrowLeft, 
-    Upload, 
-    Eye, 
-    Download, 
-    FileText, 
-    Trash2,
-    Calendar,
-    User,
-    Building2,
-    AlertCircle,
-    CheckCircle,
-    FolderOpen
-} from 'lucide-vue-next';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose
-} from '@/components/ui/dialog';
 
 const props = defineProps<{
     skpd: {
@@ -63,9 +42,12 @@ const props = defineProps<{
         };
     };
     tahun: number;
+    tahunAktif?: { id: number; tahun: string; status: number };
+    allTahun?: Array<{ id: number; tahun: string; status: number }>;
     periodeOptions: {
         [key: string]: string;
     };
+    breadcrumbUserId?: number | null;
 }>();
 
 // Get flash messages
@@ -76,8 +58,11 @@ const flashMessage = computed(() => {
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Arsip Monitoring', href: '/arsip-monitoring' },
-    { title: `Arsip Monitoring ${props.skpd.nama_skpd}`, href: `/arsip-monitoring/${props.skpd.id}` },
+    { title: 'Arsip Monitoring', href: route('arsip-monitoring.index') },
+    { 
+        title: `Arsip Monitoring ${props.skpd.nama_skpd}`, 
+        href: props.breadcrumbUserId ? route('arsip-monitoring.show', props.breadcrumbUserId) : '' 
+    },
     { title: 'Detail Arsip', href: '' },
 ];
 
@@ -93,8 +78,33 @@ const uploadForm = useForm({
     skpd_tugas_id: props.tugas.id,
     periode: '',
     tahun: props.tahun,
-    keterangan: ''
+    keterangan: '',
 });
+
+// Reactive state for selected year - menggunakan computed agar selalu sinkron dengan props
+const selectedTahunId = computed(() => props.tahunAktif?.id || null);
+
+// Handler for year change
+const handleTahunChange = (event: Event) => {
+    const target = event.target as HTMLSelectElement;
+    const newTahunId = target.value ? parseInt(target.value) : null;
+
+    if (selectedTahunId.value !== newTahunId) {
+        // Reload data with the new year
+        const selectedTahun = props.allTahun?.find((t) => t.id === newTahunId);
+        if (selectedTahun && props.tugas?.id) {
+            router.visit(
+                route('arsip-monitoring.detail.tahun', {
+                    tugasId: props.tugas.id,
+                    tahun: selectedTahun.tahun,
+                }),
+                {
+                    preserveState: false,
+                },
+            );
+        }
+    }
+};
 
 // Helper functions
 function goBack() {
@@ -123,7 +133,7 @@ function submitUpload() {
         },
         onError: (errors) => {
             console.error('Upload error:', errors);
-        }
+        },
     });
 }
 
@@ -146,7 +156,7 @@ function confirmDelete() {
             onSuccess: () => {
                 deleteModalOpen.value = false;
                 selectedArsipId.value = null;
-            }
+            },
         });
     }
 }
@@ -173,75 +183,98 @@ function getFileIcon(tipeFile: string) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-6">
             <!-- Header -->
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div class="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
                 <div>
-                    <div class="flex items-center gap-2 mb-2">
-                    </div>
+                    <div class="mb-2 flex items-center gap-2"></div>
                     <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Detail Arsip Monitoring</h1>
                     <p class="text-sm text-gray-500 dark:text-gray-400">
                         {{ skpd.nama_skpd }} - {{ tugas.kode_nomenklatur.nomor_kode }} {{ tugas.kode_nomenklatur.nomenklatur }}
                     </p>
                 </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Dropdown Tahun -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">Pilih Periode:</label>
+                        <select
+                            :value="selectedTahunId"
+                            @change="handleTahunChange"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        >
+                            <option value="">Pilih Tahun</option>
+                            <option v-for="tahun in allTahun" :key="tahun.id" :value="tahun.id">
+                                {{ tahun.tahun }} {{ tahun.status === 1 ? '(Aktif)' : '' }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-blue-600">Tahun Anggaran</span>
+                        <span class="rounded-md bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                            {{ tahunAktif?.tahun || tahun }}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <!-- Flash Messages -->
-            <div v-if="flashMessage.success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            <div v-if="flashMessage.success" class="rounded border border-green-400 bg-green-100 px-4 py-3 text-green-700">
                 <div class="flex items-center">
-                    <CheckCircle class="w-5 h-5 mr-2" />
+                    <CheckCircle class="mr-2 h-5 w-5" />
                     {{ flashMessage.success }}
                 </div>
             </div>
 
-            <div v-if="flashMessage.error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div v-if="flashMessage.error" class="rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
                 <div class="flex items-center">
-                    <AlertCircle class="w-5 h-5 mr-2" />
+                    <AlertCircle class="mr-2 h-5 w-5" />
                     {{ flashMessage.error }}
                 </div>
             </div>
 
             <!-- Informasi Perangkat Daerah -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-100 p-6">
-                <div class="flex items-center mb-4">
-                    <div class="rounded-full bg-blue-100 p-3 mr-4">
+            <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-lg">
+                <div class="mb-4 flex items-center">
+                    <div class="mr-4 rounded-full bg-blue-100 p-3">
                         <Building2 class="h-6 w-6 text-blue-600" />
                     </div>
                     <h2 class="text-xl font-bold text-gray-700">Informasi Perangkat Daerah</h2>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="text-sm font-medium text-gray-600 mb-1">Nama SKPD</h3>
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div class="rounded-lg bg-gray-50 p-4">
+                        <h3 class="mb-1 text-sm font-medium text-gray-600">Nama SKPD</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ skpd.nama_skpd }}</p>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="text-sm font-medium text-gray-600 mb-1">Kode Organisasi</h3>
+                    <div class="rounded-lg bg-gray-50 p-4">
+                        <h3 class="mb-1 text-sm font-medium text-gray-600">Kode Organisasi</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ skpd.kode_organisasi }}</p>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="text-sm font-medium text-gray-600 mb-1">Tahun</h3>
+                    <div class="rounded-lg bg-gray-50 p-4">
+                        <h3 class="mb-1 text-sm font-medium text-gray-600">Tahun</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ tahun }}</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="text-sm font-medium text-gray-600 mb-1">Kepala SKPD</h3>
+                <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div class="rounded-lg bg-gray-50 p-4">
+                        <h3 class="mb-1 text-sm font-medium text-gray-600">Kepala SKPD</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ skpd.kepala_name }}</p>
-                        <p class="text-sm font-mono text-gray-500">NIP: {{ skpd.kepala_nip || '-' }}</p>
+                        <p class="font-mono text-sm text-gray-500">NIP: {{ skpd.kepala_nip || '-' }}</p>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="text-sm font-medium text-gray-600 mb-1">Penanggung Jawab</h3>
+                    <div class="rounded-lg bg-gray-50 p-4">
+                        <h3 class="mb-1 text-sm font-medium text-gray-600">Penanggung Jawab</h3>
                         <p class="text-lg font-semibold text-gray-800">{{ skpd.operator_name }}</p>
-                        <p class="text-sm font-mono text-gray-500">NIP: {{ skpd.operator_nip || '-' }}</p>
+                        <p class="font-mono text-sm text-gray-500">NIP: {{ skpd.operator_nip || '-' }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Informasi Tugas -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-100 p-6">
-                <h2 class="text-xl font-bold text-gray-700 mb-4">Informasi Tugas</h2>
-                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h3 class="text-sm font-medium text-green-700 mb-1">Urusan/Tugas Perangkat Daerah</h3>
+            <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-lg">
+                <h2 class="mb-4 text-xl font-bold text-gray-700">Informasi Tugas</h2>
+                <div class="rounded-lg border border-green-200 bg-green-50 p-4">
+                    <h3 class="mb-1 text-sm font-medium text-green-700">Urusan/Tugas Perangkat Daerah</h3>
                     <p class="text-lg font-semibold text-green-800">
                         {{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}
                     </p>
@@ -249,50 +282,46 @@ function getFileIcon(tipeFile: string) {
             </div>
 
             <!-- Tabel Arsip Monitoring -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
-                <div class="p-6 border-b border-gray-200">
+            <div class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg">
+                <div class="border-b border-gray-200 p-6">
                     <h2 class="text-xl font-bold text-gray-700">Arsip Monitoring</h2>
-                    <p class="text-sm text-gray-500 mt-1">Kelola dokumen monitoring dari rencana awal hingga triwulan 4 - Tahun {{ tahun }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Kelola dokumen monitoring dari rencana awal hingga triwulan 4 - Tahun {{ tahun }}</p>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Periode
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status File
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Informasi File
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Aksi
-                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Periode</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Status File</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Informasi File</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="divide-y divide-gray-200 bg-white">
                             <tr v-for="(data, periode) in arsipData" :key="periode" class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="rounded-full p-2 mr-3"
-                                             :class="{
-                                                 'bg-blue-100': periode === 'rencana_awal',
-                                                 'bg-green-100': periode === 'triwulan_1',
-                                                 'bg-yellow-100': periode === 'triwulan_2',
-                                                 'bg-orange-100': periode === 'triwulan_3',
-                                                 'bg-red-100': periode === 'triwulan_4'
-                                             }">
-                                            <FolderOpen class="w-4 h-4"
-                                                       :class="{
-                                                           'text-blue-600': periode === 'rencana_awal',
-                                                           'text-green-600': periode === 'triwulan_1',
-                                                           'text-yellow-600': periode === 'triwulan_2',
-                                                           'text-orange-600': periode === 'triwulan_3',
-                                                           'text-red-600': periode === 'triwulan_4'
-                                                       }" />
+                                        <div
+                                            class="mr-3 rounded-full p-2"
+                                            :class="{
+                                                'bg-blue-100': periode === 'rencana_awal',
+                                                'bg-green-100': periode === 'triwulan_1',
+                                                'bg-yellow-100': periode === 'triwulan_2',
+                                                'bg-orange-100': periode === 'triwulan_3',
+                                                'bg-red-100': periode === 'triwulan_4',
+                                            }"
+                                        >
+                                            <FolderOpen
+                                                class="h-4 w-4"
+                                                :class="{
+                                                    'text-blue-600': periode === 'rencana_awal',
+                                                    'text-green-600': periode === 'triwulan_1',
+                                                    'text-yellow-600': periode === 'triwulan_2',
+                                                    'text-orange-600': periode === 'triwulan_3',
+                                                    'text-red-600': periode === 'triwulan_4',
+                                                }"
+                                            />
                                         </div>
                                         <div class="text-sm font-medium text-gray-900">
                                             {{ data.label }}
@@ -300,30 +329,34 @@ function getFileIcon(tipeFile: string) {
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span v-if="data.arsip" 
-                                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <CheckCircle class="w-3 h-3 mr-1" />
+                                    <span
+                                        v-if="data.arsip"
+                                        class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
+                                    >
+                                        <CheckCircle class="mr-1 h-3 w-3" />
                                         File Tersedia
                                     </span>
-                                    <span v-else 
-                                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        <AlertCircle class="w-3 h-3 mr-1" />
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
+                                    >
+                                        <AlertCircle class="mr-1 h-3 w-3" />
                                         Belum Ada File
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div v-if="data.arsip">
-                                        <div class="text-sm font-medium text-gray-900 flex items-center">
-                                            <FileText class="w-4 h-4 mr-2" :class="getFileIcon(data.arsip.tipe_file)" />
+                                        <div class="flex items-center text-sm font-medium text-gray-900">
+                                            <FileText class="mr-2 h-4 w-4" :class="getFileIcon(data.arsip.tipe_file)" />
                                             {{ data.arsip.nama_file }}
                                         </div>
-                                        <div class="text-sm text-gray-500 mt-1">
+                                        <div class="mt-1 text-sm text-gray-500">
                                             <div class="flex items-center">
-                                                <Calendar class="w-3 h-3 mr-1" />
+                                                <Calendar class="mr-1 h-3 w-3" />
                                                 {{ data.arsip.tanggal_upload }}
                                             </div>
-                                            <div class="flex items-center mt-1">
-                                                <User class="w-3 h-3 mr-1" />
+                                            <div class="mt-1 flex items-center">
+                                                <User class="mr-1 h-3 w-3" />
                                                 {{ data.arsip.uploaded_by }} • {{ data.arsip.ukuran_file }}
                                             </div>
                                             <div v-if="data.arsip.keterangan" class="mt-1 text-xs text-gray-400">
@@ -331,20 +364,18 @@ function getFileIcon(tipeFile: string) {
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-else class="text-sm text-gray-400 italic">
-                                        Belum ada file yang diunggah
-                                    </div>
+                                    <div v-else class="text-sm text-gray-400 italic">Belum ada file yang diunggah</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">
                                     <div class="flex space-x-2">
                                         <!-- Tombol Upload -->
                                         <Button
-                                            @click="openUploadModal(periode)"
+                                            @click="openUploadModal(String(periode))"
                                             size="sm"
                                             :variant="data.arsip ? 'outline' : 'default'"
                                             class="flex items-center"
                                         >
-                                            <Upload class="w-4 h-4 mr-1" />
+                                            <Upload class="mr-1 h-4 w-4" />
                                             {{ data.arsip ? 'Ganti' : 'Unggah' }}
                                         </Button>
 
@@ -354,10 +385,10 @@ function getFileIcon(tipeFile: string) {
                                             @click="viewFile(data.arsip.id)"
                                             size="sm"
                                             variant="outline"
-                                            class="flex items-center text-blue-600 hover:text-blue-800"
+                                            class="flex items-center text-orange-600 hover:text-orange-800"
                                         >
-                                            <Eye class="w-4 h-4 mr-1" />
-                                            Detail
+                                            <Binoculars class="mr-1 h-4 w-4" />
+                                            <!-- Detail -->
                                         </Button>
 
                                         <!-- Tombol Download (hanya jika ada file) -->
@@ -368,8 +399,8 @@ function getFileIcon(tipeFile: string) {
                                             variant="outline"
                                             class="flex items-center text-green-600 hover:text-green-800"
                                         >
-                                            <Download class="w-4 h-4 mr-1" />
-                                            Download
+                                            <Download class="mr-1 h-4 w-4" />
+                                            <!-- Download -->
                                         </Button>
 
                                         <!-- Tombol Delete (hanya jika ada file) -->
@@ -380,8 +411,8 @@ function getFileIcon(tipeFile: string) {
                                             variant="outline"
                                             class="flex items-center text-red-600 hover:text-red-800"
                                         >
-                                            <Trash2 class="w-4 h-4 mr-1" />
-                                            Hapus
+                                            <Trash2 class="mr-1 h-4 w-4" />
+                                            <!-- Hapus -->
                                         </Button>
                                     </div>
                                 </td>
@@ -397,23 +428,14 @@ function getFileIcon(tipeFile: string) {
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Unggah File Arsip</DialogTitle>
-                    <DialogDescription>
-                        Unggah file untuk periode {{ periodeOptions[selectedPeriode] || selectedPeriode }}
-                    </DialogDescription>
+                    <DialogDescription> Unggah file untuk periode {{ periodeOptions[selectedPeriode] || selectedPeriode }} </DialogDescription>
                 </DialogHeader>
 
                 <form @submit.prevent="submitUpload" class="space-y-4">
                     <div>
-                        <Label for="file">File (PDF, DOC, DOCX, XLS, XLSX - Max 10MB)</Label>
-                        <Input
-                            id="file"
-                            type="file"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx"
-                            @change="handleFileChange"
-                            required
-                            class="mt-1"
-                        />
-                        <div v-if="uploadForm.errors.file" class="text-red-500 text-sm mt-1">
+                        <Label for="file">File (PDF - Max 10MB)</Label>
+                        <Input id="file" type="file" accept=".pdf" @change="handleFileChange" required class="mt-1" />
+                        <div v-if="uploadForm.errors.file" class="mt-1 text-sm text-red-500">
                             {{ uploadForm.errors.file }}
                         </div>
                     </div>
@@ -424,10 +446,10 @@ function getFileIcon(tipeFile: string) {
                             id="keterangan"
                             v-model="uploadForm.keterangan"
                             placeholder="Tambahkan keterangan untuk file ini..."
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            class="focus:ring-opacity-50 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                             rows="3"
                         ></textarea>
-                        <div v-if="uploadForm.errors.keterangan" class="text-red-500 text-sm mt-1">
+                        <div v-if="uploadForm.errors.keterangan" class="mt-1 text-sm text-red-500">
                             {{ uploadForm.errors.keterangan }}
                         </div>
                     </div>
@@ -437,7 +459,7 @@ function getFileIcon(tipeFile: string) {
                             <Button type="button" variant="outline">Batal</Button>
                         </DialogClose>
                         <Button type="submit" :disabled="uploadForm.processing">
-                            <Upload class="w-4 h-4 mr-2" />
+                            <Upload class="mr-2 h-4 w-4" />
                             {{ uploadForm.processing ? 'Mengunggah...' : 'Unggah File' }}
                         </Button>
                     </DialogFooter>
@@ -450,9 +472,7 @@ function getFileIcon(tipeFile: string) {
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Hapus File Arsip</DialogTitle>
-                    <DialogDescription>
-                        Apakah Anda yakin ingin menghapus file ini? Tindakan ini tidak dapat dibatalkan.
-                    </DialogDescription>
+                    <DialogDescription> Apakah Anda yakin ingin menghapus file ini? Tindakan ini tidak dapat dibatalkan. </DialogDescription>
                 </DialogHeader>
 
                 <DialogFooter>
@@ -460,7 +480,7 @@ function getFileIcon(tipeFile: string) {
                         <Button type="button" variant="outline">Batal</Button>
                     </DialogClose>
                     <Button @click="confirmDelete" variant="destructive">
-                        <Trash2 class="w-4 h-4 mr-2" />
+                        <Trash2 class="mr-2 h-4 w-4" />
                         Hapus File
                     </Button>
                 </DialogFooter>
@@ -473,4 +493,4 @@ function getFileIcon(tipeFile: string) {
 .notification {
     transition: opacity 0.5s ease-in-out;
 }
-</style> 
+</style>

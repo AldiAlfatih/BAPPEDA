@@ -20,6 +20,13 @@ return [
      */
     'convert_entities' => true,
 
+    /*
+     * Performance and Memory Settings
+     */
+    'memory_limit' => '512M',    // Increase memory limit for PDF generation
+    'time_limit' => 300,         // 5 minutes timeout for PDF generation
+    'enable_compression' => true, // Enable PDF compression
+
     'options' => [
         /**
          * The location of the DOMPDF font directory

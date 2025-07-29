@@ -21,7 +21,6 @@ class FiturSeeder extends Seeder
             ['tahap' => 'Triwulan 2'],
             ['tahap' => 'Triwulan 3'],
             ['tahap' => 'Triwulan 4'],
-            ['tahap' => 'Evaluasi Akhir'],
         ];
 
         foreach ($stages as $stage) {

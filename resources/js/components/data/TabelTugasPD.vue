@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
-import { Eye } from 'lucide-vue-next';
+import { Binoculars } from 'lucide-vue-next';
 
 const props = defineProps<{
     skpd: {
@@ -87,7 +87,7 @@ function ShowTugas(tugasId: number) {
 
 </script>
 <template>
-    
+
             <!-- Tugas PD Table -->
             <div class="mt-6 rounded-lg bg-white p-6 shadow-md">
                 <div class="overflow-x-auto">
@@ -110,8 +110,7 @@ function ShowTugas(tugasId: number) {
                                             class="flex items-center gap-1 bg-orange-500 hover:bg-orange-700 text-white text-sm font-medium px-3 py-1 rounded"
                                             @click="ShowTugas(tugas.id)"
                                         >
-                                            <Eye class="w-4 h-4 mr-1" />
-                                            Detail  
+                                            <Binoculars class="w-4 h-4 mr-2 ml-2" />
                                         </button>
                                     </div>
                                 </td>

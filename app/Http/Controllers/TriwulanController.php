@@ -15,18 +15,111 @@ use App\Models\PeriodeTahap;
 use App\Models\PeriodeTahun;
 use App\Models\MonitoringRealisasi;
 use App\Models\MonitoringPagu;
+use App\Services\UserActivityService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\Fluent\Concerns\Has;
 use Illuminate\Support\Facades\Log;
 
 class TriwulanController extends Controller
 {
     /**
+     * Get tahun aktif atau tahun yang dipilih
+     */
+    private function getTahunAktif(Request $request)
+    {
+        // Jika ada parameter tahun_id di request, gunakan itu
+        if ($request->has('tahun_id') && $request->tahun_id) {
+            return PeriodeTahun::find($request->tahun_id);
+        }
+
+        // Jika tidak, ambil tahun aktif
+        return PeriodeTahun::getTahunAktif();
+    }
+
+    /**
+     * Get semua tahun untuk dropdown
+     */
+    private function getAllTahun()
+    {
+        return PeriodeTahun::orderByDesc('tahun')->get();
+    }
+
+    /**
+     * Get the correct User ID for breadcrumb navigation to triwulan.show
+     * This should be the user with 'perangkat_daerah' role for the same SKPD as the tugas
+     */
+    private function getBreadcrumbUserId($tugas)
+    {
+        // Method 1: Cari user dengan role perangkat_daerah untuk SKPD ini
+        $perangkatDaerahUser = \App\Models\User::whereHas('skpd', function($query) use ($tugas) {
+                $query->where('skpd.id', $tugas->skpd_id);
+            })
+            ->whereHas('roles', function($query) {
+                $query->where('name', 'perangkat_daerah');
+            })
+            ->first();
+
+        if ($perangkatDaerahUser) {
+            \Log::info('Found perangkat_daerah user for triwulan breadcrumb', [
+                'user_id' => $perangkatDaerahUser->id,
+                'user_name' => $perangkatDaerahUser->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $perangkatDaerahUser->id;
+        }
+
+        // Method 2: Fallback ke kepala SKPD aktif
+        $kepalaAktif = \App\Models\SkpdKepala::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with('user')
+            ->first();
+
+        if ($kepalaAktif && $kepalaAktif->user) {
+            \Log::info('Using kepala SKPD for triwulan breadcrumb fallback', [
+                'user_id' => $kepalaAktif->user->id,
+                'user_name' => $kepalaAktif->user->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $kepalaAktif->user->id;
+        }
+
+        // Method 3: Fallback ke operator tim kerja
+        $timKerja = \App\Models\TimKerja::where('skpd_id', $tugas->skpd_id)
+            ->where('is_aktif', 1)
+            ->with('operator')
+            ->first();
+
+        if ($timKerja && $timKerja->operator) {
+            \Log::info('Using tim kerja operator for triwulan breadcrumb fallback', [
+                'user_id' => $timKerja->operator->id,
+                'user_name' => $timKerja->operator->name,
+                'skpd_id' => $tugas->skpd_id,
+                'tugas_id' => $tugas->id
+            ]);
+            return $timKerja->operator->id;
+        }
+
+        \Log::warning('Could not find appropriate user for triwulan breadcrumb', [
+            'skpd_id' => $tugas->skpd_id,
+            'tugas_id' => $tugas->id
+        ]);
+
+        return null;
+    }
+    /**
      * Display a listing of the resource.
      */
     public function index(int $tid, int $tahun = null)
     {
         $user = Auth::user();
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini jika tidak disebutkan
+
+        // Default ke tahun aktif jika tidak disebutkan
+        if (!$tahun) {
+            $tahunAktif = PeriodeTahun::getTahunAktif();
+            $tahun = $tahunAktif ? $tahunAktif->tahun : date('Y');
+        }
 
         \Log::info("TriwulanController.index: Starting", [
             'tid' => $tid,
@@ -128,10 +221,24 @@ class TriwulanController extends Controller
             'users_data_count' => count($users->items())
         ]);
 
+        // Get tahun aktif dan semua tahun untuk dropdown
+        // Jika ada parameter tahun, gunakan tahun tersebut sebagai tahunAktif
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            $tahunAktif = $this->getTahunAktif(request());
+        }
+        $allTahun = $this->getAllTahun();
+
         return Inertia::render('Triwulan', [
             'users' => $users,
             'tid' => $tid,
             'tahun' => $tahun,
+            'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
             'periode' => $periode,
             'triwulanName' => $this->getTriwulanName($tid),
         ]);
@@ -142,7 +249,11 @@ class TriwulanController extends Controller
      */
     public function show(int $tid, string $id, int $tahun = null)
     {
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+        // Default ke tahun aktif jika tidak disebutkan
+        if (!$tahun) {
+            $tahunAktif = PeriodeTahun::getTahunAktif();
+            $tahun = $tahunAktif ? $tahunAktif->tahun : date('Y');
+        }
 
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
@@ -296,6 +407,18 @@ class TriwulanController extends Controller
         // Determine the view based on triwulan
         $viewName = 'Triwulan/Show';
 
+        // Get tahun aktif dan semua tahun untuk dropdown
+        // Jika ada parameter tahun, gunakan tahun tersebut sebagai tahunAktif
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            $tahunAktif = $this->getTahunAktif(request());
+        }
+        $allTahun = $this->getAllTahun();
+
         return Inertia::render($viewName, [
             'user' => [
                 'id' => $user->id,
@@ -310,6 +433,8 @@ class TriwulanController extends Controller
             'subkegiatanList' => $subkegiatanList,
             'tid' => $tid,
             'tahun' => $tahun,
+            'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
             'periode' => $periode,
             'triwulanName' => $this->getTriwulanName($tid),
         ]);
@@ -317,7 +442,11 @@ class TriwulanController extends Controller
 
     public function showDetail(int $tid, string $id, string $taskId, int $tahun = null)
     {
-        $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+        // Default ke tahun aktif jika tidak disebutkan
+        if (!$tahun) {
+            $tahunAktif = PeriodeTahun::getTahunAktif();
+            $tahun = $tahunAktif ? $tahunAktif->tahun : date('Y');
+        }
 
         if (!in_array($tid, [1, 2, 3, 4])) {
             return redirect()->back()->withErrors(['error' => 'ID Triwulan tidak valid.']);
@@ -337,18 +466,19 @@ class TriwulanController extends Controller
             return redirect()->back()->withErrors(['error' => 'Periode ' . $this->getTriwulanName($tid) . ' tahun ' . $tahun . ' tidak ditemukan.']);
         }
 
-        // Get all SKPD tasks for this SKPD with monitoring data
+        // Get all SKPD tasks for this SKPD with monitoring data filtered by year
         $skpdTugas = SkpdTugas::where('skpd_id', $tugas->skpd_id)
             ->where('is_aktif', 1)
             ->with([
                 'kodeNomenklatur.details',
-                'monitoring' => function($query) {
-                    $query->with([
-                        'anggaran.target.periode',
-                        'anggaran.realisasi.periode',
-                        'anggaran.sumberAnggaran',
-                        'anggaran.pagu'
-                    ]);
+                'monitoring' => function($query) use ($tahun) {
+                    $query->where('tahun', $tahun)
+                        ->with([
+                            'anggaran.target.periode',
+                            'anggaran.realisasi.periode',
+                            'anggaran.sumberAnggaran',
+                            'anggaran.pagu'
+                        ]);
                 }
             ])
             ->get();
@@ -407,8 +537,9 @@ class TriwulanController extends Controller
                 && $item->kodeNomenklatur->details->first()->id_urusan == $urusanId;
         })->values();
 
-        // Ambil monitoring data untuk tugas ini
+        // Ambil monitoring data untuk tugas ini filtered by year
         $monitoring = \App\Models\Monitoring::where('skpd_tugas_id', $tugas->id)
+            ->where('tahun', $tahun)
             ->with(['anggaran.target.periode', 'anggaran.realisasi.periode'])
             ->get();
 
@@ -416,10 +547,11 @@ class TriwulanController extends Controller
         $monitoringTargets = [];
         $monitoringRealisasi = [];
 
-        // Get all monitoring data for all tasks in this SKPD to build complete dataset
+        // Get all monitoring data for all tasks in this SKPD to build complete dataset filtered by year
         $allMonitoring = \App\Models\Monitoring::whereHas('tugas', function($query) use ($tugas) {
                 $query->where('skpd_id', $tugas->skpd_id);
             })
+            ->where('tahun', $tahun)
             ->with(['anggaran.target.periode', 'anggaran.realisasi.periode', 'anggaran.sumberAnggaran', 'anggaran.pagu'])
             ->get();
 
@@ -431,7 +563,7 @@ class TriwulanController extends Controller
                     'parsial' => 0,
                     'perubahan' => 0
                 ];
-                
+
                 // PERBAIKAN: Aggregate pagu data from all records, not just override
                 foreach ($anggaran->pagu as $pagu) {
                     switch ($pagu->kategori) {
@@ -555,6 +687,21 @@ class TriwulanController extends Controller
         $skpdData['kode_organisasi'] = $tugas->skpd->kode_organisasi ?? '-';
         $skpdData['no_dpa'] = $tugas->skpd->no_dpa ?? '-';
 
+        // Get tahun aktif dan semua tahun untuk dropdown
+        // Jika ada parameter tahun, gunakan tahun tersebut sebagai tahunAktif
+        if ($tahun) {
+            $tahunAktif = PeriodeTahun::where('tahun', $tahun)->first();
+            if (!$tahunAktif) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+            }
+        } else {
+            $tahunAktif = $this->getTahunAktif(request());
+        }
+        $allTahun = $this->getAllTahun();
+
+        // Get the correct user ID for breadcrumb navigation
+        $breadcrumbUserId = $this->getBreadcrumbUserId($tugas);
+
         return Inertia::render($viewName, [
             'user' => [
                 'id' => $tugas->skpd->user_id ?? $id, // Fallback ke parameter $id jika user_id null
@@ -582,9 +729,13 @@ class TriwulanController extends Controller
             'monitoringRealisasi' => $monitoringRealisasi,
             'tid' => $tid,
             'tahun' => $tahun,
+            'tahunAktif' => $tahunAktif,
+            'allTahun' => $allTahun,
             'periode' => $periode,
+            'periodeStatus' => $this->getPeriodeStatus($periode, $tahun),
             'triwulanName' => $this->getTriwulanName($tid),
             'monitoring' => $monitoring ?? [],
+            'breadcrumbUserId' => $breadcrumbUserId, // Add breadcrumb user ID for correct navigation
         ]);
     }
 
@@ -604,7 +755,11 @@ class TriwulanController extends Controller
         ]);
 
         try {
-            $tahun = $tahun ?? date('Y'); // Default ke tahun saat ini
+            // Default ke tahun aktif jika tidak disebutkan
+            if (!$tahun) {
+                $tahunAktif = PeriodeTahun::getTahunAktif();
+                $tahun = $tahunAktif ? $tahunAktif->tahun : date('Y');
+            }
 
         // Validate triwulan ID
         if (!in_array($tid, [1, 2, 3, 4])) {
@@ -650,6 +805,17 @@ class TriwulanController extends Controller
         }
         if ($periode->status != 1) {
             return redirect()->back()->withErrors(['error' => 'Periode ' . $this->getTriwulanName($tid) . ' belum dibuka. Data tidak dapat disimpan.']);
+        }
+
+        // Check if periode has ended
+        if ($periode->tanggal_selesai < now()->toDateString()) {
+            return redirect()->back()->withErrors(['error' => 'Periode ' . $this->getTriwulanName($tid) . ' sudah selesai. Data tidak dapat disimpan.']);
+        }
+
+        // Check if tahun is still active
+        $periodeTahun = PeriodeTahun::where('tahun', $tahun)->first();
+        if (!$periodeTahun || $periodeTahun->status != 1) {
+            return redirect()->back()->withErrors(['error' => 'Tahun ' . $tahun . ' sudah tidak aktif. Data tidak dapat disimpan.']);
         }
 
         // Get the task record
@@ -753,10 +919,10 @@ class TriwulanController extends Controller
                     if ($paguRecords->isNotEmpty()) {
                         // Aggregate the dana values
                         $totalDana = $paguRecords->sum('dana');
-                        
+
                         // Use the first record's periode_id as reference (or you can choose the latest)
                         $firstPagu = $paguRecords->first();
-                        
+
                         // PERBAIKAN: Copy aggregated pagu data but keep the original periode_id for referencing
                         // This allows the triwulan detail page to access the same pagu data that RencanaAwal shows
                         MonitoringPagu::updateOrCreate(
@@ -850,6 +1016,19 @@ class TriwulanController extends Controller
         ]);
 
         // For Inertia requests, redirect back with success message
+        // Log aktivitas mengisi data triwulan
+        UserActivityService::logTriwulan('menyimpan data ' . $this->getTriwulanName($tid), [
+            'tid' => $tid,
+            'triwulan' => $this->getTriwulanName($tid),
+            'tugas_id' => $request->id,
+            'tahun' => $tahun,
+            'monitoring_id' => $monitoring->id,
+            'sumber_anggaran_id' => $request->sumber_anggaran_id,
+            'realisasi_fisik' => $request->realisasi_fisik,
+            'realisasi_keuangan' => $request->realisasi_keuangan,
+            'periode_id' => $periode->id
+        ]);
+
         return redirect()->back()->with('success', 'Data realisasi ' . $this->getTriwulanName($tid) . ' berhasil disimpan');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -973,11 +1152,60 @@ class TriwulanController extends Controller
         }
 
         // Then get the periode with the correct tahap and tahun
-        return Periode::where('tahun_id', $periodeTahun->id)
+        return Periode::with(['tahun', 'tahap'])
+            ->where('tahun_id', $periodeTahun->id)
             ->whereHas('tahap', function($query) use ($triwulanNames, $tid) {
                 $query->where('tahap', 'like', '%' . $triwulanNames[$tid] . '%');
             })
             ->first();
+    }
+
+    /**
+     * Get periode status for frontend validation
+     */
+    private function getPeriodeStatus($periode, $tahun)
+    {
+        if (!$periode) {
+            return [
+                'canInput' => false,
+                'reason' => 'Periode tidak ditemukan',
+                'status' => 'not_found'
+            ];
+        }
+
+        // Check if periode is open
+        if ($periode->status != 1) {
+            return [
+                'canInput' => false,
+                'reason' => 'Periode belum dibuka',
+                'status' => 'not_open'
+            ];
+        }
+
+        // Check if periode has ended
+        if ($periode->tanggal_selesai < now()->toDateString()) {
+            return [
+                'canInput' => false,
+                'reason' => 'Periode sudah selesai',
+                'status' => 'ended'
+            ];
+        }
+
+        // Check if tahun is still active
+        $periodeTahun = PeriodeTahun::where('tahun', $tahun)->first();
+        if (!$periodeTahun || $periodeTahun->status != 1) {
+            return [
+                'canInput' => false,
+                'reason' => 'Tahun sudah tidak aktif',
+                'status' => 'year_inactive'
+            ];
+        }
+
+        return [
+            'canInput' => true,
+            'reason' => 'Periode aktif',
+            'status' => 'active'
+        ];
     }
 
     /**
@@ -1050,4 +1278,396 @@ class TriwulanController extends Controller
     {
         //
     }
+
+    /**
+     * Get available sumber dana for selective PDF download
+     */
+    public function getAvailableSumberDana(Request $request, $tid, $tugasId)
+    {
+        try {
+            // Get SKPD tugas
+            $skpdTugas = SkpdTugas::findOrFail($tugasId);
+            
+            // Get periode by triwulan
+            $periode = $this->getPeriodeByTriwulan($tid, $request->input('tahun', date('Y')));
+            
+            if (!$periode) {
+                return response()->json(['error' => 'Periode tidak ditemukan'], 404);
+            }
+
+            // Get all monitoring for this SKPD tugas
+            $monitoring = Monitoring::where('skpd_tugas_id', $tugasId)
+                ->where('periode_id', $periode->id)
+                ->first();
+
+            if (!$monitoring) {
+                return response()->json(['available_sources' => [], 'total_sources' => 0]);
+            }
+
+            // Get available sumber dana with statistics
+            $availableSources = DB::table('sumber_anggaran as sa')
+                ->join('monitoring_anggaran as ma', 'sa.id', '=', 'ma.sumber_anggaran_id')
+                ->where('ma.monitoring_id', $monitoring->id)
+                ->select('sa.id', 'sa.nama')
+                ->distinct()
+                ->get()
+                ->map(function ($source) use ($monitoring) {
+                    // Calculate statistics for each source
+                    $anggaran = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                        ->where('sumber_anggaran_id', $source->id)
+                        ->first();
+
+                    $totalPagu = 0;
+                    $totalRealisasi = 0;
+                    $totalSubKegiatan = 0;
+
+                    if ($anggaran) {
+                        // Calculate total pagu (all categories)
+                        $totalPagu = MonitoringPagu::where('monitoring_anggaran_id', $anggaran->id)->sum('dana');
+                        
+                        // Calculate total realisasi
+                        $totalRealisasi = MonitoringRealisasi::where('monitoring_anggaran_id', $anggaran->id)->sum('keuangan');
+                        
+                        // Count subkegiatan (assuming 1 subkegiatan per anggaran for now)
+                        $totalSubKegiatan = 1;
+                    }
+
+                    $persentaseRealisasi = $totalPagu > 0 ? ($totalRealisasi / $totalPagu) * 100 : 0;
+
+                    return [
+                        'id' => $source->id,
+                        'nama' => $source->nama,
+                        'totalSubKegiatan' => $totalSubKegiatan,
+                        'totalPagu' => $totalPagu,
+                        'totalRealisasi' => $totalRealisasi,
+                        'persentaseRealisasi' => round($persentaseRealisasi, 2),
+                    ];
+                })
+                ->filter(function ($source) {
+                    return $source['totalPagu'] > 0; // Only show sources with data
+                })
+                ->values();
+
+            return response()->json([
+                'available_sources' => $availableSources,
+                'total_sources' => $availableSources->count(),
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error getting available sumber dana: ' . $e->getMessage());
+            return response()->json(['error' => 'Terjadi kesalahan server'], 500);
+        }
+    }
+
+    /**
+     * Preview selective data for PDF generation
+     */
+    public function previewSelectiveData(Request $request, $tid, $tugasId)
+    {
+        try {
+            $validated = $request->validate([
+                'sumber_dana_ids' => 'required|array|min:1',
+                'sumber_dana_ids.*' => 'integer|exists:sumber_anggaran,id',
+                'mode' => 'required|string|in:single,multiple,compare,all',
+            ]);
+
+            // Get SKPD tugas
+            $skpdTugas = SkpdTugas::findOrFail($tugasId);
+            
+            // Get periode by triwulan
+            $periode = $this->getPeriodeByTriwulan($tid, $request->input('tahun', date('Y')));
+            
+            if (!$periode) {
+                return response()->json(['error' => 'Periode tidak ditemukan'], 404);
+            }
+
+            // Get monitoring data
+            $monitoring = Monitoring::where('skpd_tugas_id', $tugasId)
+                ->where('periode_id', $periode->id)
+                ->first();
+
+            if (!$monitoring) {
+                return response()->json([
+                    'total_subkegiatan' => 0,
+                    'total_pagu' => 0,
+                    'total_realisasi' => 0,
+                    'avg_realisasi' => 0,
+                ]);
+            }
+
+            $selectedSumberDanaIds = $validated['sumber_dana_ids'];
+            
+            // Calculate filtered statistics
+            $totalPagu = 0;
+            $totalRealisasi = 0;
+            $totalSubKegiatan = 0;
+
+            foreach ($selectedSumberDanaIds as $sumberDanaId) {
+                $anggaran = MonitoringAnggaran::where('monitoring_id', $monitoring->id)
+                    ->where('sumber_anggaran_id', $sumberDanaId)
+                    ->first();
+
+                if ($anggaran) {
+                    $pagu = MonitoringPagu::where('monitoring_anggaran_id', $anggaran->id)->sum('dana');
+                    $realisasi = MonitoringRealisasi::where('monitoring_anggaran_id', $anggaran->id)->sum('keuangan');
+                    
+                    $totalPagu += $pagu;
+                    $totalRealisasi += $realisasi;
+                    $totalSubKegiatan += 1;
+                }
+            }
+
+            $avgRealisasi = $totalPagu > 0 ? ($totalRealisasi / $totalPagu) * 100 : 0;
+
+            return response()->json([
+                'total_subkegiatan' => $totalSubKegiatan,
+                'total_pagu' => $totalPagu,
+                'total_realisasi' => $totalRealisasi,
+                'avg_realisasi' => round($avgRealisasi, 2),
+                'mode' => $validated['mode'],
+                'selected_sources_count' => count($selectedSumberDanaIds),
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error generating preview: ' . $e->getMessage());
+            return response()->json(['error' => 'Terjadi kesalahan server'], 500);
+        }
+    }
+
+    /**
+     * Export triwulan data to Excel
+     */
+    public function exportExcel($tid, $tugasId, $tahun = null)
+    {
+        try {
+            // Get data using the same logic as showDetail
+            $data = $this->getTriwulanData($tid, $tugasId, $tahun);
+            
+            // Create CSV content
+            $content = $this->generateCsvContent($data, $tid);
+            
+            // Generate filename
+            $triwulanName = str_replace(' ', '_', $this->getTriwulanName($tid));
+            $filename = "Monitoring_{$triwulanName}_{$data['skpd']->nama_skpd}_{$data['tahun']}.csv";
+            $filename = str_replace([' ', '/', '\\'], '_', $filename);
+            
+            // Log activity
+            UserActivityService::logExportData('Excel Triwulan', [
+                'triwulan_id' => $tid,
+                'tugas_id' => $tugasId,
+                'skpd_id' => $data['skpd']->id,
+                'tahun' => $data['tahun'],
+                'filename' => $filename
+            ]);
+            
+            // Return as CSV download (Excel can open CSV files)
+            return response($content, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error exporting Excel: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengekspor data Excel');
+        }
+    }
+
+    /**
+     * Export triwulan data to CSV
+     */
+    public function exportCsv($tid, $tugasId, $tahun = null)
+    {
+        try {
+            // Get data using the same logic as showDetail
+            $data = $this->getTriwulanData($tid, $tugasId, $tahun);
+            
+            // Create CSV content
+            $content = $this->generateCsvContent($data, $tid);
+            
+            // Generate filename
+            $triwulanName = str_replace(' ', '_', $this->getTriwulanName($tid));
+            $filename = "Monitoring_{$triwulanName}_{$data['skpd']->nama_skpd}_{$data['tahun']}.csv";
+            $filename = str_replace([' ', '/', '\\'], '_', $filename);
+            
+            // Log activity
+            UserActivityService::logExportData('CSV Triwulan', [
+                'triwulan_id' => $tid,
+                'tugas_id' => $tugasId,
+                'skpd_id' => $data['skpd']->id,
+                'tahun' => $data['tahun'],
+                'filename' => $filename
+            ]);
+            
+            // Return CSV download
+            return response($content, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error exporting CSV: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengekspor data CSV');
+        }
+    }
+
+    /**
+     * Get triwulan data for export
+     */
+    private function getTriwulanData($tid, $tugasId, $tahun = null)
+    {
+        // Get SKPD Tugas with relations
+        $skpdTugas = SkpdTugas::with([
+            'kodeNomenklatur',
+            'skpd'
+        ])->findOrFail($tugasId);
+
+        // Get periode for this triwulan and year
+        $tahunRecord = $tahun ? PeriodeTahun::where('tahun', $tahun)->first() : PeriodeTahun::getTahunAktif();
+        $periode = $this->getPeriodeByTriwulan($tid, $tahunRecord->tahun);
+
+        if (!$periode) {
+            throw new \Exception('Periode tidak ditemukan untuk triwulan ini');
+        }
+
+        // Get monitoring data
+        $monitoring = Monitoring::whereHas('tugas', function($query) use ($skpdTugas) {
+                $query->where('skpd_id', $skpdTugas->skpd_id);
+            })
+            ->where('tahun', $tahunRecord->tahun)
+            ->with(['anggaran.target.periode', 'anggaran.realisasi.periode', 'anggaran.sumberAnggaran', 'anggaran.pagu'])
+            ->get();
+
+        // Get monitoring targets for the current periode
+        $monitoringTargets = [];
+        $monitoringRealisasi = [];
+
+        foreach ($monitoring as $monitoringItem) {
+            foreach ($monitoringItem->anggaran as $anggaran) {
+                // Collect targets for current periode
+                foreach ($anggaran->target as $target) {
+                    if ($target->periode_id == $periode->id) {
+                        $monitoringTargets[] = [
+                            'task_id' => $monitoringItem->skpd_tugas_id,
+                            'kinerja_fisik' => $target->kinerja_fisik,
+                            'keuangan' => $target->keuangan,
+                            'pagu_pokok' => $target->pagu_pokok,
+                            'pagu_parsial' => $target->pagu_parsial,
+                            'pagu_perubahan' => $target->pagu_perubahan,
+                            'sumber_anggaran_nama' => $anggaran->sumberAnggaran->nama ?? 'Unknown',
+                            'deskripsi' => $monitoringItem->deskripsi,
+                            'nama_pptk' => $monitoringItem->nama_pptk,
+                        ];
+                    }
+                }
+
+                // Collect realisasi for current periode
+                foreach ($anggaran->realisasi as $realisasi) {
+                    if ($realisasi->periode_id == $periode->id) {
+                        $monitoringRealisasi[] = [
+                            'task_id' => $monitoringItem->skpd_tugas_id,
+                            'kinerja_fisik' => $realisasi->kinerja_fisik,
+                            'keuangan' => $realisasi->keuangan,
+                            'sumber_anggaran_nama' => $anggaran->sumberAnggaran->nama ?? 'Unknown',
+                            'deskripsi' => $realisasi->deskripsi,
+                            'nama_pptk' => $realisasi->nama_pptk,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'skpd' => $skpdTugas->skpd,
+            'tugas' => $skpdTugas,
+            'periode' => $periode,
+            'tahun' => $tahunRecord->tahun,
+            'monitoringTargets' => $monitoringTargets,
+            'monitoringRealisasi' => $monitoringRealisasi,
+        ];
+    }
+
+    /**
+     * Generate CSV content from data
+     */
+    private function generateCsvContent($data, $tid)
+    {
+        $triwulanName = str_replace(' ', '_', $this->getTriwulanName($tid));
+        
+        // Add BOM for UTF-8
+        $content = "\xEF\xBB\xBF";
+        
+        // Header information
+        $content .= "Data Monitoring {$triwulanName}\n";
+        $content .= "SKPD: {$data['skpd']->nama_skpd}\n";
+        $content .= "Tahun: {$data['tahun']}\n";
+        $content .= "Periode: {$data['periode']->nama}\n";
+        $content .= "Tanggal Export: " . date('d/m/Y H:i:s') . "\n\n";
+        
+        // CSV headers
+        $headers = [
+            'No',
+            'Kode',
+            'Bidang Urusan/Program/Kegiatan/Sub Kegiatan',
+            'Sumber Dana',
+            'Pagu Pokok (Rp)',
+            'Pagu Parsial (Rp)', 
+            'Pagu Perubahan (Rp)',
+            'Target Fisik (%)',
+            'Target Keuangan (Rp)',
+            'Realisasi Fisik (%)',
+            'Realisasi Keuangan (Rp)',
+            'Realisasi Keuangan (%)',
+            'Keterangan',
+            'PPTK'
+        ];
+        
+        $content .= implode(',', array_map(function($header) {
+            return '"' . str_replace('"', '""', $header) . '"';
+        }, $headers)) . "\n";
+        
+        // Data rows
+        $no = 1;
+        foreach ($data['monitoringTargets'] as $target) {
+            // Find matching realisasi
+            $realisasi = collect($data['monitoringRealisasi'])->firstWhere('task_id', $target['task_id']);
+            
+            // Calculate percentage
+            $latestPagu = $target['pagu_perubahan'] > 0 ? $target['pagu_perubahan'] : 
+                          ($target['pagu_parsial'] > 0 ? $target['pagu_parsial'] : $target['pagu_pokok']);
+            $realisasiPersen = $latestPagu > 0 ? (($realisasi['keuangan'] ?? 0) / $latestPagu) * 100 : 0;
+            
+            $row = [
+                $no++,
+                $data['tugas']->kodeNomenklatur->nomor_kode ?? '',
+                $data['tugas']->kodeNomenklatur->nomenklatur ?? '',
+                $target['sumber_anggaran_nama'],
+                number_format($target['pagu_pokok'], 0, ',', '.'),
+                number_format($target['pagu_parsial'], 0, ',', '.'),
+                number_format($target['pagu_perubahan'], 0, ',', '.'),
+                number_format($target['kinerja_fisik'], 2, ',', '.'),
+                number_format($target['keuangan'], 0, ',', '.'),
+                number_format($realisasi['kinerja_fisik'] ?? 0, 2, ',', '.'),
+                number_format($realisasi['keuangan'] ?? 0, 0, ',', '.'),
+                number_format($realisasiPersen, 2, ',', '.'),
+                $realisasi['deskripsi'] ?? '',
+                $realisasi['nama_pptk'] ?? ''
+            ];
+            
+            $content .= implode(',', array_map(function($cell) {
+                return '"' . str_replace('"', '""', $cell) . '"';
+            }, $row)) . "\n";
+        }
+        
+        return $content;
+    }
+
+
+
+
 }

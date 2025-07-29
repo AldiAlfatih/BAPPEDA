@@ -61,6 +61,7 @@ const mainNavItems: NavItem[] = [
         {
             title: 'Manajemen Anggaran',
             href: '/manajemenanggaran',
+            guard: ['super_admin','admin','operator'],
         },
         {
             title: 'Rencana Awal',

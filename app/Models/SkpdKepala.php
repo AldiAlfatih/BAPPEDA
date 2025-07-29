@@ -18,14 +18,18 @@ class SkpdKepala extends Model
         'user_id',
         'is_aktif',
     ];
-    
+
+    protected $attributes = [
+        'is_aktif' => 1,
+    ];
+
     protected $dates = ['deleted_at'];
 
     public function skpd(): BelongsTo
     {
         return $this->belongsTo(Skpd::class, 'skpd_id');
     }
-    
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -35,10 +39,10 @@ class SkpdKepala extends Model
         return $this->hasOneThrough(
             \App\Models\UserDetail::class,
             \App\Models\User::class,
-            'id', 
+            'id',
             'user_id',
-            'user_id', 
-            'id' 
+            'user_id',
+            'id'
 );
 }
 }

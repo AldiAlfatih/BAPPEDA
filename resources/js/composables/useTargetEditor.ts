@@ -1,6 +1,6 @@
-import { ref } from 'vue';
-import { router } from '@inertiajs/vue3';
 import { getSumberAnggaranId, normalizeKey } from '@/utils/formatters';
+import { router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData: () => void) {
   // State untuk edit target subkegiatan
@@ -38,7 +38,7 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
         // Hapus karakter non-numerik kecuali titik dan koma
         let rawValue = value.replace(/[^\d.,]/g, '');
         rawValue = rawValue.replace(',', '.'); // Ubah koma menjadi titik untuk decimal
-        
+
         // Pastikan nilai tidak melebihi 100%
         const numericValue = parseFloat(rawValue);
         if (isNaN(numericValue)) {
@@ -52,7 +52,7 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
         const numericValue = parseInt(rawValue) || 0;
         editingTargets.value[uniqueKey][idx][field] = numericValue;
       }
-      
+
       // Clear any error status when user makes changes
       if (errorRow.value === uniqueKey.split('-')[0]) {
         errorRow.value = null;
@@ -64,17 +64,17 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
   async function saveTargets(subKegiatan: any, sumberDana?: string) {
     // Cari sumberDana dari formattedSubKegiatanData jika tidak ada di parameter
     let finalSumberDana: string = sumberDana || '';
-    
+
     if (!finalSumberDana) {
       // Jika sumberDana tidak ada di parameter, cari dari subKegiatan
       finalSumberDana = subKegiatan.sumberDana || 'APBD';
     }
-    
+
     const uniqueKey = getUniqueKey(subKegiatan, finalSumberDana);
     loadingRow.value = uniqueKey;
     errorRow.value = null;
     successRow.value = null;
-    
+
     try {
       // Periksa jika editingTargets untuk key ini sudah ada
       if (!editingTargets.value[uniqueKey]) {
@@ -82,18 +82,18 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
       }
 
       const rawTargets = editingTargets.value[uniqueKey];
-          
+
       // Validate and format targets data
       const processedTargets = rawTargets.map((target: any, index: number) => {
         const kinerjaFisik = parseFloat(String(target.kinerja_fisik).replace(',', '.'));
-        const keuangan = typeof target.keuangan === 'string' 
-          ? parseInt(target.keuangan.replace(/[^\d]/g, '')) 
+        const keuangan = typeof target.keuangan === 'string'
+          ? parseInt(target.keuangan.replace(/[^\d]/g, ''))
           : (target.keuangan || 0);
-              
+
         if (isNaN(kinerjaFisik) || kinerjaFisik < 0 || kinerjaFisik > 100) {
           throw new Error(`Kinerja fisik triwulan ${index + 1} harus berupa angka antara 0-100`);
         }
-              
+
         if (isNaN(keuangan) || keuangan < 0) {
           throw new Error(`Keuangan triwulan ${index + 1} harus berupa angka positif`);
         }
@@ -104,13 +104,13 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
           triwulan: index + 1
         };
       });
-      
+
       const sumberAnggaranId = getSumberAnggaranId(finalSumberDana);
-      
+
       // Get pagu data from props.dataAnggaranTerakhir
       const paguData = props.dataAnggaranTerakhir?.[subKegiatan.id]?.values || {};
       const key = normalizeKey(finalSumberDana);
-      
+
       // We need to ensure type safety here - create a safer version of the key lookup
       let paguValue = 0;
       if (paguData) {
@@ -122,9 +122,9 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
           dak_non_fisik?: number;
           blud?: number;
         };
-        
+
         const typedPaguData = paguData as PaguDataType;
-        
+
         if (key === 'dau' && typedPaguData.dau !== undefined) {
           paguValue = typedPaguData.dau;
         } else if (key === 'dau_peruntukan' && typedPaguData.dau_peruntukan !== undefined) {
@@ -137,12 +137,12 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
           paguValue = typedPaguData.blud;
         }
       }
-      
+
       // Pastikan nama_pptk ada (ini sering menjadi masalah jika required di backend)
-      const nama_pptk = props.tugas?.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nama || 
-                        props.kepalaSkpd || 
+      const nama_pptk = props.tugas?.skpd?.skpd_kepala?.[0]?.user?.user_detail?.nama ||
+                        props.kepalaSkpd ||
                         'Belum diisi';
-      
+
       const payload = {
         skpd_tugas_id: subKegiatan.id,
         tahun: props.tahunAktif?.tahun || new Date().getFullYear(),
@@ -158,21 +158,21 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
           perubahan: 0
         }
       };
-      
+
       await router.post('/rencanaawal/save-target', payload, {
         preserveScroll: true,
         preserveState: true,
         onSuccess: (response: any) => {
           successRow.value = uniqueKey;
           delete editingTargets.value[uniqueKey];
-          
+
           // Show success message temporarily
           setTimeout(() => {
             if (successRow.value === uniqueKey) {
               successRow.value = null;
             }
           }, 3000);
-          
+
           // Refresh data from server after success to update all calculations
           setTimeout(() => {
             refreshData();
@@ -181,7 +181,7 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
         onError: (err: any) => {
           console.error('Error saving targets:', err);
           errorRow.value = uniqueKey;
-          
+
           // Check for the specific error about period not being active
           if (err.message && err.message.includes('Tidak ada periode yang aktif')) {
             alert('Tidak ada periode yang aktif saat ini. Data Rencana Awal tidak dapat disimpan. Silakan tunggu hingga periode dibuka oleh admin.');
@@ -213,30 +213,30 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
   async function deleteTargets(subKegiatan: any, sumberDana?: string) {
     // Cari sumberDana dari formattedSubKegiatanData jika tidak ada di parameter
     let finalSumberDana: string = sumberDana || '';
-    
+
     if (!finalSumberDana) {
       finalSumberDana = subKegiatan.sumberDana || 'APBD';
     }
-    
+
     const uniqueKey = getUniqueKey(subKegiatan, finalSumberDana);
     loadingRow.value = uniqueKey;
     errorRow.value = null;
     successRow.value = null;
-    
+
     try {
       // Ask for confirmation
       if (!confirm(`Apakah Anda yakin ingin menghapus target untuk sub kegiatan ini dengan sumber dana ${finalSumberDana}?`)) {
         loadingRow.value = null;
         return;
       }
-      
+
       const sumberAnggaranId = getSumberAnggaranId(finalSumberDana);
-      
+
       // Cari monitoring_anggaran_id jika tersedia
       const monitoringAnggaranId = subKegiatan.monitoring?.monitoringAnggaran?.find(
         (anggaran: any) => anggaran.sumber_anggaran_id === sumberAnggaranId
       )?.id || 0;
-      
+
       const payload = {
         skpd_tugas_id: subKegiatan.id,
         tahun: props.tahunAktif?.tahun,
@@ -252,7 +252,7 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
         preserveState: true,
         onSuccess: (response) => {
           successRow.value = uniqueKey;
-          
+
           // Reset form values to empty
           if (editingTargets.value[uniqueKey]) {
             editingTargets.value[uniqueKey] = [0, 1, 2, 3].map(i => ({
@@ -260,14 +260,14 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
               keuangan: '',
             }));
           }
-          
+
           // Show temporary success message
           setTimeout(() => {
             if (successRow.value === uniqueKey) {
               successRow.value = null;
             }
           }, 3000);
-          
+
           // Reload the page after a slight delay to refresh data
           setTimeout(() => {
             refreshData();
@@ -276,7 +276,7 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
         onError: (err: any) => {
           console.error('Error saat hapus:', err);
           errorRow.value = uniqueKey;
-          
+
           if (err.response && typeof err.response === 'object' && err.response.data && err.response.data.message) {
             alert('Error: ' + err.response.data.message);
           } else {
@@ -321,4 +321,4 @@ export function useTargetEditor(props: any, selectedPeriodeId: any, refreshData:
     deleteTargets,
     ensureEditingTargets
   };
-} 
+}

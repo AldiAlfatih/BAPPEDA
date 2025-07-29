@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import TabelDetail from '@/components/Triwulan/TabelDetail.vue';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ArrowUpDown, Search } from 'lucide-vue-next';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
+import { ArrowUpDown, Search, Trash2 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
-import TabelDetail from '@/components/Triwulan/TabelDetail.vue';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const props = defineProps<{
     user: {
@@ -90,45 +91,47 @@ const itemsPerPage = ref(10);
 const sortField = ref('nomor_kode');
 const sortDirection = ref('asc');
 
+// Dialog state management
+const confirmDelete = ref<number | null>(null);
+
 // Computed properties for table
 const filteredTugas = computed(() => {
     let data = [...props.skpdTugas];
-    
+
     // Filter based on search query
     if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase();
-        data = data.filter(tugas => 
-            (tugas.kode_nomenklatur.nomor_kode || '').toLowerCase().includes(query) || 
-            (tugas.kode_nomenklatur.nomenklatur || '').toLowerCase().includes(query)
+        data = data.filter(
+            (tugas) =>
+                (tugas.kode_nomenklatur.nomor_kode || '').toLowerCase().includes(query) ||
+                (tugas.kode_nomenklatur.nomenklatur || '').toLowerCase().includes(query),
         );
     }
-    
+
     // Apply sorting
     data.sort((a, b) => {
         let aVal = getFieldValue(a, sortField.value);
         let bVal = getFieldValue(b, sortField.value);
-        
+
         // Handle null values
         if (aVal === null || aVal === undefined) aVal = '';
         if (bVal === null || bVal === undefined) bVal = '';
-        
+
         // String comparison
         if (typeof aVal === 'string' && typeof bVal === 'string') {
-            return sortDirection.value === 'asc' 
-                ? aVal.localeCompare(bVal) 
-                : bVal.localeCompare(aVal);
+            return sortDirection.value === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
         }
-        
+
         // Number comparison for jenis_nomenklatur
         return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal;
     });
-    
+
     return data;
 });
 
 // Helper to get field value for sorting
 function getFieldValue(item: any, field: string) {
-    switch(field) {
+    switch (field) {
         case 'nomor_kode':
             return item.kode_nomenklatur.nomor_kode || '';
         case 'nomenklatur':
@@ -170,7 +173,7 @@ function getJenisNomenklaturName(jenis: number): string {
         1: 'Bidang Urusan',
         2: 'Program',
         3: 'Kegiatan',
-        4: 'Sub Kegiatan'
+        4: 'Sub Kegiatan',
     };
     return options[jenis as keyof typeof options] || 'Unknown';
 }
@@ -403,9 +406,18 @@ function saveTugas() {
 }
 
 function deleteTugas(id: number) {
-    if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
-        router.delete(`/tugas/${id}`);
+    confirmDelete.value = id;
+}
+
+function confirmDeleteAction() {
+    if (confirmDelete.value) {
+        router.delete(`/tugas/${confirmDelete.value}`);
+        confirmDelete.value = null;
     }
+}
+
+function cancelDelete() {
+    confirmDelete.value = null;
 }
 
 // Pagination controls
@@ -431,7 +443,7 @@ function goToPage(page: number) {
 const pageNumbers = computed(() => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages.value <= maxVisiblePages) {
         // Show all pages if total pages are less than or equal to maxVisiblePages
         for (let i = 1; i <= totalPages.value; i++) {
@@ -441,17 +453,17 @@ const pageNumbers = computed(() => {
         // Logic for showing current page and adjacent pages
         let startPage = Math.max(1, currentPage.value - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages.value, startPage + maxVisiblePages - 1);
-        
+
         // Adjust startPage if we're near the end
         if (endPage - startPage + 1 < maxVisiblePages) {
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
         }
-        
+
         for (let i = startPage; i <= endPage; i++) {
             pages.push(i);
         }
     }
-    
+
     return pages;
 });
 
@@ -471,7 +483,7 @@ async function handleSubmit() {
             tugas_ids: selectedIds,
             jenis_nomenklatur: jenisNomenklatur.value,
         });
-        
+
         isModalOpen.value = false;
         selectedIds = [];
     } catch (e) {
@@ -511,8 +523,12 @@ button {
     animation: fadeIn 0.3s ease-in-out;
 }
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 .table-row-hover:hover {
     background-color: #f3f4f6;
@@ -524,15 +540,15 @@ button {
     <Head title="Detail Perangkat Daerah" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-col gap-6 p-6 bg-gray-50">
+        <div class="flex flex-col gap-6 bg-gray-50 p-6">
             <!-- Flash Messages dengan animasi fadeout -->
             <transition name="notification">
                 <div
                     v-if="flashMessage.success && showFlash.success"
-                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-green-500 bg-green-50 p-4 shadow-md text-green-800"
+                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-green-500 bg-green-50 p-4 text-green-800 shadow-md"
                 >
                     <span class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                         {{ flashMessage.success }}
@@ -548,11 +564,16 @@ button {
             <transition name="notification">
                 <div
                     v-if="flashMessage.error && showFlash.error"
-                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-red-500 bg-red-50 p-4 shadow-md text-red-800"
+                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-red-500 bg-red-50 p-4 text-red-800 shadow-md"
                 >
                     <span class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                         </svg>
                         {{ flashMessage.error }}
                     </span>
@@ -567,11 +588,16 @@ button {
             <transition name="notification">
                 <div
                     v-if="flashMessage.info && showFlash.info"
-                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4 shadow-md text-blue-800"
+                    class="notification mb-4 flex items-center justify-between rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4 text-blue-800 shadow-md"
                 >
                     <span class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                         </svg>
                         {{ flashMessage.info }}
                     </span>
@@ -584,26 +610,35 @@ button {
             </transition>
 
             <!-- Header Section with better card design -->
-            <TabelDetail
-                :skpd="props.skpd"
-            />
+            <TabelDetail :skpd="props.skpd" />
 
             <!-- Tasks Section with improved table -->
-            <div class="rounded-lg bg-white p-6 shadow-lg border border-gray-100">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+            <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-lg">
+                <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                     <div class="flex items-center">
-                        <div class="rounded-full bg-green-100 p-3 mr-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        <div class="mr-4 rounded-full bg-green-100 p-3">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-6 w-6 text-green-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                                />
                             </svg>
                         </div>
                         <h3 class="text-xl font-bold text-gray-800">Tugas</h3>
                     </div>
                     <Button
-                        class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md"
+                        class="flex items-center rounded-lg bg-blue-600 px-4 py-2 text-white shadow-md transition-colors duration-200 hover:bg-blue-700"
                         @click="openModal"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         Tambah Tugas
@@ -611,22 +646,19 @@ button {
                 </div>
 
                 <!-- Filter and Search for Tasks -->
-                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between mb-4">
+                <div class="mb-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
                     <div class="relative w-full sm:w-96">
-                        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input 
-                            v-model="searchQuery" 
-                            placeholder="Cari kode atau nomenklatur tugas..." 
-                            class="pl-10 pr-4 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
+                        <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                        <Input
+                            v-model="searchQuery"
+                            placeholder="Cari kode atau nomenklatur tugas..."
+                            class="w-full rounded-lg border-gray-300 pr-4 pl-10 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                             @input="handleSearchChange"
                         />
                     </div>
-                    <div class="flex gap-2 items-center">
+                    <div class="flex items-center gap-2">
                         <span class="text-sm text-gray-500">Tampilkan:</span>
-                        <select 
-                            v-model="itemsPerPage" 
-                            class="rounded-md border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500"
-                        >
+                        <select v-model="itemsPerPage" class="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500">
                             <option value="5">5</option>
                             <option value="10">10</option>
                             <option value="25">25</option>
@@ -640,78 +672,96 @@ button {
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 text-center">No</th>
-                                <th 
-                                    @click="toggleSort('nomor_kode')" 
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                <th class="w-16 px-6 py-3 text-center text-left text-xs font-medium tracking-wider text-gray-500 uppercase">No</th>
+                                <th
+                                    @click="toggleSort('nomor_kode')"
+                                    class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
                                 >
                                     <div class="flex items-center gap-1">
                                         Kode
-                                        <ArrowUpDown class="w-4 h-4 opacity-50" :class="{'text-blue-600': sortField === 'nomor_kode'}" />
+                                        <ArrowUpDown class="h-4 w-4 opacity-50" :class="{ 'text-blue-600': sortField === 'nomor_kode' }" />
                                     </div>
                                 </th>
-                                <th 
-                                    @click="toggleSort('nomenklatur')" 
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                <th
+                                    @click="toggleSort('nomenklatur')"
+                                    class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
                                 >
                                     <div class="flex items-center gap-1">
                                         Nomenklatur
-                                        <ArrowUpDown class="w-4 h-4 opacity-50" :class="{'text-blue-600': sortField === 'nomenklatur'}" />
+                                        <ArrowUpDown class="h-4 w-4 opacity-50" :class="{ 'text-blue-600': sortField === 'nomenklatur' }" />
                                     </div>
                                 </th>
-                                <th 
-                                    @click="toggleSort('jenis_nomenklatur')" 
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                <th
+                                    @click="toggleSort('jenis_nomenklatur')"
+                                    class="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
                                 >
                                     <div class="flex items-center gap-1">
                                         Jenis
-                                        <ArrowUpDown class="w-4 h-4 opacity-50" :class="{'text-blue-600': sortField === 'jenis_nomenklatur'}" />
+                                        <ArrowUpDown class="h-4 w-4 opacity-50" :class="{ 'text-blue-600': sortField === 'jenis_nomenklatur' }" />
                                     </div>
                                 </th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Aksi</th>
+                                <th class="w-24 px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="divide-y divide-gray-200 bg-white">
                             <tr v-if="paginatedTugas.length === 0">
                                 <td colspan="5" class="px-6 py-4 text-center text-gray-500">
                                     <div class="flex flex-col items-center justify-center py-6">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            class="mb-2 h-12 w-12 text-gray-400"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                            />
                                         </svg>
                                         <p class="text-lg font-medium">Tidak ada data tugas</p>
-                                        <p class="text-sm text-gray-500 mt-1">Tambahkan tugas baru untuk perangkat daerah ini</p>
+                                        <p class="mt-1 text-sm text-gray-500">Tambahkan tugas baru untuk perangkat daerah ini</p>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-for="(tugas, index) in paginatedTugas" :key="tugas.id" class="table-row-hover">
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                <td class="px-6 py-4 text-center text-sm whitespace-nowrap text-gray-500">
                                     {{ (currentPage - 1) * itemsPerPage + index + 1 }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <td class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900">
                                     {{ tugas.kode_nomenklatur.nomor_kode }}
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500">
                                     {{ tugas.kode_nomenklatur.nomenklatur }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
-                                          :class="{
+                                <td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                                    <span
+                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                        :class="{
                                             'bg-blue-100 text-blue-800': tugas.kode_nomenklatur.jenis_nomenklatur === 0,
                                             'bg-indigo-100 text-indigo-800': tugas.kode_nomenklatur.jenis_nomenklatur === 1,
                                             'bg-purple-100 text-purple-800': tugas.kode_nomenklatur.jenis_nomenklatur === 2,
                                             'bg-green-100 text-green-800': tugas.kode_nomenklatur.jenis_nomenklatur === 3,
                                             'bg-yellow-100 text-yellow-800': tugas.kode_nomenklatur.jenis_nomenklatur === 4,
-                                          }">
+                                        }"
+                                    >
                                         {{ getJenisNomenklaturName(tugas.kode_nomenklatur.jenis_nomenklatur) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                <td class="px-6 py-4 text-right text-sm whitespace-nowrap">
                                     <button
                                         @click="deleteTugas(tugas.id)"
-                                        class="text-red-600 hover:text-red-900 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        class="font-medium text-red-600 hover:text-red-900 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
                                         </svg>
                                     </button>
                                 </td>
@@ -721,37 +771,38 @@ button {
                 </div>
 
                 <!-- Pagination -->
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 text-sm" v-if="filteredTugas.length > 0">
+                <div class="mt-4 flex flex-col items-center justify-between gap-4 text-sm sm:flex-row" v-if="filteredTugas.length > 0">
                     <div class="text-gray-500">
-                        Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredTugas.length) }} dari {{ filteredTugas.length }} tugas
+                        Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredTugas.length) }} dari
+                        {{ filteredTugas.length }} tugas
                     </div>
                     <div class="flex items-center gap-1">
                         <button
                             @click="prevPage"
                             :disabled="currentPage === 1"
-                            :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                            class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                            :class="{ 'cursor-not-allowed opacity-50': currentPage === 1 }"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-1 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        
+
                         <button
                             v-for="page in pageNumbers"
                             :key="page"
                             @click="goToPage(page)"
                             :class="{ 'bg-blue-600 text-white': currentPage === page, 'bg-white text-gray-700': currentPage !== page }"
-                            class="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                            class="rounded-md border border-gray-300 px-3 py-1 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none"
                         >
                             {{ page }}
                         </button>
-                        
+
                         <button
                             @click="nextPage"
                             :disabled="currentPage === totalPages"
-                            :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-                            class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                            :class="{ 'cursor-not-allowed opacity-50': currentPage === totalPages }"
+                            class="rounded-md border border-gray-300 bg-white px-3 py-1 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -766,15 +817,17 @@ button {
         <div v-if="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
             <div class="flex min-h-screen items-center justify-center p-4 text-center">
                 <!-- Background overlay -->
-                <div class="fixed inset-0 bg-black bg-opacity-30 transition-opacity" @click="closeModal"></div>
+                <div class="bg-opacity-30 fixed inset-0 bg-black transition-opacity" @click="closeModal"></div>
 
                 <!-- Modal panel -->
-                <div class="animate-fadeIn w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                    <div class="flex items-center justify-between pb-4 border-b border-gray-200 mb-6">
-                        <h3 class="text-lg font-medium leading-6 text-gray-900">Tambah Tugas</h3>
-                        <button 
-                            @click="closeModal" 
-                            class="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                <div
+                    class="animate-fadeIn w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
+                >
+                    <div class="mb-6 flex items-center justify-between border-b border-gray-200 pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Tambah Tugas</h3>
+                        <button
+                            @click="closeModal"
+                            class="text-gray-400 hover:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -783,12 +836,14 @@ button {
                     </div>
 
                     <!-- Error message -->
-                    <div 
-                        v-if="error" 
-                        class="mb-4 flex items-center rounded-lg border-l-4 border-red-500 bg-red-50 p-4 text-red-800"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div v-if="error" class="mb-4 flex items-center rounded-lg border-l-4 border-red-500 bg-red-50 p-4 text-red-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                         </svg>
                         {{ error }}
                     </div>
@@ -891,19 +946,23 @@ button {
                     <div class="mt-6 flex justify-end gap-3">
                         <button
                             @click="closeModal"
-                            class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
                         >
                             Batal
                         </button>
                         <button
                             @click="saveTugas"
                             :disabled="!isFormValid() || loading"
-                            :class="{ 'opacity-50 cursor-not-allowed': !isFormValid() || loading }"
-                            class="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            :class="{ 'cursor-not-allowed opacity-50': !isFormValid() || loading }"
+                            class="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
                         >
-                            <svg v-if="loading" class="h-4 w-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg v-if="loading" class="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
                             </svg>
                             Simpan
                         </button>
@@ -912,4 +971,21 @@ button {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Dialog Konfirmasi Hapus -->
+    <Dialog :open="confirmDelete !== null" @update:open="cancelDelete">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Konfirmasi Hapus</DialogTitle>
+                <DialogDescription>Apakah Anda yakin ingin menghapus tugas ini? Tindakan ini tidak dapat dibatalkan.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter class="flex justify-end gap-2 pt-4">
+                <Button variant="outline" @click="cancelDelete">Batal</Button>
+                <Button class="bg-red-600 text-white hover:bg-red-700" @click="confirmDeleteAction">
+                    <Trash2 class="mr-2 h-4 w-4" />
+                    Hapus
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

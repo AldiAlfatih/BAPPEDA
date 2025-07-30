@@ -271,14 +271,8 @@ class TriwulanController extends Controller
 
         // Get the SKPD associated with this user
         $skpd = $user->skpd()->with([
-            'kepala' => function($query) {
-                $query->where('is_aktif', 1);
-            },
-            'kepala.user.userDetail',
-            'timKerja' => function($query) {
-                $query->where('is_aktif', 1);
-            },
-            'timKerja.operator.userDetail'
+            'kepalaAktif.user.userDetail',
+            'operatorAktif.operator.userDetail'
         ])->first();
 
         if (!$skpd) {
@@ -289,47 +283,35 @@ class TriwulanController extends Controller
         \Log::info("TriwulanController.show: SKPD found", [
             'skpd_id' => $skpd->id,
             'skpd_name' => $skpd->nama_skpd,
-            'tim_kerja_count' => $skpd->timKerja->count(),
-            'kepala_count' => $skpd->kepala->count()
+            'kepala_aktif' => $skpd->kepalaAktif ? 'Yes' : 'No',
+            'operator_aktif' => $skpd->operatorAktif ? 'Yes' : 'No'
         ]);
 
-        // Transform data to ensure consistent structure
-        $skpdArray = $skpd->toArray();
-
-        // Process kepala aktif
-        $skpdArray['kepala_aktif'] = $skpdArray['skpd_kepala'][0] ?? null;
-        if ($skpdArray['kepala_aktif']) {
-            $skpdArray['kepala_aktif']['user']['user_detail'] = $skpdArray['kepala_aktif']['user']['user_detail'] ?? [
-                'nip' => '-',
-                'alamat' => '-',
-                'no_hp' => '-',
-                'jenis_kelamin' => '-'
-            ];
-        }
-
-        // Process tim kerja aktif (operator/penanggung jawab)
-        $skpdArray['tim_kerja_aktif'] = $skpdArray['tim_kerja'][0] ?? null;
-        if ($skpdArray['tim_kerja_aktif'] && isset($skpdArray['tim_kerja_aktif']['operator'])) {
-            $skpdArray['tim_kerja_aktif']['operator']['user_detail'] = $skpdArray['tim_kerja_aktif']['operator']['user_detail'] ?? [
-                'nip' => '-',
-                'alamat' => '-',
-                'no_hp' => '-',
-                'jenis_kelamin' => '-'
-            ];
-        }
-
-        // Add formatted data for the frontend
-        $skpdArray['nama_dinas'] = $skpd->nama_skpd;
-        $skpdArray['kode_organisasi'] = $skpd->kode_organisasi;
-        $skpdArray['no_dpa'] = $skpd->no_dpa ?? '-';
-
-        // Kepala SKPD info
-        $skpdArray['nama_kepala_skpd'] = $skpdArray['kepala_aktif']['user']['name'] ?? 'Tidak tersedia';
-        $skpdArray['nip_kepala_skpd'] = $skpdArray['kepala_aktif']['user']['user_detail']['nip'] ?? '-';
-
-        // Tim kerja (operator/penanggung jawab) info
-        $skpdArray['nama_operator'] = $skpdArray['tim_kerja_aktif']['operator']['name'] ?? 'Tidak tersedia';
-        $skpdArray['nip_operator'] = $skpdArray['tim_kerja_aktif']['operator']['user_detail']['nip'] ?? '-';
+        // Transform data to ensure consistent structure - using same pattern as MonitoringController
+        $skpdArray = [
+            'id' => $skpd->id,
+            'nama_dinas' => $skpd->nama_skpd,
+            'nama_skpd' => $skpd->nama_skpd,
+            'kode_organisasi' => $skpd->kode_organisasi,
+            'no_dpa' => $skpd->no_dpa ?? '-',
+            
+            // Kepala SKPD info - using kepalaAktif relation
+            'nama_kepala_skpd' => $skpd->kepalaAktif?->user?->name ?? 'Tidak tersedia',
+            'nip_kepala_skpd' => $skpd->kepalaAktif?->user?->userDetail?->nip ?? '-',
+            
+            // Operator/Tim kerja info - using operatorAktif relation
+            'nama_operator' => $skpd->operatorAktif?->operator?->name ?? 'Tidak tersedia',
+            'nip_operator' => $skpd->operatorAktif?->operator?->userDetail?->nip ?? '-',
+            
+            // Add user object for compatibility with TabelTugasPD component
+            'user' => $skpd->kepalaAktif ? [
+                'id' => $skpd->kepalaAktif->user->id,
+                'name' => $skpd->kepalaAktif->user->name,
+                'user_detail' => $skpd->kepalaAktif->user->userDetail ? [
+                    'nip' => $skpd->kepalaAktif->user->userDetail->nip
+                ] : null
+            ] : null
+        ];
 
         $periode = $this->getPeriodeByTriwulan($tid, $tahun);
 

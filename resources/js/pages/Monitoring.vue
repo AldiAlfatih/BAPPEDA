@@ -39,11 +39,12 @@ const props = defineProps<{
       user_detail?: {
         nip?: string;
       } | null;
-      skpd: {
-        nama_dinas: string;
-        nama_operator: string;
-        kode_organisasi: string;
-      } | null;
+      nama_dinas: string | null;
+      operator_name: string | null;
+      kepala_name: string | null;
+      kode_organisasi: string | null;
+      operator_nip?: string | null;
+      kepala_nip?: string | null;
     }>;
   };
 }>();

@@ -11,7 +11,7 @@ const props = defineProps<{
         no_dpa: string;
         kode_organisasi: string;
         nama_skpd?: string;
-        user: {
+        user?: {
             id: number;
             name: string;
             user_detail?: {

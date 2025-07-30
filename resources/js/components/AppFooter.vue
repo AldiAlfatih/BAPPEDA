@@ -8,9 +8,9 @@
           <p class="text-xs text-gray-500">
             Didukung oleh Institut Teknologi Bacharuddin Jusuf Habibie (ITH)
           </p>
-          <p class="text-xs text-gray-500">
+          <!-- <p class="text-xs text-gray-500">
             Jika berminat untuk mengembangkan aplikasi ini, silahkan hubungi kami di <a href="https://www.instagram.com/muhmmdanugrah_/?utm_source=ig_web_button_share_sheet" target="_blank" class="text-blue-600 hover:text-blue-700">instagram</a>
-          </p>
+          </p> -->
         </div>
       </div>
     </footer>

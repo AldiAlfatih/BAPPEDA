@@ -121,7 +121,7 @@ class LaporanAkhirController extends Controller
         $query = User::role('perangkat_daerah')
             ->with([
                 'skpd' => function($q) {
-                    $q->with(['kepalaAktif.user', 'operatorAktif.operator']);
+                    $q->with(['kepalaAktif.user.userDetail', 'operatorAktif.operator.userDetail']);
                 },
                 'userDetail'
             ]);
@@ -146,6 +146,8 @@ class LaporanAkhirController extends Controller
             $user->operator_name = $skpd?->operatorAktif?->operator?->name;
             $user->kepala_name = $skpd?->kepalaAktif?->user?->name;
             $user->kode_organisasi = $skpd?->kode_organisasi;
+
+            // Add missing NIP fields - matching MonitoringController pattern
             $user->operator_nip = $skpd?->operatorAktif?->operator?->userDetail?->nip;
             $user->kepala_nip = $skpd?->kepalaAktif?->user?->userDetail?->nip;
         }

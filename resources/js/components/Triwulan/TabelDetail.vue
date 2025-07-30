@@ -24,6 +24,54 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// Helper function to get kepala SKPD name
+function getKepalaName(): string {
+    // First check direct property
+    if (props.skpd.nama_kepala_skpd && props.skpd.nama_kepala_skpd.trim() !== '') {
+        return props.skpd.nama_kepala_skpd;
+    }
+    
+    // Then check user object
+    if (props.skpd.user && props.skpd.user.name && props.skpd.user.name.trim() !== '') {
+        return props.skpd.user.name;
+    }
+    
+    return 'Tidak tersedia';
+}
+
+// Helper function to get kepala SKPD NIP
+function getKepalaNip(): string {
+    // First check direct property
+    if (props.skpd.nip_kepala_skpd && props.skpd.nip_kepala_skpd.trim() !== '') {
+        return props.skpd.nip_kepala_skpd;
+    }
+    
+    // Then check user detail
+    if (props.skpd.user?.user_detail?.nip && props.skpd.user.user_detail.nip.trim() !== '') {
+        return props.skpd.user.user_detail.nip;
+    }
+    
+    return '-';
+}
+
+// Helper function to get operator name
+function getOperatorName(): string {
+    if (props.skpd.nama_operator && props.skpd.nama_operator.trim() !== '') {
+        return props.skpd.nama_operator;
+    }
+    
+    return 'Tidak tersedia';
+}
+
+// Helper function to get operator NIP
+function getOperatorNip(): string {
+    if (props.skpd.nip_operator && props.skpd.nip_operator.trim() !== '') {
+        return props.skpd.nip_operator;
+    }
+    
+    return '-';
+}
 </script>
 
 <template>
@@ -58,14 +106,14 @@ const props = defineProps<Props>();
 
             <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
                 <h3 class="mb-2 text-sm font-medium text-gray-500">Kepala SKPD</h3>
-                <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_kepala_skpd || 'Tidak tersedia' }}</p>
-                <p class="font-mono text-sm text-gray-500">NIP: {{ skpd.nip_kepala_skpd || '-' }}</p>
+                <p class="text-lg font-semibold text-gray-500">{{ getKepalaName() }}</p>
+                <p class="font-mono text-sm text-gray-500">NIP: {{ getKepalaNip() }}</p>
             </div>
 
             <div class="rounded-lg border border-gray-100 bg-gray-50 p-4">
                 <h3 class="mb-2 text-sm font-medium text-gray-500">Nama Penanggung Jawab</h3>
-                <p class="text-lg font-semibold text-gray-500">{{ skpd.nama_operator || 'Tidak tersedia' }}</p>
-                <p class="font-mono text-sm text-gray-500">NIP: {{ skpd.nip_operator || '-' }}</p>
+                <p class="text-lg font-semibold text-gray-500">{{ getOperatorName() }}</p>
+                <p class="font-mono text-sm text-gray-500">NIP: {{ getOperatorNip() }}</p>
             </div>
         </div>
     </div>

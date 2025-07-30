@@ -37,10 +37,12 @@ const fetchPeriodeBelumSelesai = () => {
     fetch(route('periode.belum-selesai.data'))
         .then((response) => response.json())
         .then((data) => {
+            console.log('🔍 Data periode belum selesai:', data);
             periodeBelumSelesai.value = data.periode || [];
+            console.log('📊 periodeBelumSelesai.value:', periodeBelumSelesai.value);
         })
         .catch((error) => {
-            console.error('Error fetching periode data:', error);
+            console.error('❌ Error fetching periode data:', error);
         });
 };
 
@@ -48,10 +50,12 @@ const fetchPeriodeSelesai = () => {
     fetch('/api/periode/selesai')
         .then((response) => response.json())
         .then((data) => {
+            console.log('🔍 Data periode selesai:', data);
             periodeSelesai.value = data.periode || [];
+            console.log('📊 periodeSelesai.value:', periodeSelesai.value);
         })
         .catch((error) => {
-            console.error('Error fetching completed periode data:', error);
+            console.error('❌ Error fetching completed periode data:', error);
         });
 };
 
@@ -70,6 +74,24 @@ onMounted(() => {
     if (props.initialDate !== todayStr || !props.initialActivities?.length) {
         fetchActivityLogs(todayStr);
     }
+
+    // 🧪 TEMPORARY: Test data untuk debugging
+    // Uncomment salah satu untuk test visual:
+    
+    // Test: Rencana Awal aktif
+    // periodeBelumSelesai.value = [{ tahap: { tahap: 'Rencana Awal' } }];
+    
+    // Test: Triwulan 2 aktif  
+    // periodeBelumSelesai.value = [{ tahap: { tahap: 'Triwulan 2' } }];
+    
+    // Test: Semua selesai
+    // periodeSelesai.value = [
+    //     { tahap: { tahap: 'Rencana Awal' } },
+    //     { tahap: { tahap: 'Triwulan 1' } },
+    //     { tahap: { tahap: 'Triwulan 2' } },
+    //     { tahap: { tahap: 'Triwulan 3' } },
+    //     { tahap: { tahap: 'Triwulan 4' } }
+    // ];
 });
 
 function formatTanggal(periode: Periode) {
@@ -196,41 +218,89 @@ const steps = computed(() => {
     ];
 });
 
+// Fungsi untuk menentukan warna garis hijau gelap sesuai gambar
+const getLineColor = (index: number) => {
+    const currentState = stepStates.value[index];
+    console.log(`🔗 Line ${index}: step state = ${currentState}`);
+    
+    // Berdasarkan status step saat ini (yang dari mana garis keluar)
+    if (currentState === 'completed') {
+        console.log(`🔗 Line ${index}: Using green-800 (completed)`);
+        return '#166534'; // green-800 - Hijau gelap pekat untuk step yang sudah selesai
+    } else if (currentState === 'active') {
+        console.log(`🔗 Line ${index}: Using green-700 (active)`);
+        return '#15803d'; // green-700 - Hijau sedang untuk step yang aktif
+    } else {
+        console.log(`🔗 Line ${index}: Using green-600 (inactive)`);
+        return '#16a34a'; // green-600 - Hijau untuk step yang belum aktif
+    }
+};
+
+// Fungsi untuk menentukan opacity garis - SEMUA garis selalu muncul
+const getLineOpacity = (index: number) => {
+    const currentState = stepStates.value[index];
+    
+    // Berdasarkan status step saat ini (yang dari mana garis keluar)
+    if (currentState === 'completed') {
+        return 1.0; // Opacity penuh untuk step yang sudah selesai
+    } else if (currentState === 'active') {
+        return 0.8; // Opacity sedang untuk step yang aktif
+    } else {
+        return 0.4; // Opacity rendah tapi TETAP TERLIHAT untuk step yang belum aktif
+    }
+};
+
 const stepStates = computed(() => {
+    console.log('🔍 Checking periods...', {
+        periodeBelumSelesai: periodeBelumSelesai.value,
+        periodeSelesai: periodeSelesai.value
+    });
+    
     // Jika ada periode yang sedang berlangsung
     if (periodeBelumSelesai.value.length) {
         const tahap = periodeBelumSelesai.value[0]?.tahap?.tahap?.toLowerCase();
+        console.log('🟢 Active period found:', tahap);
 
         // Jika sedang periode rencana awal
         if (tahap?.includes('rencana')) {
-            return ['active', 'inactive', 'inactive', 'inactive', 'inactive'];
+            const result = ['active', 'inactive', 'inactive', 'inactive', 'inactive'];
+            console.log('📊 Step States:', result);
+            return result;
         }
 
         // Jika sedang periode triwulan 1
         if (tahap?.includes('triwulan 1')) {
-            return ['completed', 'active', 'inactive', 'inactive', 'inactive'];
+            const result = ['completed', 'active', 'inactive', 'inactive', 'inactive'];
+            console.log('📊 Step States:', result);
+            return result;
         }
 
         // Jika sedang periode triwulan 2
         if (tahap?.includes('triwulan 2')) {
-            return ['completed', 'completed', 'active', 'inactive', 'inactive'];
+            const result = ['completed', 'completed', 'active', 'inactive', 'inactive'];
+            console.log('📊 Step States:', result);
+            return result;
         }
 
         // Jika sedang periode triwulan 3
         if (tahap?.includes('triwulan 3')) {
-            return ['completed', 'completed', 'completed', 'active', 'inactive'];
+            const result = ['completed', 'completed', 'completed', 'active', 'inactive'];
+            console.log('📊 Step States:', result);
+            return result;
         }
 
         // Jika sedang periode triwulan 4
         if (tahap?.includes('triwulan 4')) {
-            return ['completed', 'completed', 'completed', 'completed', 'active'];
+            const result = ['completed', 'completed', 'completed', 'completed', 'active'];
+            console.log('📊 Step States:', result);
+            return result;
         }
     }
 
     // Jika tidak ada periode aktif, cek periode yang sudah selesai
     if (periodeSelesai.value.length) {
-        // Cari tahap terakhir yang selesai
         const tahapSelesai = periodeSelesai.value.map((p) => p.tahap?.tahap?.toLowerCase()).filter(Boolean);
+        console.log('🔵 Completed periods found:', tahapSelesai);
 
         let rencanaSelesai = false;
         let triwulan1Selesai = false;
@@ -239,24 +309,71 @@ const stepStates = computed(() => {
         let triwulan4Selesai = false;
 
         tahapSelesai.forEach((tahap) => {
-            if (tahap?.includes('rencana')) rencanaSelesai = true;
-            if (tahap?.includes('triwulan 1')) triwulan1Selesai = true;
-            if (tahap?.includes('triwulan 2')) triwulan2Selesai = true;
-            if (tahap?.includes('triwulan 3')) triwulan3Selesai = true;
-            if (tahap?.includes('triwulan 4')) triwulan4Selesai = true;
+            console.log('🔍 Checking completed tahap:', tahap);
+            if (tahap?.includes('rencana')) {
+                rencanaSelesai = true;
+                console.log('✅ Rencana Awal marked as completed');
+            }
+            if (tahap?.includes('triwulan 1')) {
+                triwulan1Selesai = true;
+                console.log('✅ Triwulan 1 marked as completed');
+            }
+            if (tahap?.includes('triwulan 2')) {
+                triwulan2Selesai = true;
+                console.log('✅ Triwulan 2 marked as completed');
+            }
+            if (tahap?.includes('triwulan 3')) {
+                triwulan3Selesai = true;
+                console.log('✅ Triwulan 3 marked as completed');
+            }
+            if (tahap?.includes('triwulan 4')) {
+                triwulan4Selesai = true;
+                console.log('✅ Triwulan 4 marked as completed');
+            }
+        });
+        
+        console.log('📊 Final completion status:', {
+            rencanaSelesai,
+            triwulan1Selesai,
+            triwulan2Selesai,
+            triwulan3Selesai,
+            triwulan4Selesai
         });
 
-        return [
-            rencanaSelesai ? 'completed' : 'inactive',
-            triwulan1Selesai ? 'completed' : 'inactive',
-            triwulan2Selesai ? 'completed' : 'inactive',
-            triwulan3Selesai ? 'completed' : 'inactive',
-            triwulan4Selesai ? 'completed' : 'inactive',
-        ];
+        // PERBAIKAN: Hanya yang benar-benar selesai yang ditandai completed (tidak berurutan otomatis)
+        const result = ['inactive', 'inactive', 'inactive', 'inactive', 'inactive'];
+        
+        // Set completed berdasarkan status individual (tidak asumsi berurutan)
+        if (rencanaSelesai) {
+            result[0] = 'completed';
+            console.log('✅ Rencana Awal completed');
+        }
+        if (triwulan1Selesai) {
+            result[1] = 'completed';
+            console.log('✅ Triwulan 1 completed');
+        }
+        if (triwulan2Selesai) {
+            result[2] = 'completed';
+            console.log('✅ Triwulan 2 completed');
+        }
+        if (triwulan3Selesai) {
+            result[3] = 'completed';
+            console.log('✅ Triwulan 3 completed');
+        }
+        if (triwulan4Selesai) {
+            result[4] = 'completed';
+            console.log('✅ Triwulan 4 completed');
+        }
+        
+        console.log('📊 Final step states:', result);
+        return result;
     }
 
     // Fallback - periode baru yang belum dimulai (tidak ada periode aktif atau selesai)
-    return ['inactive', 'inactive', 'inactive', 'inactive', 'inactive'];
+    console.log('⚪ No periods found, showing all inactive');
+    const result = ['inactive', 'inactive', 'inactive', 'inactive', 'inactive'];
+    console.log('📊 Step States:', result);
+    return result;
 });
 
 </script>
@@ -302,30 +419,43 @@ const stepStates = computed(() => {
                             :step="step.step"
                             :data-state="stepStates[index]"
                         >
+                            <!-- Garis penghubung antar step - SEMUA garis harus muncul -->
                             <StepperSeparator
-                                v-if="step.step !== steps[steps.length - 1].step"
-                                class="bg-black absolute top-5 right-[calc(-50%+10px)] left-[calc(50%+20px)] block h-0.5 shrink-0 rounded-full"
+                                v-if="index < steps.length - 1"
+                                class="absolute top-5 right-[calc(-50%+10px)] left-[calc(50%+20px)] block h-2 shrink-0 rounded-full transition-all duration-700 ease-in-out"
+                                :style="{
+                                    opacity: getLineOpacity(index),
+                                    backgroundColor: getLineColor(index)
+                                }"
                             />
+                            
+                            <!-- Lingkaran step -->
                             <StepperTrigger as-child>
                                 <Button
                                     variant="default"
                                     size="icon"
-                                    class="z-10 shrink-0 rounded-full bg-black text-white hover:bg-gray-800"
-                                    :class="[stepStates[index] === 'active' && 'ring-black ring-offset-background ring-2 ring-offset-2']"
+                                    class="z-10 shrink-0 rounded-full text-white transition-all duration-300 h-10 w-10 border-2"
+                                    :class="{
+                                        'bg-green-800 hover:bg-green-900 border-green-800 shadow-md': stepStates[index] === 'completed',
+                                        'bg-green-700 hover:bg-green-800 border-green-700 ring-2 ring-green-700 ring-offset-2 ring-offset-white shadow-lg': stepStates[index] === 'active',
+                                        'bg-green-600 hover:bg-green-700 border-green-600': stepStates[index] === 'inactive'
+                                    }"
                                 >
-                                    <Check v-if="stepStates[index] === 'completed'" class="size-5 text-white" />
-                                    <Circle v-else-if="stepStates[index] === 'active'" class="text-white" />
-                                    <Dot v-else class="text-white" />
+                                    <Check v-if="stepStates[index] === 'completed'" class="h-5 w-5 text-white" />
+                                    <Circle v-else-if="stepStates[index] === 'active'" class="h-4 w-4 text-white fill-current" />
+                                    <Dot v-else class="h-6 w-6 text-white" />
                                 </Button>
                             </StepperTrigger>
+                            
+                            <!-- Label step -->
                             <div class="mt-5 flex flex-col items-center text-center">
                                 <StepperTitle
-                                    class="text-sm font-semibold transition lg:text-base text-black"
+                                    class="text-sm font-semibold transition-colors duration-300 lg:text-base text-gray-900"
                                 >
                                     {{ step.title }}
                                 </StepperTitle>
                                 <StepperDescription
-                                    class="text-black sr-only text-xs transition md:not-sr-only lg:text-sm"
+                                    class="sr-only text-xs transition-colors duration-300 md:not-sr-only lg:text-sm mt-1 text-gray-700"
                                 >
                                     {{ step.description }}
                                 </StepperDescription>

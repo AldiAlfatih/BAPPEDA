@@ -152,7 +152,7 @@ async function handleAnggaranPerubahan() {
             try {
 
         // Call backend to enable budget change for all departments
-        const response = await fetch('/manajemenanggaran/enable-budget-change-all', {
+        const response = await fetchWithCSRFRetry('/manajemenanggaran/enable-budget-change-all', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -182,16 +182,127 @@ async function handleAnggaranPerubahan() {
                 }
             } catch (err) {
                 console.error('Error enabling budget change:', err);
-                showAlert(
-                    'Terjadi Kesalahan',
-                    'Terjadi kesalahan saat mengaktifkan mode perubahan anggaran. Silakan coba lagi.',
-                    'error'
-                );
+                
+                // Check if it's a CSRF error
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                const isCSRFError = errorMessage.includes('CSRF') || 
+                                   errorMessage.includes('419') || 
+                                   errorMessage.includes('token');
+                
+                if (isCSRFError) {
+                    showAlert(
+                        'Session Expired - Token CSRF',
+                        'Session Anda telah kedaluwarsa. Halaman akan di-refresh untuk memperbarui session.',
+                        'error'
+                    );
+                    
+                    // Auto-refresh after showing the alert
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showAlert(
+                        'Terjadi Kesalahan',
+                        `Terjadi kesalahan saat mengaktifkan mode perubahan anggaran:\n\n${errorMessage}\n\nSilakan coba lagi.`,
+                        'error'
+                    );
+                }
             } finally {
                 isProcessing.value = false;
             }
         }
     );
+}
+
+// Refresh CSRF token function
+async function refreshCSRFToken(): Promise<boolean> {
+    try {
+        const response = await fetch('/sanctum/csrf-cookie', {
+            method: 'GET',
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            // Update the meta tag with new token
+            const newTokenResponse = await fetch(window.location.href, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (newTokenResponse.ok) {
+                const htmlContent = await newTokenResponse.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+                const newTokenElement = doc.querySelector('meta[name="csrf-token"]');
+                
+                if (newTokenElement) {
+                    const currentTokenElement = document.querySelector('meta[name="csrf-token"]');
+                    if (currentTokenElement) {
+                        currentTokenElement.setAttribute('content', newTokenElement.getAttribute('content') || '');
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    } catch (error) {
+        console.error('Failed to refresh CSRF token:', error);
+        return false;
+    }
+}
+
+// Fetch with CSRF retry mechanism
+async function fetchWithCSRFRetry(url: string, options: RequestInit, maxRetries: number = 1): Promise<Response> {
+    let attempt = 0;
+    
+    while (attempt <= maxRetries) {
+        try {
+            // Ensure we have the latest CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            if (options.headers && typeof options.headers === 'object') {
+                (options.headers as Record<string, string>)['X-CSRF-TOKEN'] = csrfToken || '';
+            }
+            
+            const response = await fetch(url, options);
+            
+            // If response is successful, return it
+            if (response.ok) {
+                return response;
+            }
+            
+            // Check if it's a CSRF error (419)
+            if (response.status === 419 && attempt < maxRetries) {
+                console.log(`CSRF error detected (attempt ${attempt + 1}/${maxRetries + 1}), refreshing token...`);
+                
+                // Try to refresh CSRF token
+                const tokenRefreshed = await refreshCSRFToken();
+                
+                if (tokenRefreshed) {
+                    attempt++;
+                    continue; // Retry with new token
+                } else {
+                    throw new Error('Failed to refresh CSRF token');
+                }
+            }
+            
+            // If not a CSRF error or max retries reached, return the response
+            return response;
+            
+        } catch (error) {
+            if (attempt >= maxRetries) {
+                throw error;
+            }
+            
+            // If it's a network error and we haven't reached max retries, try again
+            console.log(`Request failed (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
+            attempt++;
+        }
+    }
+    
+    throw new Error('Max retries reached');
 }
 
 </script>

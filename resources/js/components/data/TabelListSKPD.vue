@@ -183,15 +183,41 @@ function toggleSort(field: string) {
 }
 
 function goToShowPage(id: number) {
-    // If budget change mode is active and enabled, go to budget change page
-    if (props.isBudgetChangeMode && isBudgetChangeEnabledForUser(id) && props.url_budget_change) {
-        router.visit(route(props.url_budget_change, { id }));
-    } else if (isParsialEnabledForUser(id)) {
-        // If parsial is enabled, go to parsial page
-        router.visit(route(props.url_detail_partial, { id }));
-    } else {
-        // Otherwise go to normal detail page
-        router.visit(route(props.url_detail, { id }));
+    try {
+        // If budget change mode is active and enabled, go to budget change page
+        if (props.isBudgetChangeMode && isBudgetChangeEnabledForUser(id) && props.url_budget_change) {
+            router.visit(route(props.url_budget_change, { id }), {
+                preserveState: false,
+                preserveScroll: false,
+                onError: (errors) => {
+                    console.error('Navigation error to budget change:', errors);
+                    handleNavigationError(errors, id, 'budget_change');
+                }
+            });
+        } else if (isParsialEnabledForUser(id)) {
+            // If parsial is enabled, go to parsial page
+            router.visit(route(props.url_detail_partial, { id }), {
+                preserveState: false,
+                preserveScroll: false,
+                onError: (errors) => {
+                    console.error('Navigation error to parsial:', errors);
+                    handleNavigationError(errors, id, 'parsial');
+                }
+            });
+        } else {
+            // Otherwise go to normal detail page
+            router.visit(route(props.url_detail, { id }), {
+                preserveState: false,
+                preserveScroll: false,
+                onError: (errors) => {
+                    console.error('Navigation error to detail:', errors);
+                    handleNavigationError(errors, id, 'detail');
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error in navigation:', error);
+        showAlert('Error Navigasi', 'Terjadi kesalahan saat membuka halaman. Silakan refresh halaman dan coba lagi.', 'error');
     }
 }
 
@@ -219,7 +245,7 @@ async function toggleParsial(id: number) {
             dinas: dinasName,
         });
 
-        const response = await fetch(endpoint, {
+        let response = await fetchWithCSRFRetry(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -339,6 +365,131 @@ function getButtonTooltip(userId: number): string {
     } else {
         return 'Mode Normal (Klik untuk rencana awal)';
     }
+}
+
+// Handle navigation errors, especially CSRF token mismatch
+function handleNavigationError(errors: any, userId: number, pageType: string) {
+    // Check if it's a CSRF token mismatch error
+    const isCSRFError = errors.message?.includes('CSRF') || 
+                       errors.message?.includes('419') || 
+                       errors.message?.includes('token mismatch') ||
+                       Object.values(errors).some((error: any) => 
+                           typeof error === 'string' && 
+                           (error.includes('CSRF') || error.includes('419') || error.includes('token'))
+                       );
+
+    if (isCSRFError) {
+        showConfirm(
+            'Session Expired - Token CSRF',
+            `Session Anda telah kedaluwarsa. Ini biasanya terjadi jika Anda telah lama tidak aktif.\n\nApakah Anda ingin me-refresh halaman untuk memperbarui session dan mencoba lagi?`,
+            () => {
+                // Refresh page to get new CSRF token
+                window.location.reload();
+            }
+        );
+    } else {
+        // Handle other types of errors
+        const errorMessage = typeof errors === 'object' ? 
+            Object.values(errors).join(', ') : 
+            errors.toString();
+            
+        showAlert(
+            'Error Membuka Halaman',
+            `Terjadi kesalahan saat membuka halaman ${pageType}:\n\n${errorMessage}\n\nSilakan coba lagi atau refresh halaman.`,
+            'error'
+        );
+    }
+}
+
+// Refresh CSRF token function
+async function refreshCSRFToken(): Promise<boolean> {
+    try {
+        const response = await fetch('/sanctum/csrf-cookie', {
+            method: 'GET',
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            // Update the meta tag with new token
+            const newTokenResponse = await fetch(window.location.href, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (newTokenResponse.ok) {
+                const htmlContent = await newTokenResponse.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+                const newTokenElement = doc.querySelector('meta[name="csrf-token"]');
+                
+                if (newTokenElement) {
+                    const currentTokenElement = document.querySelector('meta[name="csrf-token"]');
+                    if (currentTokenElement) {
+                        currentTokenElement.setAttribute('content', newTokenElement.getAttribute('content') || '');
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    } catch (error) {
+        console.error('Failed to refresh CSRF token:', error);
+        return false;
+    }
+}
+
+// Fetch with CSRF retry mechanism
+async function fetchWithCSRFRetry(url: string, options: RequestInit, maxRetries: number = 1): Promise<Response> {
+    let attempt = 0;
+    
+    while (attempt <= maxRetries) {
+        try {
+            // Ensure we have the latest CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            if (options.headers && typeof options.headers === 'object') {
+                (options.headers as Record<string, string>)['X-CSRF-TOKEN'] = csrfToken || '';
+            }
+            
+            const response = await fetch(url, options);
+            
+            // If response is successful, return it
+            if (response.ok) {
+                return response;
+            }
+            
+            // Check if it's a CSRF error (419)
+            if (response.status === 419 && attempt < maxRetries) {
+                console.log(`CSRF error detected (attempt ${attempt + 1}/${maxRetries + 1}), refreshing token...`);
+                
+                // Try to refresh CSRF token
+                const tokenRefreshed = await refreshCSRFToken();
+                
+                if (tokenRefreshed) {
+                    attempt++;
+                    continue; // Retry with new token
+                } else {
+                    throw new Error('Failed to refresh CSRF token');
+                }
+            }
+            
+            // If not a CSRF error or max retries reached, return the response
+            return response;
+            
+        } catch (error) {
+            if (attempt >= maxRetries) {
+                throw error;
+            }
+            
+            // If it's a network error and we haven't reached max retries, try again
+            console.log(`Request failed (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
+            attempt++;
+        }
+    }
+    
+    throw new Error('Max retries reached');
 }
 </script>
 <template>

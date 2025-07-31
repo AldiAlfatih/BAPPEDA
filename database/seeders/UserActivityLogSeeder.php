@@ -131,8 +131,8 @@ class UserActivityLogSeeder extends Seeder
                     'activity_data' => $activityData['activity_data'],
                     'ip_address' => '127.0.0.1',
                     'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'created_at' => $date->addMinutes(rand(0, 1440)), // Random time in the day
-                    'updated_at' => $date
+                    'created_at' => $date->addMinutes(rand(0, 1440))->setTimezone('Asia/Makassar'), // Random time in the day with WITA timezone
+                    'updated_at' => $date->setTimezone('Asia/Makassar')
                 ]);
             }
         }

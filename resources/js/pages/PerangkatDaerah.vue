@@ -34,7 +34,9 @@ const props = defineProps<{
       id: number;
       name: string;
       operator_name: string | null;
+      operator_nip: string | null;
       kepala_name: string | null;
+      kepala_nip: string | null;
       skpd: Array<{
         id: number;
         nama_skpd: string;
@@ -90,11 +92,21 @@ function getKodeOrganisasi(user: any): string {
 
 // Helper function to get operator NIP
 function getOperatorNip(user: any): string {
+  // Prioritas menggunakan data yang sudah diproses dari controller
+  if (user.operator_nip) {
+    return user.operator_nip;
+  }
+  // Fallback ke data relationship jika ada
   return user.skpd?.[0]?.operatorAktif?.operator?.userDetail?.nip || '-';
 }
 
 // Helper function to get kepala NIP
 function getKepalaNip(user: any): string {
+  // Prioritas menggunakan data yang sudah diproses dari controller
+  if (user.kepala_nip) {
+    return user.kepala_nip;
+  }
+  // Fallback ke data relationship jika ada
   return user.skpd?.[0]?.kepalaAktif?.user?.userDetail?.nip || '-';
 }
 

@@ -937,17 +937,29 @@ watch(
 const handlePDFDownload = async () => {
     if (!props.tugas?.id) return;
 
-    // 📝 Log aktivitas download PDF
-    await ActivityLogger.logPDFDownload('Rencana Awal', {
-        tugas_id: props.tugas.id,
-        skpd_name: props.skpd?.nama_dinas || props.user?.nama_skpd,
-        tahun: props.tahunAktif?.tahun,
-        periode_id: selectedPeriodeId.value,
-        total_subkegiatan: formattedSubKegiatanData.value?.length || 0,
-    });
+    try {
+        // 📝 Log aktivitas download PDF
+        await ActivityLogger.logPDFDownload('Rencana Awal', {
+            tugas_id: props.tugas.id,
+            skpd_name: props.skpd?.nama_dinas || props.user?.nama_skpd,
+            tahun: props.tahunAktif?.tahun,
+            periode_id: selectedPeriodeId.value,
+            total_subkegiatan: formattedSubKegiatanData.value?.length || 0,
+        });
 
-    // Lakukan download
-    router.visit(route('pdf.rencana-awal.form', props.tugas.id));
+        // PERBAIKAN: Buka form PDF di tab baru untuk menghindari error 419
+        // Gunakan window.open() yang lebih aman untuk cross-navigation
+        const pdfFormUrl = route('pdf.rencana-awal.form', props.tugas.id);
+        const newWindow = window.open(pdfFormUrl, '_blank', 'noopener,noreferrer');
+        
+        if (!newWindow) {
+            // Fallback jika popup blocked
+            alert('Pop-up diblokir. Silakan izinkan pop-up untuk mengunduh PDF atau klik tombol PDF lagi.');
+        }
+    } catch (error) {
+        console.error('Error opening PDF form:', error);
+        alert('Terjadi kesalahan saat membuka form PDF. Silakan coba lagi.');
+    }
 };
 </script>
 

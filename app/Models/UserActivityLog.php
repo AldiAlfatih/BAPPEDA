@@ -19,7 +19,8 @@ class UserActivityLog extends Model
 
     protected $casts = [
         'activity_data' => 'array',
-        'created_at' => 'datetime'
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     // Konstanta untuk jenis aktivitas
@@ -77,6 +78,22 @@ class UserActivityLog extends Model
     public function scopeByModule($query, $module)
     {
         return $query->where('module', $module);
+    }
+
+    /**
+     * Get formatted timestamp in WITA timezone
+     */
+    public function getCreatedAtWitaAttribute()
+    {
+        return $this->created_at->setTimezone('Asia/Makassar')->format('d M Y H:i:s') . ' WITA';
+    }
+
+    /**
+     * Get time only in WITA timezone
+     */
+    public function getTimeWitaAttribute()
+    {
+        return $this->created_at->setTimezone('Asia/Makassar')->format('H:i:s');
     }
 
     /**

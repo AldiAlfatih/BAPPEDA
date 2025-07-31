@@ -134,6 +134,28 @@ const viewFile = (fileUrl: string | undefined | null) => {
         alert('File tidak tersedia');
     }
 };
+
+// Handle image loading errors
+const handleImageError = (event: Event) => {
+    const img = event.target as HTMLImageElement;
+    console.warn('🖼️ Image failed to load:', img.src);
+    console.warn('🔄 Switching to fallback image: /images/default-image.png');
+    
+    // Set fallback image
+    img.src = '/images/default-image.png';
+    // Add error styling
+    img.classList.add('opacity-75', 'border-2', 'border-dashed', 'border-gray-300');
+    
+    // Add tooltip to indicate this is a fallback
+    img.title = 'Gambar sampul tidak tersedia - menggunakan gambar default';
+};
+
+// Debug: Log all panduan URLs when component mounts
+console.log('🐛 DEBUG: Panduan URLs loaded:', props.panduan.map(item => ({
+    id: item.id,
+    judul: item.judul,
+    sampul_url: item.sampul_url
+})));
 </script>
 
 <template>
@@ -224,7 +246,13 @@ const viewFile = (fileUrl: string | undefined | null) => {
         <!-- Daftar Panduan -->
         <div class="mx-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div v-for="item in localPanduan" :key="item.id" class="flex flex-col rounded-lg bg-white p-4 shadow-lg">
-                <img :src="item.sampul_url ?? '/images/default-image.png'" alt="Panduan Sampul" class="mb-4 h-32 w-full rounded object-contain" />
+                <img 
+                    :src="item.sampul_url ?? '/images/default-image.png'" 
+                    :alt="`Sampul ${item.judul}`" 
+                    class="mb-4 h-32 w-full rounded object-contain transition-all duration-200 hover:scale-105" 
+                    @error="handleImageError"
+                    loading="lazy"
+                />
                 <div class="text-base text-gray-700">
                     <p class="mb-2 font-bold text-gray-800">{{ item.judul }}</p>
                     <p class="mb-4 text-justify text-sm leading-relaxed">{{ item.deskripsi }}</p>

@@ -115,7 +115,7 @@ class LaporanAkhirController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole('perangkat_daerah')) {
-            return redirect()->route('laporan-akhir.show', $user->id);
+            return redirect()->route('arsip-monitoring.show', $user->id);
         }
 
         $query = User::role('perangkat_daerah')
@@ -321,7 +321,7 @@ class LaporanAkhirController extends Controller
                     'nama_file' => $arsip->nama_file,
                     'ukuran_file' => $arsip->formatted_size,
                     'tipe_file' => $arsip->tipe_file,
-                    'tanggal_upload' => $arsip->tanggal_upload->format('d/m/Y H:i'),
+                    'tanggal_upload' => $arsip->tanggal_upload->setTimezone('Asia/Makassar')->format('d/m/Y H:i') . ' WITA',
                     'uploaded_by' => $arsip->uploadedBy->name,
                     'keterangan' => $arsip->keterangan,
                     'file_url' => $arsip->file_url,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import { type BreadcrumbItem } from '@/types';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import { type BreadcrumbItem, type User } from '@/types';
 import { computed, ref, watch } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -9,10 +9,10 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Tambah PD', href: '/manajemen-tim/perangkatdaerah/create' },
 ];
 
-const props = defineProps({
-  users: Array,
-  operators: Array, 
-});
+const props = defineProps<{
+  users: User[];
+  operators: User[];
+}>();
 
 const form = useForm({
   nama_dinas: '', 
@@ -24,7 +24,7 @@ const form = useForm({
 });
 
 const isFormValid = computed(() => {
-  return form.nama_dinas && form.no_dpa && form.kode_organisasi && form.user_id && form.operator_id;
+  return form.nama_dinas && form.kode_organisasi && form.user_id && form.operator_id;
 });
 
 // Loading state for form submission
@@ -33,6 +33,7 @@ const isSubmitting = ref(false);
 function submit() {
   if (!isFormValid.value) {
     console.error('Form tidak valid. Pastikan semua field wajib diisi.');
+    alert('Pastikan semua field wajib telah diisi dengan benar.');
     return;
   }
 
@@ -47,19 +48,27 @@ function submit() {
   });
   
   form.post(route('perangkatdaerah.store'), {
-    onSuccess: () => {
+    onSuccess: (page) => {
+      console.log('Data berhasil disimpan');
       form.reset();
       isSubmitting.value = false;
     },
     onError: (errors) => {
       console.error('Validation errors:', errors);
       isSubmitting.value = false;
+      
+      // Tampilkan error yang lebih user-friendly
+      const errorMessages = Object.values(errors).flat().join('\n');
+      alert(`Terjadi kesalahan:\n${errorMessages}`);
     },
+    onFinish: () => {
+      isSubmitting.value = false;
+    }
   });
 }
 
 watch(() => route().current(), (newRoute) => {
-  if (!newRoute.includes('perangkatdaerah.create')) {
+  if (newRoute && !newRoute.includes('perangkatdaerah.create')) {
     form.reset();
   }
 });
@@ -109,7 +118,7 @@ watch(() => route().current(), (newRoute) => {
                     <option v-for="operator in props.operators" :key="operator.id" :value="operator.id">{{ operator.name }}</option>
                   </select>
                   <p v-if="form.errors.operator_id" class="text-sm text-red-600">{{ form.errors.operator_id }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Pilih pengguna yang akan menjadi operator SKPD ini</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Pilih pengguna yang akan menjadi operator SKPD ini (operator dapat bertugas di beberapa SKPD)</p>
                 </div>
               </div>
 
@@ -157,7 +166,7 @@ watch(() => route().current(), (newRoute) => {
                 <button 
                   type="button" 
                   class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                  @click="$inertia.visit('/manajemen-tim/perangkatdaerah')"
+                  @click="router.visit('/manajemen-tim/perangkatdaerah')"
                   :disabled="isSubmitting"
                 >
                   Kembali

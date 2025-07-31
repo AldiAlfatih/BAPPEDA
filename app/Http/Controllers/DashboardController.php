@@ -29,8 +29,8 @@ class DashboardController extends Controller
                 'description' => $activity->activity_description,
                 'activity_type' => $activity->activity_type,
                 'module' => $activity->module,
-                'created_at' => $activity->created_at->format('H:i:s'),
-                'created_at_formatted' => $activity->created_at->format('d M Y H:i:s'),
+                'created_at' => $activity->time_wita,
+                'created_at_formatted' => $activity->created_at_wita,
                 'activity_data' => $activity->activity_data
             ];
         });
@@ -61,8 +61,8 @@ class DashboardController extends Controller
                 'description' => $activity->activity_description,
                 'activity_type' => $activity->activity_type,
                 'module' => $activity->module,
-                'created_at' => $activity->created_at->format('H:i:s'),
-                'created_at_formatted' => $activity->created_at->format('d M Y H:i:s'),
+                'created_at' => $activity->time_wita,
+                'created_at_formatted' => $activity->created_at_wita,
                 'activity_data' => $activity->activity_data
             ];
         });

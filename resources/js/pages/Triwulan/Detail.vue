@@ -233,8 +233,15 @@ const getKeuanganPersentase = (id: string): string => {
         return item?.realisasiKeuanganPersen || '0%';
     }
 
-    // Untuk subkegiatan_sumber_dana, hitung berdasarkan input yang sedang diedit
-    const currentRealisasi = getRealisasiKeuangan(id, 0);
+    // PERBAIKAN: Untuk subkegiatan_sumber_dana, hitung berdasarkan input yang sedang diedit
+    // Atau data yang sudah disimpan jika tidak ada yang sedang diedit
+    let currentRealisasi = getRealisasiKeuangan(id, 0);
+    
+    // PERBAIKAN: Jika tidak ada data edited, coba ambil dari data asli item
+    if (currentRealisasi === 0 && item.realisasiKeuangan) {
+        const realisasiFromItem = parseInt(item.realisasiKeuangan.replace(/[^\d]/g, '')) || 0;
+        currentRealisasi = realisasiFromItem;
+    }
 
     // Ekstrak semua jenis pagu dari format "Rp 1,000,000" menjadi number
     const paguPokokStr = item.paguPokok || 'Rp 0';
@@ -251,11 +258,13 @@ const getKeuanganPersentase = (id: string): string => {
 
     console.log(`📊 Calculating percentage for ${id}:`, {
         currentRealisasi,
+        realisasiFromItem: item.realisasiKeuangan,
         paguPokok,
         paguParsial,
         paguPerubahan,
         latestPagu,
         persentase: persentase.toFixed(2),
+        hasEditedData: !!editedItems.value[id]?.realisasiKeuangan,
     });
 
     return `${persentase.toFixed(2)}%`;
@@ -791,7 +800,7 @@ const saveData = async (id: string) => {
 
                 // Send to backend using Inertia
                 router.post(`/triwulan/${props.tid}/save-realisasi`, savePayload, {
-                    preserveState: true,
+                    preserveState: false, // PERBAIKAN: Set false untuk get fresh data
                     preserveScroll: true,
                     onSuccess: async (page) => {
                         console.log(`✅ Save successful for ID: ${id}`, page);
@@ -809,21 +818,37 @@ const saveData = async (id: string) => {
                             triwulan_id: props.tid,
                         });
 
-                        // PENTING: Hanya clear data untuk ID yang spesifik ini
-                        console.log(`🗑️ Clearing editedItems for ID: ${id}`);
-                        console.log(`📊 Before clear:`, JSON.stringify(editedItems.value, null, 2));
+                        // PERBAIKAN: Update editedItems dengan data yang baru disimpan
+                        // Ini memastikan persentase tetap tampil dengan data terbaru
+                        editedItems.value[id] = {
+                            realisasiFisik: savePayload.realisasi_fisik.toString(),
+                            realisasiKeuangan: savePayload.realisasi_keuangan.toString(),
+                            keterangan: savePayload.keterangan,
+                            pptk: savePayload.nama_pptk,
+                        };
 
-                        delete editedItems.value[id];
+                        console.log(`📊 Updated editedItems for ID ${id}:`, editedItems.value[id]);
 
-                        console.log(`📊 After clear:`, JSON.stringify(editedItems.value, null, 2));
-
-                        // Show success message from backend
+                        // Show success message
                         const flash = (page.props as any).flash;
                         if (flash?.success) {
                             showAlert('Berhasil!', flash.success, 'success');
                         } else {
                             showAlert('Berhasil!', 'Data berhasil disimpan!', 'success');
                         }
+
+                        // PERBAIKAN: Clear editedItems setelah delay untuk mempertahankan persentase
+                        setTimeout(() => {
+                            // Hanya clear jika tidak ada perubahan baru
+                            const currentEdited = editedItems.value[id];
+                            if (currentEdited && 
+                                currentEdited.realisasiFisik === savePayload.realisasi_fisik.toString() &&
+                                currentEdited.realisasiKeuangan === savePayload.realisasi_keuangan.toString()) {
+                                // Data belum berubah, aman untuk clear
+                                console.log(`🗑️ Safe to clear editedItems for ID: ${id}`);
+                                delete editedItems.value[id];
+                            }
+                        }, 3000); // 3 detik delay untuk memastikan user melihat hasil
                     },
                     onError: (errors) => {
                         console.error('Save failed:', errors);
@@ -856,6 +881,55 @@ const saveData = async (id: string) => {
 
 
 </script>
+
+<style scoped>
+/* PERBAIKAN: Custom styles untuk layout PPTK dan Keterangan yang fleksibel */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure textarea expands properly */
+textarea.auto-expand {
+    resize: none;
+    transition: height 0.2s ease;
+    overflow: hidden;
+}
+
+/* Better spacing for long text content */
+.text-content {
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    line-height: 1.5;
+}
+
+/* Improve table cell alignment for dynamic content */
+.table-cell-flexible {
+    vertical-align: top;
+    word-wrap: break-word;
+}
+
+/* Percentage badge styling */
+.percentage-badge {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+/* Animation for successful save */
+@keyframes save-success {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.save-success {
+    animation: save-success 0.3s ease;
+}
+</style>
 
 <template>
     <Head :title="`Monitoring ${triwulanName}`" />
@@ -1038,7 +1112,7 @@ const saveData = async (id: string) => {
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="min-w-full table-fixed border-collapse">
+                    <table class="min-w-full border-collapse" style="table-layout: auto;">
                         <colgroup>
                             <col style="width: 120px" />
                             <col style="width: 250px" />
@@ -1270,9 +1344,9 @@ const saveData = async (id: string) => {
                                     <template v-if="item.type === 'subkegiatan_sumber_dana'">
                                         <div class="relative">
                                             <span
-                                                class="inline-flex h-8 w-16 items-center justify-center rounded border border-blue-200 bg-blue-50 text-xs font-semibold text-blue-700"
+                                                class="percentage-badge inline-flex h-8 w-16 items-center justify-center rounded border border-blue-200 bg-blue-50 text-xs font-semibold text-blue-700"
                                                 :class="{
-                                                    'border-green-200 bg-green-50 text-green-700': parseFloat(getKeuanganPersentase(item.id)) >= 80,
+                                                    'border-green-200 bg-green-50 text-green-700 save-success': parseFloat(getKeuanganPersentase(item.id)) >= 80,
                                                     'border-yellow-200 bg-yellow-50 text-yellow-700':
                                                         parseFloat(getKeuanganPersentase(item.id)) >= 50 &&
                                                         parseFloat(getKeuanganPersentase(item.id)) < 80,
@@ -1325,46 +1399,77 @@ const saveData = async (id: string) => {
                                 </td>
 
                                 <!-- Keterangan Column -->
-                                <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                <td class="border-r border-gray-200 px-3 py-3 align-top text-sm" style="min-width: 200px; max-width: 300px;">
                                     <template v-if="item.type === 'subkegiatan_sumber_dana'">
-                                        <input
-                                            type="text"
+                                        <textarea
                                             :data-field="`keterangan-${item.id}`"
-                                            class="w-full rounded border border-gray-300 px-2 py-1 text-xs transition-all duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            class="w-full resize-none rounded border border-gray-300 px-2 py-1 text-xs leading-relaxed transition-all duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                             :class="{
                                                 'border-orange-400 bg-orange-50':
                                                     editedItems[item.id]?.keterangan && editedItems[item.id]?.keterangan !== item.keterangan,
                                             }"
                                             :value="editedItems[item.id]?.keterangan || item.keterangan"
-                                            @input="(e: Event) => handleInputChange(item.id, 'keterangan', (e.target as HTMLInputElement).value)"
+                                            @input="(e: Event) => handleInputChange(item.id, 'keterangan', (e.target as HTMLTextAreaElement).value)"
                                             :disabled="isAdminOrOperator"
                                             placeholder="Masukkan keterangan..."
+                                            rows="2"
+                                            style="min-height: 40px;"
+                                            @focus="(e: Event) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                target.style.height = 'auto';
+                                                target.style.height = Math.max(40, target.scrollHeight) + 'px';
+                                            }"
+                                            @blur="(e: Event) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                if (!target.value.trim()) {
+                                                    target.style.height = '40px';
+                                                }
+                                            }"
                                         />
                                     </template>
                                     <template v-else>
-                                        <span class="text-gray-400">{{ item.keterangan || '-' }}</span>
+                                        <div class="max-w-[280px] break-words text-gray-400 leading-relaxed">{{ item.keterangan || '-' }}</div>
                                     </template>
                                 </td>
 
                                 <!-- PPTK Column -->
-                                <td class="border-r border-gray-200 px-3 py-3 align-middle text-sm">
+                                <td class="border-r border-gray-200 px-3 py-3 align-top text-sm" style="min-width: 180px; max-width: 250px;">
                                     <template v-if="item.type === 'subkegiatan_sumber_dana'">
-                                        <input
-                                            type="text"
+                                        <textarea
                                             :data-field="`pptk-${item.id}`"
-                                            class="w-full rounded border border-gray-300 px-2 py-1 text-xs transition-all duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            class="w-full resize-none rounded border border-gray-300 px-2 py-1 text-xs leading-relaxed transition-all duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                             :class="{
                                                 'border-orange-400 bg-orange-50':
                                                     editedItems[item.id]?.pptk && editedItems[item.id]?.pptk !== item.pptk,
                                             }"
                                             :value="editedItems[item.id]?.pptk || item.pptk"
-                                            @input="(e: Event) => handleInputChange(item.id, 'pptk', (e.target as HTMLInputElement).value)"
+                                            @input="(e: Event) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                // Auto-expand while typing
+                                                target.style.height = 'auto';
+                                                target.style.height = Math.max(35, target.scrollHeight) + 'px';
+                                                // Call the existing input handler
+                                                handleInputChange(item.id, 'pptk', target.value);
+                                            }"
                                             placeholder="Masukkan nama PPTK..."
                                             :disabled="!canInputData || isAdminOrOperator"
+                                            rows="1"
+                                            style="min-height: 35px;"
+                                            @focus="(e: Event) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                target.style.height = 'auto';
+                                                target.style.height = Math.max(35, target.scrollHeight) + 'px';
+                                            }"
+                                            @blur="(e: Event) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                if (!target.value.trim()) {
+                                                    target.style.height = '35px';
+                                                }
+                                            }"
                                         />
                                     </template>
                                     <template v-else>
-                                        <span class="text-gray-400">{{ item.pptk || '-' }}</span>
+                                        <div class="max-w-[230px] break-words text-gray-400 leading-relaxed">{{ item.pptk || '-' }}</div>
                                     </template>
                                 </td>
 

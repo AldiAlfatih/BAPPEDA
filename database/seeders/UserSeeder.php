@@ -8,7 +8,7 @@ use App\Models\Skpd;
 use App\Models\SkpdTugas;
 use App\Models\SkpdKepala;
 use App\Models\TimKerja;
-use App\Models\Kodenomenklatur;
+use App\Models\KodeNomenklatur;
 use App\Models\UserDetail;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str;
@@ -82,7 +82,7 @@ class UserSeeder extends Seeder
             '5.01.01.2.01.01',
         ];
 
-        $relevantKode = Kodenomenklatur::whereIn('nomor_kode', $nomenklaturBappeda)->pluck('id');
+        $relevantKode = KodeNomenklatur::whereIn('nomor_kode', $nomenklaturBappeda)->pluck('id');
 
         foreach ($relevantKode as $kodeId) {
             SkpdTugas::create([

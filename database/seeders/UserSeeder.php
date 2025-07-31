@@ -24,7 +24,7 @@ class UserSeeder extends Seeder
         Role::firstOrCreate(['name' => 'operator']);
 
         // 2. Buat 1 User Admin
-        $admin = User::create([
+        $admin = User::firstOrCreate([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
             'password' => \Hash::make('12345678'),
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
         $this->createUserDetail($admin, 1);
 
         // 3. Buat 1 User Operator dengan nama orang
-        $operator = User::create([
+        $operator = User::firstOrCreate([
             'name' => 'Ridwan Hidayat',
             'email' => 'ridwanhidayat@gmail.com', 
             'password' => \Hash::make('12345678'),
@@ -42,7 +42,7 @@ class UserSeeder extends Seeder
         $this->createUserDetail($operator, 2);
 
         // 4. Buat 1 User SKPD (BAPPEDA) dengan nama orang
-        $bappedaUser = User::create([
+        $bappedaUser = User::firstOrCreate([
             'name' => 'Arya Sunandar', 
             'email' => 'aryasunandar@gmail.com', 
             'password' => \Hash::make('12345678'),

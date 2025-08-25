@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->integer('jenis_nomenklatur');
             $table->string('nomor_kode');
-            $table->string('nomenklatur'); 
+            $table->text('nomenklatur'); // Changed from string to text to accommodate long descriptions
             $table->timestamps();
         });
 

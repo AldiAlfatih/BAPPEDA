@@ -9,8 +9,6 @@ import {
   Pencil, 
   Eye, 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
   ArrowUpDown,
   Info,
   User,
@@ -27,6 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Pagination } from '@/components/ui/pagination';
 
 const props = defineProps<{
   users: {
@@ -409,53 +408,13 @@ function truncateText(text: string | null | undefined, length: number = 30): str
       </Card>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex justify-between items-center">
-        <div class="text-sm text-gray-500">
-          Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai 
-          {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 
-          dari {{ filteredData.length }} data
-        </div>
-        <div class="flex gap-2 items-center">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            @click="currentPage = Math.max(1, currentPage - 1)"
-            :disabled="currentPage === 1"
-            class="flex items-center gap-1"
-          >
-            <ChevronLeft class="w-4 h-4" />
-            <span class="hidden sm:inline">Sebelumnya</span>
-          </Button>
-          
-          <div class="hidden sm:flex gap-1">
-            <Button 
-              v-for="page in totalPages" 
-              :key="page"
-              :variant="page === currentPage ? 'default' : 'outline'"
-              size="sm"
-              @click="currentPage = page"
-              class="w-10 h-10"
-            >
-              {{ page }}
-            </Button>
-          </div>
-          
-          <div class="sm:hidden">
-            <span class="text-sm">{{ currentPage }} / {{ totalPages }}</span>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            @click="currentPage = Math.min(totalPages, currentPage + 1)"
-            :disabled="currentPage === totalPages"
-            class="flex items-center gap-1"
-          >
-            <span class="hidden sm:inline">Selanjutnya</span>
-            <ChevronRight class="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filteredData.length"
+        :items-per-page="itemsPerPage"
+        @update:current-page="currentPage = $event"
+      />
     </div>
   </AppLayout>
 </template>

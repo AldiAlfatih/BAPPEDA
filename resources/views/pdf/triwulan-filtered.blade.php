@@ -150,16 +150,7 @@
 </head>
 
 <body>
-    <!-- Filter Information Header -->
-    <div class="filter-header">
-        <div class="filter-info">📊 LAPORAN SELEKTIF {{ strtoupper($triwulanName) }} - FILTER SUMBER DANA</div>
-        <div class="filter-info">🎯 Sumber Dana Terpilih: {{ implode(', ', $selectedSumberDanaNames) }}</div>
-        @if(count($selectedSumberDanaNames) < 5)
-            <div class="filter-info">💡 Hanya menampilkan data untuk sumber dana di atas</div>
-        @else
-            <div class="filter-info">💡 Menampilkan {{ count($selectedSumberDanaNames) }} sumber dana terpilih</div>
-        @endif
-    </div>
+    <!-- Removed filter header as requested -->
 
     <!-- Info Section -->
     <div class="info-section">
@@ -195,7 +186,7 @@
                 <th colspan="3">Pagu Anggaran APBD</th>
                 <th rowspan="3">Sumber<br>Dana</th>
                 <th colspan="2">Target</th>
-                <th colspan="2">Realisasi</th>
+                <th colspan="3">Realisasi</th>
                 <th rowspan="3">Keterangan</th>
                 <th rowspan="3">PPTK</th>
             </tr>
@@ -206,6 +197,7 @@
                 <th>Kinerja<br>Fisik (%)</th>
                 <th>Keuangan<br>(RP)</th>
                 <th>Kinerja<br>Fisik (%)</th>
+                <th>Keuangan<br>(%)</th>
                 <th>Keuangan<br>(RP)</th>
             </tr>
             <tr>
@@ -216,6 +208,7 @@
                 <th>5</th>
                 <th>6</th>
                 <th>7</th>
+                <th>8</th>
             </tr>
         </thead>
         <tbody>
@@ -331,6 +324,10 @@
 
                     $avgUrusanTargetFisik = $urusanItemCount > 0 ? $urusanTargetFisik / $urusanItemCount : 0;
                     $avgUrusanRealisasiFisik = $urusanItemCount > 0 ? $urusanRealisasiFisik / $urusanItemCount : 0;
+                    
+                    // Calculate percentage for urusan financial realization
+                    $totalUrusanPagu = $urusanPaguPokok + $urusanPaguParsial + $urusanPaguPerubahan;
+                    $persentaseUrusanKeuangan = $totalUrusanPagu > 0 ? ($urusanRealisasiKeuangan / $totalUrusanPagu) * 100 : 0;
                 @endphp
 
                 @if($bidangHasFilteredData)
@@ -354,6 +351,7 @@
                             <strong>{{ $urusanTargetKeuangan > 0 ? 'Rp ' . number_format($urusanTargetKeuangan, 0, ',', '.') : '-' }}</strong>
                         </td>
                         <td class="center"><strong>{{ number_format($avgUrusanRealisasiFisik, 1) }}%</strong></td>
+                        <td class="center"><strong>{{ number_format($persentaseUrusanKeuangan, 2) }}%</strong></td>
                         <td class="center">
                             <strong>{{ $urusanRealisasiKeuangan > 0 ? 'Rp ' . number_format($urusanRealisasiKeuangan, 0, ',', '.') : '-' }}</strong>
                         </td>
@@ -446,6 +444,10 @@
 
                                 $avgProgramTargetFisik = $programItemCount > 0 ? $programTargetFisik / $programItemCount : 0;
                                 $avgProgramRealisasiFisik = $programItemCount > 0 ? $programRealisasiFisik / $programItemCount : 0;
+                                
+                                // Calculate percentage for program financial realization
+                                $totalProgramPagu = $programPaguPokok + $programPaguParsial + $programPaguPerubahan;
+                                $persentaseProgramKeuangan = $totalProgramPagu > 0 ? ($programRealisasiKeuangan / $totalProgramPagu) * 100 : 0;
                             @endphp
 
                             <!-- Program Row -->
@@ -460,6 +462,7 @@
                                 <td class="center">{{ number_format($avgProgramTargetFisik, 1) }}%</td>
                                 <td class="center">{{ $programTargetKeuangan > 0 ? 'Rp ' . number_format($programTargetKeuangan, 0, ',', '.') : '-' }}</td>
                                 <td class="center">{{ number_format($avgProgramRealisasiFisik, 1) }}%</td>
+                                <td class="center">{{ number_format($persentaseProgramKeuangan, 2) }}%</td>
                                 <td class="center">{{ $programRealisasiKeuangan > 0 ? 'Rp ' . number_format($programRealisasiKeuangan, 0, ',', '.') : '-' }}</td>
                                 <td class="center">-</td>
                                 <td class="center">-</td>
@@ -525,6 +528,10 @@
 
                                         $avgKegiatanTargetFisik = $kegiatanItemCount > 0 ? $kegiatanTargetFisik / $kegiatanItemCount : 0;
                                         $avgKegiatanRealisasiFisik = $kegiatanItemCount > 0 ? $kegiatanRealisasiFisik / $kegiatanItemCount : 0;
+                                        
+                                        // Calculate percentage for kegiatan financial realization
+                                        $totalKegiatanPagu = $kegiatanPaguPokok + $kegiatanPaguParsial + $kegiatanPaguPerubahan;
+                                        $persentaseKegiatanKeuangan = $totalKegiatanPagu > 0 ? ($kegiatanRealisasiKeuangan / $totalKegiatanPagu) * 100 : 0;
                                     @endphp
 
                                     <!-- Kegiatan Row -->
@@ -539,6 +546,7 @@
                                         <td class="center">{{ number_format($avgKegiatanTargetFisik, 1) }}%</td>
                                         <td class="center">{{ $kegiatanTargetKeuangan > 0 ? 'Rp ' . number_format($kegiatanTargetKeuangan, 0, ',', '.') : '-' }}</td>
                                         <td class="center">{{ number_format($avgKegiatanRealisasiFisik, 1) }}%</td>
+                                        <td class="center">{{ number_format($persentaseKegiatanKeuangan, 2) }}%</td>
                                         <td class="center">{{ $kegiatanRealisasiKeuangan > 0 ? 'Rp ' . number_format($kegiatanRealisasiKeuangan, 0, ',', '.') : '-' }}</td>
                                         <td class="center">-</td>
                                         <td class="center">-</td>
@@ -588,6 +596,12 @@
                                                     $totalRealisasiFisik += $realisasiFisik;
                                                     $itemCount++;
 
+                                                    // Calculate percentage for financial realization
+                                                    $persentaseKeuangan = 0;
+                                                    if ($totalPaguItem > 0) {
+                                                        $persentaseKeuangan = ($realisasiKeuangan / $totalPaguItem) * 100;
+                                                    }
+
                                                     // Get PPTK and Keterangan
                                                     $pptk = $realisasiItem['nama_pptk'] ?? '-';
                                                     $keterangan = $realisasiItem['deskripsi'] ?? '-';
@@ -618,6 +632,7 @@
                                                         {{ $targetKeuangan > 0 ? 'Rp ' . number_format($targetKeuangan, 0, ',', '.') : '-' }}
                                                     </td>
                                                     <td class="center">{{ number_format($realisasiFisik, 1) }}%</td>
+                                                    <td class="center">{{ number_format($persentaseKeuangan, 2) }}%</td>
                                                     <td class="center">
                                                         {{ $realisasiKeuangan > 0 ? 'Rp ' . number_format($realisasiKeuangan, 0, ',', '.') : '-' }}
                                                     </td>
@@ -634,7 +649,7 @@
                 @endif
             @empty
                 <tr>
-                    <td colspan="13" class="center" style="padding: 20px;">
+                    <td colspan="14" class="center" style="padding: 20px;">
                         <strong>Tidak ada data untuk sumber dana yang dipilih</strong>
                     </td>
                 </tr>

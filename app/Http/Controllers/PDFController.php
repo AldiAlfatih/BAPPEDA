@@ -369,43 +369,21 @@ class PDFController extends Controller
                 }
             }
 
-            // Apply urusan filtering if urusan is found
-            if ($currentUrusan && $urusanCode) {
-                \Log::info("Filtering by urusan", [
-                    'urusan_code' => $urusanCode,
-                    'urusan_name' => $currentUrusan->kodeNomenklatur->nomenklatur ?? 'N/A',
-                    'original_code' => $currentCode
-                ]);
+            // NEW APPROACH: Export per SKPD instead of per urusan
+            \Log::info("RENCANA AWAL PDF - Using SKPD-based filtering (showing all data for SKPD)", [
+                'skpd_id' => $skpdTugas->skpd_id,
+                'skpd_name' => $skpdTugas->skpd->nama_skpd,
+                'total_tasks' => $allSkpdTugas->count(),
+                'total_monitoring' => $allMonitoring->count()
+            ]);
 
-                // Filter data by urusan
-                $bidangurusanTugas = collect([$currentUrusan]);
-
-                $programTugas = $allSkpdTugas->filter(function($item) use ($urusanCode) {
-                    return $item->kodeNomenklatur->jenis_nomenklatur == 3 &&
-                           str_starts_with($item->kodeNomenklatur->nomor_kode ?? '', $urusanCode);
-                })->values();
-
-                $kegiatanTugas = $allSkpdTugas->filter(function($item) use ($urusanCode) {
-                    return $item->kodeNomenklatur->jenis_nomenklatur == 4 &&
-                           str_starts_with($item->kodeNomenklatur->nomor_kode ?? '', $urusanCode);
-                })->values();
-
-                $subkegiatanTugas = $allSkpdTugas->filter(function($item) use ($urusanCode) {
-                    return ($item->kodeNomenklatur->jenis_nomenklatur == 5 || $item->kodeNomenklatur->jenis_nomenklatur == 4) &&
-                           str_starts_with($item->kodeNomenklatur->nomor_kode ?? '', $urusanCode);
-                })->values();
-
-                // Filter monitoring by urusan
-                $allMonitoring = $allMonitoring->filter(function($monitoring) use ($urusanCode) {
-                    $monitoringCode = $monitoring->tugas->kodeNomenklatur->nomor_kode ?? '';
-                    return str_starts_with($monitoringCode, $urusanCode);
-                });
-            } else {
-                \Log::warning("Could not determine urusan for filtering", [
-                    'task_code' => $currentCode,
-                    'task_jenis' => $skpdTugas->kodeNomenklatur->jenis_nomenklatur ?? 'N/A'
-                ]);
-            }
+            // No filtering by urusan - include ALL data for this SKPD
+            // This ensures complete SKPD report regardless of which task was selected
+            $currentUrusan = null; // Set to null to indicate full SKPD report
+            
+            // Keep all data as-is (no urusan filtering)
+            // $bidangurusanTugas, $programTugas, $kegiatanTugas, $subkegiatanTugas, $allMonitoring
+            // remain with their original SKPD-wide data
 
             // Collect monitoring targets and realisasi with UNIQUE filtering to avoid duplicates
             $monitoringTargetsRaw = [];
@@ -847,43 +825,21 @@ class PDFController extends Controller
                 }
             }
 
-            // Apply urusan filtering if urusan is found
-            if ($currentUrusan && $urusanCode) {
-                \Log::info("Filtering by urusan", [
-                    'urusan_code' => $urusanCode,
-                    'urusan_name' => $currentUrusan->kodeNomenklatur->nomenklatur ?? 'N/A',
-                    'original_code' => $currentCode
-                ]);
+            // NEW APPROACH: Export per SKPD instead of per urusan
+            \Log::info("TRIWULAN PDF - Using SKPD-based filtering (showing all data for SKPD)", [
+                'skpd_id' => $skpdTugas->skpd_id,
+                'skpd_name' => $skpdTugas->skpd->nama_skpd,
+                'total_tasks' => $allSkpdTugas->count(),
+                'total_monitoring' => $allMonitoring->count()
+            ]);
 
-                // Filter data by urusan
-                $bidangurusanTugas = collect([$currentUrusan]);
-
-                $programTugas = $allSkpdTugas->filter(function($item) use ($urusanCode) {
-                    return $item->kodeNomenklatur->jenis_nomenklatur == 3 &&
-                           str_starts_with($item->kodeNomenklatur->nomor_kode ?? '', $urusanCode);
-                })->values();
-
-                $kegiatanTugas = $allSkpdTugas->filter(function($item) use ($urusanCode) {
-                    return $item->kodeNomenklatur->jenis_nomenklatur == 4 &&
-                           str_starts_with($item->kodeNomenklatur->nomor_kode ?? '', $urusanCode);
-                })->values();
-
-                $subkegiatanTugas = $allSkpdTugas->filter(function($item) use ($urusanCode) {
-                    return ($item->kodeNomenklatur->jenis_nomenklatur == 5 || $item->kodeNomenklatur->jenis_nomenklatur == 4) &&
-                           str_starts_with($item->kodeNomenklatur->nomor_kode ?? '', $urusanCode);
-                })->values();
-
-                // Filter monitoring by urusan
-                $allMonitoring = $allMonitoring->filter(function($monitoring) use ($urusanCode) {
-                    $monitoringCode = $monitoring->tugas->kodeNomenklatur->nomor_kode ?? '';
-                    return str_starts_with($monitoringCode, $urusanCode);
-                });
-            } else {
-                \Log::warning("Could not determine urusan for filtering", [
-                    'task_code' => $currentCode,
-                    'task_jenis' => $skpdTugas->kodeNomenklatur->jenis_nomenklatur ?? 'N/A'
-                ]);
-            }
+            // No filtering by urusan - include ALL data for this SKPD
+            // This ensures complete SKPD report regardless of which task was selected
+            $currentUrusan = null; // Set to null to indicate full SKPD report
+            
+            // Keep all data as-is (no urusan filtering)
+            // $bidangurusanTugas, $programTugas, $kegiatanTugas, $subkegiatanTugas, $allMonitoring
+            // remain with their original SKPD-wide data
 
             // Collect monitoring targets and realisasi with UNIQUE filtering to avoid duplicates
             $monitoringTargetsRaw = [];

@@ -213,7 +213,7 @@
                     <th rowspan="2">Sumber Dana</th>
                     <th colspan="3">Pagu Anggaran (Rp)</th>
                     <th colspan="2">Target</th>
-                    <th colspan="2">Realisasi</th>
+                    <th colspan="3">Realisasi</th>
                 </tr>
                 <tr>
                     <th>Pokok</th>
@@ -222,6 +222,7 @@
                     <th>Fisik (%)</th>
                     <th>Keuangan (Rp)</th>
                     <th>Fisik (%)</th>
+                    <th>Keuangan (%)</th>
                     <th>Keuangan (Rp)</th>
                 </tr>
             </thead>
@@ -237,6 +238,14 @@
                         <td class="center">{{ $anggaran->realisasi->avg('kinerja_fisik') ?? '-' }}%</td>
                         <td class="amount">{{ $anggaran->realisasi->sum('keuangan') > 0 ? 'Rp ' . number_format($anggaran->realisasi->sum('keuangan'), 0, ',', '.') : '-' }}</td>
                         <td class="center">{{ $anggaran->realisasi->avg('kinerja_fisik') ?? '-' }}%</td>
+                        <td class="center">
+                            @php
+                                $totalPagu = $anggaran->pagu->sum('dana');
+                                $totalRealisasi = $anggaran->realisasi->sum('keuangan');
+                                $persentaseKeuangan = $totalPagu > 0 ? ($totalRealisasi / $totalPagu) * 100 : 0;
+                            @endphp
+                            {{ number_format($persentaseKeuangan, 2) }}%
+                        </td>
                         <td class="amount">{{ $anggaran->realisasi->sum('keuangan') > 0 ? 'Rp ' . number_format($anggaran->realisasi->sum('keuangan'), 0, ',', '.') : '-' }}</td>
                     </tr>
                 @endforeach
@@ -251,7 +260,7 @@
                     <th rowspan="3">Sumber Dana</th>
                     <th colspan="3">Pagu Anggaran APBD</th>
                     <th colspan="2">Target</th>
-                    <th colspan="2">Realisasi</th>
+                    <th colspan="3">Realisasi</th>
                 </tr>
                 <tr>
                     <th class="amount">Pokok<br>(RP)</th>
@@ -260,6 +269,7 @@
                     <th>Kinerja<br>Fisik (%)</th>
                     <th>Keuangan<br>(RP)</th>
                     <th>Kinerja<br>Fisik (%)</th>
+                    <th>Keuangan<br>(%)</th>
                     <th>Keuangan<br>(RP)</th>
                 </tr>
                 <tr>
@@ -270,6 +280,7 @@
                     <th>5</th>
                     <th>6</th>
                     <th>7</th>
+                    <th>8</th>
                 </tr>
             </thead>
             <tbody>

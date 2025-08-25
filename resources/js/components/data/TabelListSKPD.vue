@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { router } from '@inertiajs/vue3';
-import { ArrowUpDown, Binoculars, ChevronLeft, ChevronRight, Info, Search, Wallet, Trash2 } from 'lucide-vue-next';
+import { ArrowUpDown, Binoculars, Info, Search, Wallet, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Pagination } from '@/components/ui/pagination';
 
 const props = defineProps<{
     users: {
@@ -759,52 +760,14 @@ async function fetchWithCSRFRetry(url: string, options: RequestInit, maxRetries:
         </Card>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between">
-            <div class="text-sm text-gray-500">
-                Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} sampai
-                {{ Math.min(currentPage * itemsPerPage, filteredData.length) }}
-                dari {{ filteredData.length }} data
-            </div>
-            <div class="flex items-center gap-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    @click="currentPage = Math.max(1, currentPage - 1)"
-                    :disabled="currentPage === 1"
-                    class="flex items-center gap-1"
-                >
-                    <ChevronLeft class="h-4 w-4" />
-                    <span class="hidden sm:inline">Sebelumnya</span>
-                </Button>
-
-                <div class="hidden gap-1 sm:flex">
-                    <Button
-                        v-for="page in totalPages"
-                        :key="page"
-                        :variant="page === currentPage ? 'default' : 'outline'"
-                        size="sm"
-                        @click="currentPage = page"
-                        class="h-10 w-10"
-                    >
-                        {{ page }}
-                    </Button>
-                </div>
-
-                <div class="sm:hidden">
-                    <span class="text-sm">{{ currentPage }} / {{ totalPages }}</span>
-                </div>
-
-                <Button
-                    variant="outline"
-                    size="sm"
-                    @click="currentPage = Math.min(totalPages, currentPage + 1)"
-                    :disabled="currentPage === totalPages"
-                    class="flex items-center gap-1"
-                >
-                    <span class="hidden sm:inline">Selanjutnya</span>
-                    <ChevronRight class="h-4 w-4" />
-                </Button>
-            </div>
+        <div class="mt-6">
+            <Pagination
+                :current-page="currentPage"
+                :total-pages="totalPages"
+                :total-items="filteredData.length"
+                :items-per-page="itemsPerPage"
+                @update:current-page="currentPage = $event"
+            />
         </div>
     </div>
 

@@ -279,7 +279,7 @@
                 <th colspan="3">Pagu Anggaran APBD</th>
                 <th rowspan="3">Sumber<br>Dana</th>
                 <th colspan="2">Target</th>
-                <th colspan="2">Realisasi</th>
+                <th colspan="3">Realisasi</th>
                 <th rowspan="3">Keterangan</th>
                 <th rowspan="3">PPTK</th>
             </tr>
@@ -290,6 +290,7 @@
                 <th>Kinerja<br>Fisik (%)</th>
                 <th>Keuangan<br>(RP)</th>
                 <th>Kinerja<br>Fisik (%)</th>
+                <th>Keuangan<br>(%)</th>
                 <th>Keuangan<br>(RP)</th>
             </tr>
             <tr>
@@ -300,6 +301,7 @@
                 <th>5</th>
                 <th>6</th>
                 <th>7</th>
+                <th>8</th>
             </tr>
         </thead>
         <tbody>
@@ -629,6 +631,12 @@
                                     $totalRealisasiFisik += $realisasiFisik;
                                     $itemCount++;
 
+                                    // Calculate percentage for financial realization
+                                    $persentaseKeuangan = 0;
+                                    if ($totalPaguItem > 0) {
+                                        $persentaseKeuangan = ($realisasiKeuangan / $totalPaguItem) * 100;
+                                    }
+
                                     // Get PPTK and Keterangan
                                     $pptk = $targetItem['nama_pptk'] ?? ($realisasiItem['nama_pptk'] ?? '-');
                                     $keterangan = $targetItem['deskripsi'] ?? ($realisasiItem['deskripsi'] ?? '-');
@@ -658,6 +666,7 @@
                                         {{ $targetKeuangan > 0 ? 'Rp ' . number_format($targetKeuangan, 0, ',', '.') : '-' }}
                                     </td>
                                     <td class="center">{{ number_format($realisasiFisik, 1) }}%</td>
+                                    <td class="center">{{ number_format($persentaseKeuangan, 2) }}%</td>
                                     <td class="center">
                                         {{ $realisasiKeuangan > 0 ? 'Rp ' . number_format($realisasiKeuangan, 0, ',', '.') : '-' }}
                                     </td>
@@ -670,7 +679,7 @@
                 @endforeach
             @empty
                 <tr>
-                    <td colspan="13" style="text-align: center; font-style: italic; padding: 20px;">
+                    <td colspan="14" style="text-align: center; font-style: italic; padding: 20px;">
                         <strong>Tidak ada data subkegiatan {{ $jenis_laporan }} yang ditemukan</strong><br>
                         <small style="color: #666;">
                             SKPD ID: {{ $tugas->skpd_id ?? 'N/A' }}<br>

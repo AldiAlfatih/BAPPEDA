@@ -329,6 +329,159 @@ class UserSeeder extends Seeder
 
             $userDetailIndex++;
         }
+
+        // 6. Tambahkan tugas/urusan untuk BAPPEDA
+        $this->createBappedaTugas();
+    }
+
+    private function createBappedaTugas()
+    {
+        // Cari SKPD BAPPEDA
+        $bappedaSkpd = Skpd::where('nama_skpd', 'Badan Perencanaan Pembangunan Daerah')->first();
+        
+        if ($bappedaSkpd) {
+            // Cari urusan level 5 dari UrusanSeeder: "UNSUR PENUNJANG URUSAN PEMERINTAHAN"
+            $urusanPenunjang = \DB::table('kode_nomenklatur')
+                ->where('nomor_kode', '5')
+                ->where('jenis_nomenklatur', 0) // urusan
+                ->first();
+
+            // Cari bidang urusan Perencanaan (5.01) dari BidangUrusanSeeder: 'PERENCANAAN'
+            $bidangUrusanPerencanaan = \DB::table('kode_nomenklatur')
+                ->where('nomor_kode', '5.01')
+                ->where('jenis_nomenklatur', 1) // bidang urusan
+                ->first();
+
+            if ($urusanPenunjang && $bidangUrusanPerencanaan) {
+                // Data program dan kegiatan khusus untuk BAPPEDA
+                $bappedaTugas = [
+                    'urusan_induk_kode' => '5',
+                    'urusan_induk_nama' => 'UNSUR PENUNJANG URUSAN PEMERINTAHAN', // Sesuai UrusanSeeder
+                    'bidang_urusan_kode' => '5.01',
+                    'bidang_urusan_nama' => 'PERENCANAAN', // Sesuai BidangUrusanSeeder
+                    'skpd_id' => $bappedaSkpd->id,
+                    'program' => [
+                        [
+                            'kode_program' => '5.01.01',
+                            'nama_program' => 'Program Perencanaan, Pengendalian dan Evaluasi Pembangunan Daerah',
+                            'kegiatan' => [
+                                [
+                                    'kode_kegiatan' => '5.01.01.1.01',
+                                    'nama_kegiatan' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah',
+                                    'subkegiatan' => [
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.01.0001',
+                                            'nama_subkegiatan' => 'Penyusunan Rencana Strategis Perangkat Daerah',
+                                            'deskripsi' => 'Penyusunan Renstra SKPD sebagai dokumen perencanaan jangka menengah'
+                                        ],
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.01.0006',
+                                            'nama_subkegiatan' => 'Penyusunan Rencana Kerja Perangkat Daerah',
+                                            'deskripsi' => 'Penyusunan Renja SKPD sebagai dokumen perencanaan tahunan'
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'kode_kegiatan' => '5.01.01.1.02',
+                                    'nama_kegiatan' => 'Koordinasi dan Penyusunan Dokumen RKP Daerah',
+                                    'subkegiatan' => [
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.02.0001',
+                                            'nama_subkegiatan' => 'Koordinasi dan Penyusunan Dokumen Rencana Kerja Pemerintah Daerah',
+                                            'deskripsi' => 'Koordinasi dan penyusunan RKP Daerah sebagai acuan penyusunan RAPBD'
+                                        ],
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.02.0002',
+                                            'nama_subkegiatan' => 'Koordinasi dan Penyusunan Dokumen Perencanaan Daerah Lainnya',
+                                            'deskripsi' => 'Koordinasi penyusunan dokumen perencanaan sektoral dan spasial'
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'kode_kegiatan' => '5.01.01.1.03',
+                                    'nama_kegiatan' => 'Koordinasi dan Penyusunan Dokumen RPJMD',
+                                    'subkegiatan' => [
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.03.0001',
+                                            'nama_subkegiatan' => 'Koordinasi dan Penyusunan Dokumen Rencana Pembangunan Jangka Menengah Daerah (RPJMD)',
+                                            'deskripsi' => 'Koordinasi dan penyusunan RPJMD sebagai dokumen perencanaan 5 tahun'
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'kode_kegiatan' => '5.01.01.1.05',
+                                    'nama_kegiatan' => 'Penelitian dan Pengembangan Daerah',
+                                    'subkegiatan' => [
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.05.0001',
+                                            'nama_subkegiatan' => 'Penelitian dan Pengembangan Daerah',
+                                            'deskripsi' => 'Pelaksanaan litbang untuk mendukung perencanaan pembangunan daerah'
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'kode_kegiatan' => '5.01.01.1.06',
+                                    'nama_kegiatan' => 'Pengendalian dan Evaluasi Pelaksanaan Rencana Pembangunan Daerah',
+                                    'subkegiatan' => [
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.06.0002',
+                                            'nama_subkegiatan' => 'Pengendalian Pelaksanaan Rencana Pembangunan Daerah',
+                                            'deskripsi' => 'Monitoring dan pengendalian pelaksanaan pembangunan daerah'
+                                        ],
+                                        [
+                                            'kode_subkegiatan' => '5.01.01.1.06.0003',
+                                            'nama_subkegiatan' => 'Evaluasi Pelaksanaan Rencana Pembangunan Daerah',
+                                            'deskripsi' => 'Evaluasi capaian kinerja pembangunan daerah'
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+
+                // Log informasi tugas BAPPEDA
+                \Log::info("=== TUGAS DAN URUSAN BAPPEDA ===");
+                \Log::info("SKPD: {$bappedaSkpd->nama_skpd}");
+                \Log::info("Urusan Induk: {$bappedaTugas['urusan_induk_nama']} (Kode: {$bappedaTugas['urusan_induk_kode']})");
+                \Log::info("Bidang Urusan: {$bappedaTugas['bidang_urusan_nama']} (Kode: {$bappedaTugas['bidang_urusan_kode']})");
+                
+                foreach ($bappedaTugas['program'] as $program) {
+                    \Log::info("📋 Program: {$program['nama_program']} ({$program['kode_program']})");
+                    
+                    foreach ($program['kegiatan'] as $kegiatan) {
+                        \Log::info("  🎯 Kegiatan: {$kegiatan['nama_kegiatan']} ({$kegiatan['kode_kegiatan']})");
+                        
+                        foreach ($kegiatan['subkegiatan'] as $subkegiatan) {
+                            \Log::info("    📝 Sub Kegiatan: {$subkegiatan['nama_subkegiatan']} ({$subkegiatan['kode_subkegiatan']})");
+                            \Log::info("       💡 {$subkegiatan['deskripsi']}");
+                        }
+                    }
+                }
+
+                // Simpan relasi SKPD dengan urusan menggunakan model SkpdTugas
+                // Cari KodeNomenklatur untuk bidang urusan 5.01 (PERENCANAAN)
+                $kodeNomenklaturPerencanaan = \App\Models\KodeNomenklatur::where('nomor_kode', $bappedaTugas['bidang_urusan_kode'])
+                    ->where('jenis_nomenklatur', 1) // bidang urusan (level 1)
+                    ->first();
+                
+                if ($kodeNomenklaturPerencanaan) {
+                    SkpdTugas::updateOrCreate(
+                        [
+                            'skpd_id' => $bappedaSkpd->id,
+                            'kode_nomenklatur_id' => $kodeNomenklaturPerencanaan->id
+                        ],
+                        [
+                            'is_aktif' => true,
+                        ]
+                    );
+                    
+                    \Log::info("✅ SKPD Tugas created for BAPPEDA with kode_nomenklatur_id: {$kodeNomenklaturPerencanaan->id}");
+                } else {
+                    \Log::error("❌ KodeNomenklatur not found for bidang urusan: {$bappedaTugas['bidang_urusan_kode']}");
+                }
+            }
+        }
     }
 
     private function createUserDetail(User $user, int $nipIndex)

@@ -73,6 +73,7 @@ const kegiatanOptions = computed(() => {
     }));
 });
 
+
 const subkegiatanOptions = computed(() => {
   if (!kegiatan.value) return [];
 
@@ -100,7 +101,7 @@ function handleJenisChange(value: number) {
   } else {
     nomorKode.value = '';
   }
-}
+}jhhuunmegnjjioaeuij
 
 // Watch perubahan pada urusan untuk update nomor kode bidang urusan
 watch(urusan, (newValue) => {

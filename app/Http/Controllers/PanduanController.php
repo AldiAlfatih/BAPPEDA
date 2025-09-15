@@ -43,19 +43,19 @@ class PanduanController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'judul' => 'required|string|max:255',
-                'deskripsi' => 'required|string',
-                'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-                'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            ]);
+        $validated = $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
 
-            $panduan = new Panduan();
-            $panduan->judul = $validated['judul'];
-            $panduan->deskripsi = $validated['deskripsi'];
+        $panduan = new Panduan();
+        $panduan->judul = $validated['judul'];
+        $panduan->deskripsi = $validated['deskripsi'];
 
             // Handle file upload dengan error checking
-            if ($request->hasFile('file')) {
+        if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 \Log::info('Uploading file: ' . $file->getClientOriginalName() . ' Size: ' . $file->getSize());
                 
@@ -66,18 +66,18 @@ class PanduanController extends Controller
                 
                 $filePath = $file->store('panduan_files', 'public');
                 if ($filePath) {
-                    $panduan->file = $filePath;
+            $panduan->file = $filePath;
                     \Log::info('File uploaded successfully to: ' . $filePath);
                 } else {
                     \Log::error('Failed to upload file');
                     return back()->withErrors(['file' => 'Gagal mengunggah file.']);
                 }
-            } else {
-                $panduan->file = null;
-            }
+        } else {
+            $panduan->file = null;
+        }
 
             // Handle sampul upload dengan error checking
-            if ($request->hasFile('sampul')) {
+        if ($request->hasFile('sampul')) {
                 $sampul = $request->file('sampul');
                 \Log::info('Uploading sampul: ' . $sampul->getClientOriginalName() . ' Size: ' . $sampul->getSize());
                 
@@ -88,20 +88,20 @@ class PanduanController extends Controller
                 
                 $sampulPath = $sampul->store('panduan_sampul', 'public');
                 if ($sampulPath) {
-                    $panduan->sampul = $sampulPath;
+            $panduan->sampul = $sampulPath;
                     \Log::info('Sampul uploaded successfully to: ' . $sampulPath);
                 } else {
                     \Log::error('Failed to upload sampul');
                     return back()->withErrors(['sampul' => 'Gagal mengunggah sampul.']);
                 }
-            } else {
-                $panduan->sampul = null;
-            }
+        } else {
+            $panduan->sampul = null;
+        }
 
-            $panduan->save();
+        $panduan->save();
             \Log::info('Panduan saved successfully with ID: ' . $panduan->id);
 
-            return redirect()->route('panduan.index')->with('success', 'Panduan berhasil ditambahkan.');
+        return redirect()->route('panduan.index')->with('success', 'Panduan berhasil ditambahkan.');
         } catch (\Exception $e) {
             \Log::error('Error in PanduanController@store: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
@@ -118,26 +118,26 @@ class PanduanController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            $validated = $request->validate([
-                'judul' => 'required|string|max:255',
-                'deskripsi' => 'required|string',
-                'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-                'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            ]);
+        $validated = $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
 
-            $panduan = Panduan::findOrFail($id);
+        $panduan = Panduan::findOrFail($id);
 
-            $panduan->judul = $validated['judul'];
-            $panduan->deskripsi = $validated['deskripsi'];
+        $panduan->judul = $validated['judul'];
+        $panduan->deskripsi = $validated['deskripsi'];
 
             // Handle file upload
-            if ($request->hasFile('file')) {
+        if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 \Log::info('Updating file for panduan ID ' . $id . ': ' . $file->getClientOriginalName());
                 
-                // Hapus file lama jika ada
+            // Hapus file lama jika ada
                 if ($panduan->file && Storage::disk('public')->exists($panduan->file)) {
-                    Storage::disk('public')->delete($panduan->file);
+                Storage::disk('public')->delete($panduan->file);
                     \Log::info('Deleted old file: ' . $panduan->file);
                 }
                 
@@ -148,7 +148,7 @@ class PanduanController extends Controller
                 
                 $filePath = $file->store('panduan_files', 'public');
                 if ($filePath) {
-                    $panduan->file = $filePath;
+            $panduan->file = $filePath;
                     \Log::info('File updated successfully to: ' . $filePath);
                 } else {
                     \Log::error('Failed to update file');
@@ -157,13 +157,13 @@ class PanduanController extends Controller
             }
 
             // Handle sampul upload
-            if ($request->hasFile('sampul')) {
+        if ($request->hasFile('sampul')) {
                 $sampul = $request->file('sampul');
                 \Log::info('Updating sampul for panduan ID ' . $id . ': ' . $sampul->getClientOriginalName());
                 
-                // Hapus sampul lama jika ada
+            // Hapus sampul lama jika ada
                 if ($panduan->sampul && Storage::disk('public')->exists($panduan->sampul)) {
-                    Storage::disk('public')->delete($panduan->sampul);
+                Storage::disk('public')->delete($panduan->sampul);
                     \Log::info('Deleted old sampul: ' . $panduan->sampul);
                 }
                 
@@ -180,12 +180,12 @@ class PanduanController extends Controller
                     \Log::error('Failed to update sampul');
                     return back()->withErrors(['sampul' => 'Gagal mengunggah sampul.']);
                 }
-            }
+        }
 
-            $panduan->save();
+        $panduan->save();
             \Log::info('Panduan updated successfully with ID: ' . $panduan->id);
 
-            return redirect()->route('panduan.index')->with('success', 'Panduan berhasil diperbarui');
+        return redirect()->route('panduan.index')->with('success', 'Panduan berhasil diperbarui');
         } catch (\Exception $e) {
             \Log::error('Error in PanduanController@update: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);

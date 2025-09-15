@@ -86,6 +86,15 @@ class PerangkatDaerahController extends Controller
             });
         }
 
+        if ($user->hasRole('operator')) {
+            $skpdIds = TimKerja::where('operator_id', $user->id)
+                ->where('is_aktif', 1)
+                ->pluck('skpd_id');
+            $query->whereHas('skpd', function($q) use ($skpdIds) {
+                $q->whereIn('skpd.id', $skpdIds);
+            });
+        }
+
         $users = $query->paginate(1000);
 
         \Log::info('PerangkatDaerahController.index users fetched', [

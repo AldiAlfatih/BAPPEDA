@@ -44,7 +44,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Perangkat Daerah',
         href: '/manajemen-tim/perangkatdaerah',
-        guard: ['perangkat_daerah'],
+        guard: ['perangkat_daerah','operator'],
         icon: Users,
     },
 
@@ -61,7 +61,6 @@ const mainNavItems: NavItem[] = [
         {
             title: 'Manajemen Anggaran',
             href: '/manajemenanggaran',
-            guard: ['super_admin','admin','operator'],
         },
         {
             title: 'Rencana Awal',

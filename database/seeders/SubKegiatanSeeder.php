@@ -1243,740 +1243,679 @@ class SubKegiatanSeeder extends Seeder
             ['nomor_kode' => '2.23.21.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
             ['nomor_kode' => '2.23.21.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
 
-            // ===== Program 3.27.22 — PROGRAM PENYULUHAN PERTANIAN =====
-            // --- Kegiatan 3.27.22.02.01 — Pengelolaan Penangkapan Ikan di Wilayah Sungai, Danau, Waduk, Rawa, dan Genangan Air Lainnya yang Dapat Diusahakan dalam 1 (Satu) Daerah Kabupaten/ Kota ---
-            ['nomor_kode' => '3.27.22.02.01.0001', 'nomenklatur' => 'Penyediaan Data dan Informasi Sumber Daya Ikan'],
-            ['nomor_kode' => '3.27.22.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '3.27.22.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '3.27.22.02.01.0004', 'nomenklatur' => 'Penyediaan Sarana Usaha Perikanan Tangkap'],
-            ['nomor_kode' => '3.27.22.02.01.0005', 'nomenklatur' => 'Penyediaan Data dan Informasi Usaha Pemasaran dan Pengolahan Hasil Perikanan dalam 1 (Satu) Daerah Kabupaten/Kota berdasarkan skala usaha dan risiko'],
-            ['nomor_kode' => '3.27.22.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '3.27.22.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            ['nomor_kode' => '3.27.22.02.01.0008', 'nomenklatur' => 'Pemberantasan Penyakit Hewan Menular dan Zoonosis dalam 1 (satu) Daerah Kabupaten/Kota'],
-            ['nomor_kode' => '3.27.22.02.01.0015', 'nomenklatur' => 'Pengelolaan Lahan Pertanian Pangan Berkelanjutan/LP2B, Kawasan Pertanian Pangan Berkelanjutan/KP2B dan Lahan Cadangan Pertanian Pangan Berkelanjutan/LCP2B di Kabupaten/Kota'],
-            // --- Kegiatan 3.27.22.02.02 — Pemberdayaan Nelayan Kecil dalam Daerah Kabupaten/Kota ---
-            ['nomor_kode' => '3.27.22.02.02.0001', 'nomenklatur' => 'Pengembangan Kapasitas Nelayan Kecil'],
-            ['nomor_kode' => '3.27.22.02.02.0002', 'nomenklatur' => 'Pelaksanaan Fasilitasi Pembentukan dan Pengembangan Kelembagaan Nelayan Kecil'],
-            ['nomor_kode' => '3.27.22.02.02.0003', 'nomenklatur' => 'Pelaksanaan Fasilitasi Bantuan Pendanaan, Bantuan Pembiayaan, Kemitraan Usaha'],
-            ['nomor_kode' => '3.27.22.02.02.0004', 'nomenklatur' => 'Pemberian Pendampingan, Kemudahanan Akses Ilmu Pengetahuan, Teknologi dan Informasi, serta Penyelenggaraan Pendidikan dan Pelatihan'],
-            ['nomor_kode' => '3.27.22.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '3.27.22.02.02.0006', 'nomenklatur' => 'Pembangunan, Rehabilitasi dan Pemeliharaan Pintu Air'],
-            ['nomor_kode' => '3.27.22.02.02.0008', 'nomenklatur' => 'Pembangunan, Rehabilitasi dan Pemeliharaan Balai Penyuluh di Kecamatan serta Sarana Pendukungnya'],
-            ['nomor_kode' => '3.27.22.02.02.0009', 'nomenklatur' => 'Pembangunan, Rehabilitasi dan Pemeliharaan Prasarana Pertanian Lainnya'],
-            ['nomor_kode' => '3.27.22.02.02.0010', 'nomenklatur' => 'Rehabilitasi dan Pemeliharaan Jaringan Irigasi Usaha Tani'],
-            ['nomor_kode' => '3.27.22.02.02.0015', 'nomenklatur' => 'Pembangunan, Rehabilitasi, Pemeliharaan dan operasionalisasi Rumah Potong Hewan'],
-            // --- Kegiatan 3.27.22.02.03 — Pengelolaan dan Penyelenggaraan Tempat Pelelangan Ikan (TPI) ---
-            ['nomor_kode' => '3.27.22.02.03.0001', 'nomenklatur' => 'Peningkatan Ketersediaan Ikan untuk Konsumsi dan Usaha Pengolahan dalam 1 (Satu) Daerah Kabupaten/Kota'],
-            ['nomor_kode' => '3.27.22.02.03.0002', 'nomenklatur' => 'Pelayanan Penyelenggaraan Tempat Pelelangan Ikan (TPI)'],
-            ['nomor_kode' => '3.27.22.02.03.0006', 'nomenklatur' => 'Penatausahaan Barang Milik Daerah pada SKPD'],
-            // --- Kegiatan 3.27.22.02.04 — Pengelolaan Pembudidayaan Ikan ---
-            ['nomor_kode' => '3.27.22.02.04.0001', 'nomenklatur' => 'Penyediaan Data dan Informasi Pembudidayaan Ikan dalam 1 (Satu) Daerah Kabupaten/Kota'],
-            ['nomor_kode' => '3.27.22.02.04.0002', 'nomenklatur' => 'Penyediaan Prasarana Pembudidayaan Ikan dalam 1 (Satu) Daerah Kabupaten/Kota'],
-            ['nomor_kode' => '3.27.22.02.04.0004', 'nomenklatur' => 'Pengujian Laboratorium Kesehatan Masyarakat Veteriner'],
-            ['nomor_kode' => '3.27.22.02.04.0005', 'nomenklatur' => 'Pembinaan Penerapan persyaratan higiene sanitasi pada unit usaha produk hewan'],
-            ['nomor_kode' => '3.27.22.02.04.0009', 'nomenklatur' => 'Penjaminan Ketersediaan Sarana Pembudidayaan Ikan dalam 1 (Satu) Daerah Kabupaten/Kota'],
-            ['nomor_kode' => '3.27.22.02.04.0010', 'nomenklatur' => 'Pembinaan dan Pemantauan Pembudidayaan Ikan di Darat'],
-            ['nomor_kode' => '3.27.22.02.04.0011', 'nomenklatur' => 'Perencanaan, dan Pengembangan Pemanfaatan Air untuk Pembudidayaan Ikan di Darat'],
-            // --- Kegiatan 3.27.22.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '3.27.22.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '3.27.22.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '3.27.22.02.05.0006', 'nomenklatur' => 'Pengawasan Produksi Benih/Bibit Ternak dan HPT, Bahan Pakan/Pakan'],
-            ['nomor_kode' => '3.27.22.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            ['nomor_kode' => '3.27.22.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
-            // --- Kegiatan 3.27.22.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '3.27.22.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '3.27.22.02.06.0002', 'nomenklatur' => 'Penyediaan Peralatan dan Perlengkapan Kantor'],
-            ['nomor_kode' => '3.27.22.02.06.0003', 'nomenklatur' => 'Penyediaan Peralatan Rumah Tangga'],
-            ['nomor_kode' => '3.27.22.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '3.27.22.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '3.27.22.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '3.27.22.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '3.27.22.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            ['nomor_kode' => '3.27.22.02.06.0010', 'nomenklatur' => 'Penatausahaan Arsip Dinamis pada SKPD'],
-            // --- Kegiatan 3.27.22.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '3.27.22.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '3.27.22.02.07.0002', 'nomenklatur' => 'Pengadaan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '3.27.22.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '3.27.22.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '3.27.22.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '3.27.22.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 3.27.22.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '3.27.22.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '3.27.22.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '3.27.22.02.08.0003', 'nomenklatur' => 'Penyediaan Jasa Peralatan dan Perlengkapan Kantor'],
-            ['nomor_kode' => '3.27.22.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 3.27.22.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '3.27.22.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '3.27.22.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '3.27.22.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '3.27.22.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '3.27.22.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
-            ['nomor_kode' => '3.27.22.02.09.0010', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '3.27.22.02.09.0011', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Pendukung Gedung Kantor atau Bangunan Lainnya'],
+            // ===== Program 3.25.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.25.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.25.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.25.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.25.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.25.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.25.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.25.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.25.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+            
+            // --- Kegiatan 3.25.01.02.02 — Administrasi Keuangan Perangkat Daerah ---
+            ['nomor_kode' => '3.25.01.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
+            ['nomor_kode' => '3.25.01.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
+            ['nomor_kode' => '3.25.01.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
+            ['nomor_kode' => '3.25.01.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
+            
+            // --- Kegiatan 3.25.01.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
+            ['nomor_kode' => '3.25.01.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
+            ['nomor_kode' => '3.25.01.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
+            ['nomor_kode' => '3.25.01.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
+            
+            // --- Kegiatan 3.25.01.02.06 — Administrasi Umum Perangkat Daerah ---
+            ['nomor_kode' => '3.25.01.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
+            ['nomor_kode' => '3.25.01.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
+            ['nomor_kode' => '3.25.01.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
+            ['nomor_kode' => '3.25.01.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
+            ['nomor_kode' => '3.25.01.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
+            ['nomor_kode' => '3.25.01.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
+            ['nomor_kode' => '3.25.01.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
 
-            // ===== Program 3.30.18 — PROGRAM PENGELOLAAN SISTEM INFORMASI INDUSTRI NASIONAL =====
-            // --- Kegiatan 3.30.18.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '3.30.18.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '3.30.18.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '3.30.18.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '3.30.18.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '3.30.18.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '3.30.18.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '3.30.18.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 3.30.18.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '3.30.18.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '3.30.18.02.02.0002', 'nomenklatur' => 'Pemberdayaan Pengelola Sarana Distribusi Perdagangan'],
-            ['nomor_kode' => '3.30.18.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '3.30.18.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '3.30.18.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 3.30.18.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '3.30.18.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '3.30.18.02.03.0003', 'nomenklatur' => 'Pengawasan Penyaluran dan Penggunaan Pupuk dan Pestisida Bersubsidi'],
-            // --- Kegiatan 3.30.18.02.04 — Administrasi Pendapatan Daerah Kewenangan Perangkat Daerah ---
-            ['nomor_kode' => '3.30.18.02.04.0003', 'nomenklatur' => 'Penyuluhan dan Penyebarluasan Kebijakan Retribusi Daerah'],
-            ['nomor_kode' => '3.30.18.02.04.0004', 'nomenklatur' => 'Pendataan dan Pendaftaran Objek Retribusi Daerah'],
-            // --- Kegiatan 3.30.18.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '3.30.18.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 3.30.18.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '3.30.18.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '3.30.18.02.06.0003', 'nomenklatur' => 'Penyediaan Peralatan Rumah Tangga'],
-            ['nomor_kode' => '3.30.18.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '3.30.18.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '3.30.18.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '3.30.18.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '3.30.18.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '3.30.18.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 3.30.18.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '3.30.18.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '3.30.18.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '3.30.18.02.07.0007', 'nomenklatur' => 'Pengadaan Aset Tetap Lainnya'],
-            ['nomor_kode' => '3.30.18.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '3.30.18.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 3.30.18.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '3.30.18.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '3.30.18.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '3.30.18.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 3.30.18.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '3.30.18.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '3.30.18.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '3.30.18.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '3.30.18.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '3.30.18.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+            // ===== Program 3.25.02 — PROGRAM PENYULUHAN PERTANIAN =====
+            // --- Kegiatan 3.25.02.02.01 — Penyelenggaraan Penyuluhan Pertanian ---
+            ['nomor_kode' => '3.25.02.02.01.0001', 'nomenklatur' => 'Penyusunan Program Penyuluhan Pertanian'],
+            ['nomor_kode' => '3.25.02.02.01.0002', 'nomenklatur' => 'Pelaksanaan Penyuluhan Pertanian'],
+            ['nomor_kode' => '3.25.02.02.01.0003', 'nomenklatur' => 'Evaluasi dan Pelaporan Penyuluhan Pertanian'],
+            
+            // --- Kegiatan 3.25.02.02.02 — Peningkatan Kapasitas Penyuluh Pertanian ---
+            ['nomor_kode' => '3.25.02.02.02.0001', 'nomenklatur' => 'Pendidikan dan Pelatihan Penyuluh Pertanian'],
+            ['nomor_kode' => '3.25.02.02.02.0002', 'nomenklatur' => 'Pembinaan dan Pengembangan Penyuluh Pertanian'],
+            ['nomor_kode' => '3.25.02.02.02.0003', 'nomenklatur' => 'Sertifikasi Penyuluh Pertanian'],
 
-            // ===== Program 4.01.23 — PROGRAM PEREKONOMIAN DAN PEMBANGUNAN =====
-            // --- Kegiatan 4.01.23.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '4.01.23.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '4.01.23.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '4.01.23.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '4.01.23.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '4.01.23.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '4.01.23.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '4.01.23.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 4.01.23.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '4.01.23.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '4.01.23.02.02.0002', 'nomenklatur' => 'Penyediaan Administrasi Pelaksanaan Tugas ASN'],
-            ['nomor_kode' => '4.01.23.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '4.01.23.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            ['nomor_kode' => '4.01.23.02.02.0008', 'nomenklatur' => 'Penyusunan Pelaporan dan Analisis Prognosis Realisasi Anggaran'],
-            // --- Kegiatan 4.01.23.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '4.01.23.02.03.0001', 'nomenklatur' => 'Fasilitasi Penyusunan Produk Hukum Daerah'],
-            ['nomor_kode' => '4.01.23.02.03.0002', 'nomenklatur' => 'Pengamanan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '4.01.23.02.03.0003', 'nomenklatur' => 'Pendokumentasian Produk Hukum dan Pengelolaan Informasi Hukum'],
-            // --- Kegiatan 4.01.23.02.04 — Fasilitasi Kerja Sama Daerah ---
-            ['nomor_kode' => '4.01.23.02.04.0001', 'nomenklatur' => 'Fasilitasi Kerja Sama Dalam Negeri'],
-            ['nomor_kode' => '4.01.23.02.04.0003', 'nomenklatur' => 'Koordinasi, Sinkronisasi dan Evaluasi Kebijakan Energi dan Air'],
-            // --- Kegiatan 4.01.23.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '4.01.23.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
-            ['nomor_kode' => '4.01.23.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '4.01.23.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '4.01.23.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 4.01.23.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '4.01.23.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '4.01.23.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '4.01.23.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '4.01.23.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '4.01.23.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '4.01.23.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '4.01.23.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 4.01.23.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '4.01.23.02.07.0002', 'nomenklatur' => 'Pengadaan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '4.01.23.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '4.01.23.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 4.01.23.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '4.01.23.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '4.01.23.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '4.01.23.02.08.0003', 'nomenklatur' => 'Penyediaan Jasa Peralatan dan Perlengkapan Kantor'],
-            ['nomor_kode' => '4.01.23.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 4.01.23.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '4.01.23.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '4.01.23.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '4.01.23.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '4.01.23.02.09.0010', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '4.01.23.02.09.0011', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Pendukung Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 4.01.23.02.11 — Administrasi Keuangan dan Operasional Kepala Daerah dan Wakil Kepala Daerah ---
-            ['nomor_kode' => '4.01.23.02.11.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan Kepala Daerah dan Wakil Kepala Daerah'],
-            ['nomor_kode' => '4.01.23.02.11.0002', 'nomenklatur' => 'Penyediaan Pakaian Dinas dan Atribut Kelengkapan Kepala Daerah dan Wakil Kepala Daerah'],
-            ['nomor_kode' => '4.01.23.02.11.0003', 'nomenklatur' => 'Pelaksanaan Medical Check Up Kepala Daerah dan Wakil Kepala Daerah'],
-            ['nomor_kode' => '4.01.23.02.11.0004', 'nomenklatur' => 'Penyediaan Dana Penunjang Operasional Kepala Daerah dan Wakil Kepala Daerah'],
-            // --- Kegiatan 4.01.23.02.12 — Fasilitasi Kerumahtanggaan Sekretariat Daerah ---
-            ['nomor_kode' => '4.01.23.02.12.0001', 'nomenklatur' => 'Penyediaan Kebutuhan Rumah Tangga Kepala Daerah'],
-            ['nomor_kode' => '4.01.23.02.12.0002', 'nomenklatur' => 'Penyediaan Kebutuhan Rumah Tangga Wakil Kepala Daerah'],
-            ['nomor_kode' => '4.01.23.02.12.0003', 'nomenklatur' => 'Penyediaan Kebutuhan Rumah Tangga Sekretariat Daerah'],
-            // --- Kegiatan 4.01.23.02.13 — Penataan Organisasi ---
-            ['nomor_kode' => '4.01.23.02.13.0001', 'nomenklatur' => 'Pengelolaan Kelembagaan dan Analisis Jabatan'],
-            ['nomor_kode' => '4.01.23.02.13.0002', 'nomenklatur' => 'Fasilitasi Pelayanan Publik dan Tata Laksana'],
-            ['nomor_kode' => '4.01.23.02.13.0003', 'nomenklatur' => 'Peningkatan Kinerja dan Reformasi Birokrasi'],
-            ['nomor_kode' => '4.01.23.02.13.0004', 'nomenklatur' => 'Monitoring, Evaluasi dan Pengendalian Kualitas Pelayanan Publik dan Tata Laksana'],
-            // --- Kegiatan 4.01.23.02.14 — Pelaksanaan Protokol dan Komunikasi Pimpinan ---
-            ['nomor_kode' => '4.01.23.02.14.0001', 'nomenklatur' => 'Fasilitasi Keprotokolan'],
-            ['nomor_kode' => '4.01.23.02.14.0002', 'nomenklatur' => 'Fasilitasi Komunikasi Pimpinan'],
-            ['nomor_kode' => '4.01.23.02.14.0003', 'nomenklatur' => 'Pendokumentasian Tugas Pimpinan'],
+            // ===== Program 3.26.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.26.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.26.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.26.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.26.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.26.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.26.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.26.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.26.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
 
-            // ===== Program 4.02.24 — PROGRAM DUKUNGAN PELAKSANAAN TUGAS DAN FUNGSI DPRD =====
-            // --- Kegiatan 4.02.24.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '4.02.24.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '4.02.24.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '4.02.24.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '4.02.24.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '4.02.24.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '4.02.24.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '4.02.24.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 4.02.24.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '4.02.24.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '4.02.24.02.02.0002', 'nomenklatur' => 'Pembahasan Perubahan KUA dan Perubahan PPAS'],
-            ['nomor_kode' => '4.02.24.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '4.02.24.02.02.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Akuntansi SKPD'],
-            ['nomor_kode' => '4.02.24.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '4.02.24.02.02.0006', 'nomenklatur' => 'Pengelolaan dan Penyiapan Bahan Tanggapan Pemeriksaan'],
-            ['nomor_kode' => '4.02.24.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            ['nomor_kode' => '4.02.24.02.02.0008', 'nomenklatur' => 'Penyusunan Pelaporan dan Analisis Prognosis Realisasi Anggaran'],
-            // --- Kegiatan 4.02.24.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '4.02.24.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '4.02.24.02.03.0003', 'nomenklatur' => 'Pengawasan Urusan Pemerintahan Bidang Kesejahteraan Rakyat'],
-            ['nomor_kode' => '4.02.24.02.03.0004', 'nomenklatur' => 'Pengawasan Urusan Pemerintahan Bidang Perekonomian'],
-            ['nomor_kode' => '4.02.24.02.03.0008', 'nomenklatur' => 'Pembahasan Laporan Keterangan Pertanggungjawaban Kepala Daerah'],
-            // --- Kegiatan 4.02.24.02.04 — Peningkatan Kapasitas DPRD ---
-            ['nomor_kode' => '4.02.24.02.04.0002', 'nomenklatur' => 'Pendalaman Tugas DPRD'],
-            ['nomor_kode' => '4.02.24.02.04.0004', 'nomenklatur' => 'Penyediaan Kelompok Pakar dan Tim Ahli'],
-            ['nomor_kode' => '4.02.24.02.04.0005', 'nomenklatur' => 'Penyediaan Tenaga Ahli Fraksi'],
-            ['nomor_kode' => '4.02.24.02.04.0006', 'nomenklatur' => 'Penyelenggaraan Hubungan Masyarakat'],
-            ['nomor_kode' => '4.02.24.02.04.0007', 'nomenklatur' => 'Penyusunan Program Kerja DPRD'],
-            ['nomor_kode' => '4.02.24.02.04.0008', 'nomenklatur' => 'Publikasi dan Dokumentasi DPRD'],
-            // --- Kegiatan 4.02.24.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '4.02.24.02.05.0001', 'nomenklatur' => 'Kunjungan Kerja dalam Daerah'],
-            ['nomor_kode' => '4.02.24.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
-            ['nomor_kode' => '4.02.24.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '4.02.24.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '4.02.24.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 4.02.24.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '4.02.24.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '4.02.24.02.06.0002', 'nomenklatur' => 'Penyediaan Peralatan dan Perlengkapan Kantor'],
-            ['nomor_kode' => '4.02.24.02.06.0003', 'nomenklatur' => 'Penyediaan Peralatan Rumah Tangga'],
-            ['nomor_kode' => '4.02.24.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '4.02.24.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '4.02.24.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '4.02.24.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '4.02.24.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '4.02.24.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 4.02.24.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '4.02.24.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '4.02.24.02.07.0002', 'nomenklatur' => 'Pengadaan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '4.02.24.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '4.02.24.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '4.02.24.02.07.0007', 'nomenklatur' => 'Pengadaan Aset Tetap Lainnya'],
-            ['nomor_kode' => '4.02.24.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '4.02.24.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '4.02.24.02.07.0011', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Pendukung Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 4.02.24.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '4.02.24.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '4.02.24.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '4.02.24.02.08.0003', 'nomenklatur' => 'Penyediaan Jasa Peralatan dan Perlengkapan Kantor'],
-            ['nomor_kode' => '4.02.24.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 4.02.24.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '4.02.24.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '4.02.24.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '4.02.24.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '4.02.24.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '4.02.24.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
-            ['nomor_kode' => '4.02.24.02.09.0010', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '4.02.24.02.09.0011', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Pendukung Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 4.02.24.02.15 — Layanan Keuangan dan Kesejahteraan DPRD ---
-            ['nomor_kode' => '4.02.24.02.15.0001', 'nomenklatur' => 'Penyelenggaraan Administrasi Keuangan DPRD'],
-            ['nomor_kode' => '4.02.24.02.15.0002', 'nomenklatur' => 'Penyediaan Pakaian Dinas dan Atribut DPRD'],
-            ['nomor_kode' => '4.02.24.02.15.0003', 'nomenklatur' => 'Pelaksanaan Medical Check Up DPRD'],
-            // --- Kegiatan 4.02.24.02.16 — Layanan Administrasi DPRD ---
-            ['nomor_kode' => '4.02.24.02.16.0002', 'nomenklatur' => 'Fasilitasi Fraksi DPRD'],
-            ['nomor_kode' => '4.02.24.02.16.0003', 'nomenklatur' => 'Fasilitasi Rapat Koordinasi dan Konsultasi DPRD'],
-            ['nomor_kode' => '4.02.24.02.16.0004', 'nomenklatur' => 'Penyediaan Kebutuhan Rumah Tangga DPRD'],
+            // ===== Program 3.27.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.27.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.27.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.27.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.27.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.27.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.27.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.27.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.27.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
 
-            // ===== Program 5.01.25 — PROGRAM PENELITIAN DAN PENGEMBANGAN DAERAH =====
-            // --- Kegiatan 5.01.25.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '5.01.25.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '5.01.25.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '5.01.25.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '5.01.25.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '5.01.25.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '5.01.25.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '5.01.25.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            ['nomor_kode' => '5.01.25.02.01.0008', 'nomenklatur' => 'Koordinasi Pelaksanaan Sinergitas dan Harmonisasi Perencanaan Pembangunan Daerah Bidang Pembangunan Manusia'],
-            ['nomor_kode' => '5.01.25.02.01.0012', 'nomenklatur' => 'Pengelolaan Data Kelitbangan dan Peraturan'],
-            // --- Kegiatan 5.01.25.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '5.01.25.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '5.01.25.02.02.0002', 'nomenklatur' => 'Asistensi Penyusunan Dokumen Perencanaan Pembangunan Perangkat Daerah Bidang Perekonomian'],
-            ['nomor_kode' => '5.01.25.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '5.01.25.02.02.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Akuntansi SKPD'],
-            ['nomor_kode' => '5.01.25.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '5.01.25.02.02.0006', 'nomenklatur' => 'Asistensi Penyusunan Dokumen Perencanaan Pembangunan Perangkat Daerah Bidang SDA'],
-            ['nomor_kode' => '5.01.25.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            ['nomor_kode' => '5.01.25.02.02.0008', 'nomenklatur' => 'Koordinasi Pelaksanaan Sinergitas dan Harmonisasi Perencanaan Pembangunan Daerah Bidang SDA'],
-            // --- Kegiatan 5.01.25.02.03 — Pengendalian, Evaluasi dan Pelaporan Bidang Perencanaan Pembangunan Daerah ---
-            ['nomor_kode' => '5.01.25.02.03.0001', 'nomenklatur' => 'Koordinasi Pengendalian Perencanaan dan Pelaksanaan Pembangunan Daerah di Kabupaten/Kota'],
-            ['nomor_kode' => '5.01.25.02.03.0002', 'nomenklatur' => 'Asistensi Penyusunan Dokumen Perencanaan Pembangunan Perangkat Daerah Bidang Infrastruktur'],
-            ['nomor_kode' => '5.01.25.02.03.0003', 'nomenklatur' => 'Monitoring, Evaluasi dan Penyusunan Laporan Berkala Pelaksanaan Pembangunan Daerah'],
-            ['nomor_kode' => '5.01.25.02.03.0004', 'nomenklatur' => 'Koordinasi Pelaksanaan Sinergitas dan Harmonisasi Perencanaan Pembangunan Daerah Bidang Infrastruktur'],
-            ['nomor_kode' => '5.01.25.02.03.0005', 'nomenklatur' => 'Koordinasi Penyusunan Dokumen Perencanaan Pembangunan Daerah Bidang Kewilayahan (RPJPD, RPJMD dan RKPD)'],
-            ['nomor_kode' => '5.01.25.02.03.0006', 'nomenklatur' => 'Asistensi Penyusunan Dokumen Perencanaan Pembangunan Perangkat Daerah Bidang Kewilayahan'],
-            ['nomor_kode' => '5.01.25.02.03.0007', 'nomenklatur' => 'Pelaksanaan Monitoring dan Evaluasi Penyusunan Dokumen Perencanaan Pembangunan Perangkat Daerah Bidang Kewilayahan'],
-            ['nomor_kode' => '5.01.25.02.03.0008', 'nomenklatur' => 'Koordinasi Pelaksanaan Sinergitas dan Harmonisasi Perencanaan Pembangunan Daerah Bidang Kewilayahan'],
-            ['nomor_kode' => '5.01.25.02.03.0012', 'nomenklatur' => 'Penelitian dan Pengembangan Penataan Ruang dan Pertanahan'],
-            // --- Kegiatan 5.01.25.02.04 — Implementasi Sistem Informasi Pemerintahan Daerah di Bidang Pembangunan Daerah ---
-            ['nomor_kode' => '5.01.25.02.04.0001', 'nomenklatur' => 'Penelitian, Pengembangan, dan Perekayasaan di Bidang Teknologi dan Inovasi'],
-            ['nomor_kode' => '5.01.25.02.04.0002', 'nomenklatur' => 'Penerapan Sistem Informasi Pemerintahan Daerah di Bidang Pembangunan Daerah'],
-            ['nomor_kode' => '5.01.25.02.04.0003', 'nomenklatur' => 'Diseminasi Jenis, Prosedur dan Metode Penyelenggaraan Pemerintahan Daerah yang Bersifat Inovatif'],
-            ['nomor_kode' => '5.01.25.02.04.0004', 'nomenklatur' => 'Sosialisasi dan Diseminasi Hasil-Hasil Kelitbangan'],
-            ['nomor_kode' => '5.01.25.02.04.0005', 'nomenklatur' => 'Fasilitasi Hak Kekayaan Intelektual'],
-            // --- Kegiatan 5.01.25.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '5.01.25.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '5.01.25.02.05.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Sistem Informasi Kepegawaian'],
-            ['nomor_kode' => '5.01.25.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '5.01.25.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            ['nomor_kode' => '5.01.25.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
-            // --- Kegiatan 5.01.25.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '5.01.25.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '5.01.25.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '5.01.25.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '5.01.25.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '5.01.25.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '5.01.25.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '5.01.25.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 5.01.25.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '5.01.25.02.07.0002', 'nomenklatur' => 'Pengadaan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '5.01.25.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '5.01.25.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            // --- Kegiatan 5.01.25.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '5.01.25.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '5.01.25.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '5.01.25.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 5.01.25.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '5.01.25.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '5.01.25.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '5.01.25.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '5.01.25.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '5.01.25.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+            // ===== Program 3.27.02 — PROGRAM PENGELOLAAN PENANGKAPAN IKAN DI WILAYAH SUNGAI, DANAU, WADUK, RAWA, DAN GENANGAN AIR LAINNYA =====
+            // --- Kegiatan 3.27.02.02.01 — Pengelolaan Penangkapan Ikan ---
+            ['nomor_kode' => '3.27.02.02.01.0001', 'nomenklatur' => 'Penyediaan Data dan Informasi Sumber Daya Ikan'],
+            ['nomor_kode' => '3.27.02.02.01.0002', 'nomenklatur' => 'Penyediaan Sarana Usaha Perikanan Tangkap'],
+            ['nomor_kode' => '3.27.02.02.01.0003', 'nomenklatur' => 'Pembinaan Nelayan dan Kelompok Nelayan'],
+            
+            // --- Kegiatan 3.27.02.02.02 — Pemberdayaan Nelayan Kecil ---
+            ['nomor_kode' => '3.27.02.02.02.0001', 'nomenklatur' => 'Pengembangan Kapasitas Nelayan Kecil'],
+            ['nomor_kode' => '3.27.02.02.02.0002', 'nomenklatur' => 'Pelaksanaan Fasilitasi Pembentukan dan Pengembangan Kelembagaan Nelayan Kecil'],
+            ['nomor_kode' => '3.27.02.02.02.0003', 'nomenklatur' => 'Pelaksanaan Fasilitasi Bantuan Pendanaan, Bantuan Pembiayaan, Kemitraan Usaha'],
+            
+            // --- Kegiatan 3.27.02.02.03 — Pengelolaan dan Penyelenggaraan Tempat Pelelangan Ikan (TPI) ---
+            ['nomor_kode' => '3.27.02.02.03.0001', 'nomenklatur' => 'Peningkatan Ketersediaan Ikan untuk Konsumsi dan Usaha Pengolahan'],
+            ['nomor_kode' => '3.27.02.02.03.0002', 'nomenklatur' => 'Pelayanan Penyelenggaraan Tempat Pelelangan Ikan (TPI)'],
+            ['nomor_kode' => '3.27.02.02.03.0003', 'nomenklatur' => 'Pembinaan dan Pengawasan TPI'],
+            
+            // --- Kegiatan 3.27.02.02.04 — Pengelolaan Pembudidayaan Ikan ---
+            ['nomor_kode' => '3.27.02.02.04.0001', 'nomenklatur' => 'Penyediaan Data dan Informasi Pembudidayaan Ikan'],
+            ['nomor_kode' => '3.27.02.02.04.0002', 'nomenklatur' => 'Penyediaan Prasarana Pembudidayaan Ikan'],
+            ['nomor_kode' => '3.27.02.02.04.0003', 'nomenklatur' => 'Penjaminan Ketersediaan Sarana Pembudidayaan Ikan'],
+            ['nomor_kode' => '3.27.02.02.04.0004', 'nomenklatur' => 'Pembinaan dan Pemantauan Pembudidayaan Ikan'],
 
-            // ===== Program 5.02.27 — PROGRAM PENGELOLAAN PENDAPATAN DAERAH =====
-            // --- Kegiatan 5.02.27.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '5.02.27.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '5.02.27.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '5.02.27.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '5.02.27.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '5.02.27.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '5.02.27.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0008', 'nomenklatur' => 'Koordinasi dan Penyusunan Peraturan Daerah tentang Perubahan APBD dan Peraturan Kepala Daerah tentang Penjabaran Perubahan APBD'],
-            ['nomor_kode' => '5.02.27.02.01.0009', 'nomenklatur' => 'Pengawasan dan Pengendalian Pengelolaan Barang Milik Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0010', 'nomenklatur' => 'Optimalisasi Penggunaan, Pemanfaatan, Pemindahtanganan, Pemusnahan, dan Penghapusan Barang Milik Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0011', 'nomenklatur' => 'Koordinasi Perencanaan Anggaran Belanja Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0012', 'nomenklatur' => 'Penyusunan Laporan Barang Milik Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0013', 'nomenklatur' => 'Pembinaan Pengelolaan Barang Milik Daerah Pemerintah Kabupaten/Kota'],
-            ['nomor_kode' => '5.02.27.02.01.0014', 'nomenklatur' => 'Pembinaan dan Pengawasan Pengelolaan Pajak Daerah dan Retribusi Daerah'],
-            ['nomor_kode' => '5.02.27.02.01.0015', 'nomenklatur' => 'Elektronifikasi Transaksi Pemerintah Daerah'],
-            // --- Kegiatan 5.02.27.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '5.02.27.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '5.02.27.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '5.02.27.02.02.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Akuntansi SKPD'],
-            ['nomor_kode' => '5.02.27.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '5.02.27.02.02.0006', 'nomenklatur' => 'Pengelolaan dan Penyiapan Bahan Tanggapan Pemeriksaan'],
-            ['nomor_kode' => '5.02.27.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            ['nomor_kode' => '5.02.27.02.02.0008', 'nomenklatur' => 'Penyusunan Pelaporan dan Analisis Prognosis Realisasi Anggaran'],
-            ['nomor_kode' => '5.02.27.02.02.0009', 'nomenklatur' => 'Rekonsiliasi Data Penerimaan dan Pengeluaran Kas serta Pemungutan dan Pemotongan atas SP2D dengan Instansi Terkait'],
-            // --- Kegiatan 5.02.27.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '5.02.27.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '5.02.27.02.03.0002', 'nomenklatur' => 'Rekonsiliasi dan Verifikasi Aset, Kewajiban, Ekuitas, Pendapatan, Belanja, Pembiayaan, Pendapatan-LO dan Beban'],
-            ['nomor_kode' => '5.02.27.02.03.0003', 'nomenklatur' => 'Koordinasi Penyusunan Laporan Pertanggungjawaban Pelaksanaan APBD Bulanan, Triwulanan dan Semesteran'],
-            ['nomor_kode' => '5.02.27.02.03.0004', 'nomenklatur' => 'Konsolidasi Laporan Keuangan SKPD, BLUD dan Laporan Keuangan Pemerintah Daerah'],
-            ['nomor_kode' => '5.02.27.02.03.0005', 'nomenklatur' => 'Rekonsiliasi dan Penyusunan Laporan Barang Milik Daerah pada SKPD'],
-            ['nomor_kode' => '5.02.27.02.03.0006', 'nomenklatur' => 'Penyusunan Tanggapan/Tindak Lanjut Terhadap LHP BPK atas Laporan Pertanggungjawaban Pelaksanaan APBD'],
-            ['nomor_kode' => '5.02.27.02.03.0011', 'nomenklatur' => 'Pembinaan Akuntansi, Pelaporan dan Pertanggungjawaban Pemerintah Kabupaten/Kota'],
-            // --- Kegiatan 5.02.27.02.04 — Penunjang Urusan Kewenangan Pengelolaan Keuangan Daerah ---
-            ['nomor_kode' => '5.02.27.02.04.0008', 'nomenklatur' => 'Analisis Perencanaan dan Penyaluran Bantuan Keuangan'],
-            ['nomor_kode' => '5.02.27.02.04.0009', 'nomenklatur' => 'Pengelolaan Dana Darurat dan Mendesak'],
-            // --- Kegiatan 5.02.27.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '5.02.27.02.05.0001', 'nomenklatur' => 'Inventarisasi dan Analisis Data Bidang Keuangan Daerah'],
-            ['nomor_kode' => '5.02.27.02.05.0002', 'nomenklatur' => 'Implementasi dan Pemeliharaan Sistem Informasi Pemerintah Daerah Bidang Keuangan Daerah'],
-            ['nomor_kode' => '5.02.27.02.05.0003', 'nomenklatur' => 'Pembinaan Sistem Informasi Pemerintah Daerah Bidang Keuangan Daerah Pemerintah Kabupaten/Kota'],
-            ['nomor_kode' => '5.02.27.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '5.02.27.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 5.02.27.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '5.02.27.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '5.02.27.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '5.02.27.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '5.02.27.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '5.02.27.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '5.02.27.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            ['nomor_kode' => '5.02.27.02.06.0010', 'nomenklatur' => 'Penatausahaan Arsip Dinamis pada SKPD'],
-            ['nomor_kode' => '5.02.27.02.06.0011', 'nomenklatur' => 'Dukungan Pelaksanaan Sistem Pemerintahan Berbasis Elektronik pada SKPD'],
-            // --- Kegiatan 5.02.27.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '5.02.27.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '5.02.27.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '5.02.27.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 5.02.27.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '5.02.27.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '5.02.27.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '5.02.27.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 5.02.27.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '5.02.27.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '5.02.27.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '5.02.27.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '5.02.27.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+            // ===== Program 3.28.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.28.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.28.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.28.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.28.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.28.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.28.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.28.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.28.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
 
-            // ===== Program 5.03.26 — PROGRAM PENGEMBANGAN SUMBER DAYA MANUSIA =====
-            // --- Kegiatan 5.03.26.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '5.03.26.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '5.03.26.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '5.03.26.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '5.03.26.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '5.03.26.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '5.03.26.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '5.03.26.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            ['nomor_kode' => '5.03.26.02.01.0008', 'nomenklatur' => 'Fasilitasi Lembaga Profesi ASN'],
-            ['nomor_kode' => '5.03.26.02.01.0010', 'nomenklatur' => 'Pengelolaan Sistem Informasi Kepegawaian'],
-            ['nomor_kode' => '5.03.26.02.01.0012', 'nomenklatur' => 'Evaluasi Data, Informasi dan Sistem Informasi Kepegawaian'],
-            // --- Kegiatan 5.03.26.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '5.03.26.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '5.03.26.02.02.0002', 'nomenklatur' => 'Penyediaan Administrasi Pelaksanaan Tugas ASN'],
-            ['nomor_kode' => '5.03.26.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '5.03.26.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '5.03.26.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 5.03.26.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '5.03.26.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '5.03.26.02.03.0002', 'nomenklatur' => 'Pengelolaan Assessment Center'],
-            ['nomor_kode' => '5.03.26.02.03.0004', 'nomenklatur' => 'Pengelolaan Pendidikan Lanjutan ASN'],
-            ['nomor_kode' => '5.03.26.02.03.0005', 'nomenklatur' => 'Rekonsiliasi dan Penyusunan Laporan Barang Milik Daerah pada SKPD'],
-            ['nomor_kode' => '5.03.26.02.03.0007', 'nomenklatur' => 'Pemanfaatan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '5.03.26.02.03.0014', 'nomenklatur' => 'Fasilitasi Pengembangan Karir dalam Jabatan Fungsional'],
-            // --- Kegiatan 5.03.26.02.04 — Penilaian dan Evaluasi Kinerja Aparatur ---
-            ['nomor_kode' => '5.03.26.02.04.0002', 'nomenklatur' => 'Pelaksanaan Penilaian dan Evaluasi Kinerja Aparatur'],
-            ['nomor_kode' => '5.03.26.02.04.0004', 'nomenklatur' => 'Pengelolaan Pemberian Penghargaan bagi Pegawai'],
-            ['nomor_kode' => '5.03.26.02.04.0005', 'nomenklatur' => 'Pengelolaan Tanda Jasa bagi Pegawai'],
-            ['nomor_kode' => '5.03.26.02.04.0007', 'nomenklatur' => 'Pembinaan Disiplin ASN'],
-            ['nomor_kode' => '5.03.26.02.04.0008', 'nomenklatur' => 'Pengelolaan Penyelesaian Pelanggaran Disiplin ASN'],
-            ['nomor_kode' => '5.03.26.02.04.0009', 'nomenklatur' => 'Pelayanan Proses Izin Perceraian Pegawai'],
-            // --- Kegiatan 5.03.26.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '5.03.26.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
-            ['nomor_kode' => '5.03.26.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '5.03.26.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '5.03.26.02.05.0006', 'nomenklatur' => 'Pemulangan Pegawai yang Pensiun'],
-            ['nomor_kode' => '5.03.26.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
-            // --- Kegiatan 5.03.26.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '5.03.26.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '5.03.26.02.06.0003', 'nomenklatur' => 'Penyediaan Peralatan Rumah Tangga'],
-            ['nomor_kode' => '5.03.26.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '5.03.26.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '5.03.26.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '5.03.26.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '5.03.26.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '5.03.26.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 5.03.26.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '5.03.26.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '5.03.26.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            // --- Kegiatan 5.03.26.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '5.03.26.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '5.03.26.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '5.03.26.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 5.03.26.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '5.03.26.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '5.03.26.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '5.03.26.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '5.03.26.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '5.03.26.02.09.0011', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Pendukung Gedung Kantor atau Bangunan Lainnya'],
+            // ===== Program 3.29.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.29.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.29.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.29.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.29.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.29.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.29.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.29.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.29.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
 
-            // ===== Program 6.01.28 — PROGRAM PERUMUSAN KEBIJAKAN, PENDAMPINGAN DANASISTENSI =====
-            // --- Kegiatan 6.01.28.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '6.01.28.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '6.01.28.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '6.01.28.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '6.01.28.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '6.01.28.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '6.01.28.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '6.01.28.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 6.01.28.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '6.01.28.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '6.01.28.02.02.0002', 'nomenklatur' => 'Pengawasan dengan Tujuan Tertentu'],
-            ['nomor_kode' => '6.01.28.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '6.01.28.02.02.0004', 'nomenklatur' => 'Pendampingan, Asistensi dan Verifikasi Penegakan Integritas'],
-            ['nomor_kode' => '6.01.28.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '6.01.28.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 6.01.28.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '6.01.28.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '6.01.28.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '6.01.28.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 6.01.28.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '6.01.28.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '6.01.28.02.06.0002', 'nomenklatur' => 'Penyediaan Peralatan dan Perlengkapan Kantor'],
-            ['nomor_kode' => '6.01.28.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '6.01.28.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '6.01.28.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '6.01.28.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '6.01.28.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '6.01.28.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            ['nomor_kode' => '6.01.28.02.06.0011', 'nomenklatur' => 'Dukungan Pelaksanaan Sistem Pemerintahan Berbasis Elektronik pada SKPD'],
-            // --- Kegiatan 6.01.28.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '6.01.28.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '6.01.28.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '6.01.28.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            // --- Kegiatan 6.01.28.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '6.01.28.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '6.01.28.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '6.01.28.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 6.01.28.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '6.01.28.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '6.01.28.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '6.01.28.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '6.01.28.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+            // ===== Program 3.30.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.30.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.30.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.30.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.30.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.30.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.30.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.30.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.30.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
 
-            // ===== Program 7.01.29 — PROGRAM KOORDINASI KETENTRAMAN DAN KETERTIBAN UMUM =====
-            // --- Kegiatan 7.01.29.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '7.01.29.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '7.01.29.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '7.01.29.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '7.01.29.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '7.01.29.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '7.01.29.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '7.01.29.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 7.01.29.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '7.01.29.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '7.01.29.02.02.0002', 'nomenklatur' => 'Pembangunan Sarana dan Prasarana Kelurahan'],
-            ['nomor_kode' => '7.01.29.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '7.01.29.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '7.01.29.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 7.01.29.02.03 — Pemberdayaan Lembaga Kemasyarakatan Tingkat Kecamatan ---
-            ['nomor_kode' => '7.01.29.02.03.0001', 'nomenklatur' => 'Penyelenggaraan Lembaga Kemasyarakatan'],
-            ['nomor_kode' => '7.01.29.02.03.0002', 'nomenklatur' => 'Peningkatan Kapasitas Lembaga Kemasyarakatan'],
-            // --- Kegiatan 7.01.29.02.04 — Pelaksanaan Urusan Pemerintahan yang Dilimpahkan kepada Camat ---
-            ['nomor_kode' => '7.01.29.02.04.0003', 'nomenklatur' => 'Pelaksanaan Urusan Pemerintahan yang Terkait dengan Kewenangan Lain yang Dilimpahkan'],
-            // --- Kegiatan 7.01.29.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '7.01.29.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
-            ['nomor_kode' => '7.01.29.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '7.01.29.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '7.01.29.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            ['nomor_kode' => '7.01.29.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
-            // --- Kegiatan 7.01.29.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '7.01.29.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '7.01.29.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '7.01.29.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '7.01.29.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '7.01.29.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '7.01.29.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 7.01.29.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '7.01.29.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.29.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '7.01.29.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.29.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            ['nomor_kode' => '7.01.29.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 7.01.29.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.29.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '7.01.29.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '7.01.29.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 7.01.29.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.29.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.29.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '7.01.29.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '7.01.29.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.29.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+            // ===== Program 3.31.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 3.31.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '3.31.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '3.31.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '3.31.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '3.31.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '3.31.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '3.31.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '3.31.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
 
-            // ===== Program 7.01.30 — PROGRAM KOORDINASI KETENTRAMAN DAN KETERTIBAN UMUM =====
-            // --- Kegiatan 7.01.30.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '7.01.30.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '7.01.30.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '7.01.30.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '7.01.30.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '7.01.30.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '7.01.30.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '7.01.30.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 7.01.30.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '7.01.30.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '7.01.30.02.02.0002', 'nomenklatur' => 'Pembangunan Sarana dan Prasarana Kelurahan'],
-            ['nomor_kode' => '7.01.30.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '7.01.30.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '7.01.30.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 7.01.30.02.03 — Pemberdayaan Lembaga Kemasyarakatan Tingkat Kecamatan ---
-            ['nomor_kode' => '7.01.30.02.03.0001', 'nomenklatur' => 'Penyelenggaraan Lembaga Kemasyarakatan'],
-            ['nomor_kode' => '7.01.30.02.03.0002', 'nomenklatur' => 'Peningkatan Kapasitas Lembaga Kemasyarakatan'],
-            // --- Kegiatan 7.01.30.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '7.01.30.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '7.01.30.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '7.01.30.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 7.01.30.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '7.01.30.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '7.01.30.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '7.01.30.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '7.01.30.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '7.01.30.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '7.01.30.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 7.01.30.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '7.01.30.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.30.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '7.01.30.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.30.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 7.01.30.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.30.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '7.01.30.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '7.01.30.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 7.01.30.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.30.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.30.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '7.01.30.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.30.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
 
-            // ===== Program 7.01.31 — PROGRAM KOORDINASI KETENTRAMAN DAN KETERTIBAN UMUM =====
-            // --- Kegiatan 7.01.31.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '7.01.31.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '7.01.31.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '7.01.31.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '7.01.31.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '7.01.31.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '7.01.31.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '7.01.31.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 7.01.31.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '7.01.31.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '7.01.31.02.02.0002', 'nomenklatur' => 'Pembangunan Sarana dan Prasarana Kelurahan'],
-            ['nomor_kode' => '7.01.31.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '7.01.31.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '7.01.31.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 7.01.31.02.03 — Pemberdayaan Lembaga Kemasyarakatan Tingkat Kecamatan ---
-            ['nomor_kode' => '7.01.31.02.03.0001', 'nomenklatur' => 'Penyelenggaraan Lembaga Kemasyarakatan'],
-            ['nomor_kode' => '7.01.31.02.03.0002', 'nomenklatur' => 'Peningkatan Kapasitas Lembaga Kemasyarakatan'],
-            // --- Kegiatan 7.01.31.02.04 — Pelaksanaan Urusan Pemerintahan yang Dilimpahkan kepada Camat ---
-            ['nomor_kode' => '7.01.31.02.04.0003', 'nomenklatur' => 'Pelaksanaan Urusan Pemerintahan yang Terkait dengan Kewenangan Lain yang Dilimpahkan'],
-            // --- Kegiatan 7.01.31.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '7.01.31.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
-            ['nomor_kode' => '7.01.31.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 7.01.31.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '7.01.31.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '7.01.31.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '7.01.31.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '7.01.31.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '7.01.31.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '7.01.31.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 7.01.31.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '7.01.31.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.31.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '7.01.31.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.31.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 7.01.31.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.31.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '7.01.31.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '7.01.31.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 7.01.31.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.31.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.31.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.31.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
-            ['nomor_kode' => '7.01.31.02.09.0010', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
 
-            // ===== Program 7.01.32 — PROGRAM KOORDINASI KETENTRAMAN DAN KETERTIBAN UMUM =====
-            // --- Kegiatan 7.01.32.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '7.01.32.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '7.01.32.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '7.01.32.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '7.01.32.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '7.01.32.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '7.01.32.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '7.01.32.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            // --- Kegiatan 7.01.32.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '7.01.32.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '7.01.32.02.02.0002', 'nomenklatur' => 'Pembangunan Sarana dan Prasarana Kelurahan'],
-            ['nomor_kode' => '7.01.32.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '7.01.32.02.02.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Akuntansi SKPD'],
-            ['nomor_kode' => '7.01.32.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            ['nomor_kode' => '7.01.32.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
-            // --- Kegiatan 7.01.32.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '7.01.32.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
-            ['nomor_kode' => '7.01.32.02.03.0002', 'nomenklatur' => 'Peningkatan Kapasitas Lembaga Kemasyarakatan'],
-            ['nomor_kode' => '7.01.32.02.03.0005', 'nomenklatur' => 'Rekonsiliasi dan Penyusunan Laporan Barang Milik Daerah pada SKPD'],
-            // --- Kegiatan 7.01.32.02.04 — Pelaksanaan Urusan Pemerintahan yang Dilimpahkan kepada Camat ---
-            ['nomor_kode' => '7.01.32.02.04.0003', 'nomenklatur' => 'Pelaksanaan Urusan Pemerintahan yang Terkait dengan Kewenangan Lain yang Dilimpahkan'],
-            // --- Kegiatan 7.01.32.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '7.01.32.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
-            ['nomor_kode' => '7.01.32.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
-            ['nomor_kode' => '7.01.32.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
-            ['nomor_kode' => '7.01.32.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            ['nomor_kode' => '7.01.32.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
-            // --- Kegiatan 7.01.32.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '7.01.32.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '7.01.32.02.06.0003', 'nomenklatur' => 'Peningkatan Ketahanan Pangan Keluarga'],
-            ['nomor_kode' => '7.01.32.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '7.01.32.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '7.01.32.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '7.01.32.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '7.01.32.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            ['nomor_kode' => '7.01.32.02.06.0010', 'nomenklatur' => 'Pelatihan Keluarga Tanggap Bencana Alam'],
-            // --- Kegiatan 7.01.32.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '7.01.32.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.32.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
-            ['nomor_kode' => '7.01.32.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.32.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
-            // --- Kegiatan 7.01.32.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.32.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '7.01.32.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '7.01.32.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 7.01.32.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '7.01.32.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '7.01.32.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
-            ['nomor_kode' => '7.01.32.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '7.01.32.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '7.01.32.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
 
-            // ===== Program 8.01.33 — PROGRAM PENINGKATAN KEWASPADAAN NASIONAL DAN PENINGKATAN KUALITAS DAN FASILITASI PENANGANAN KONFLIK SOSIAL =====
-            // --- Kegiatan 8.01.33.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
-            ['nomor_kode' => '8.01.33.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
-            ['nomor_kode' => '8.01.33.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
-            ['nomor_kode' => '8.01.33.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
-            ['nomor_kode' => '8.01.33.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
-            ['nomor_kode' => '8.01.33.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
-            ['nomor_kode' => '8.01.33.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
-            ['nomor_kode' => '8.01.33.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
-            ['nomor_kode' => '8.01.33.02.01.0008', 'nomenklatur' => 'Pembentukan Paskibraka'],
-            ['nomor_kode' => '8.01.33.02.01.0009', 'nomenklatur' => 'Pembinaan Lanjutan kepada Purnapaskibraka Duta Pancasila'],
-            ['nomor_kode' => '8.01.33.02.01.0010', 'nomenklatur' => 'Pelaksanaan tugas Purnapaskibraka Duta Pancasila'],
-            // --- Kegiatan 8.01.33.02.02 — Administrasi Keuangan Perangkat Daerah ---
-            ['nomor_kode' => '8.01.33.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
-            ['nomor_kode' => '8.01.33.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
-            ['nomor_kode' => '8.01.33.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
-            // --- Kegiatan 8.01.33.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
-            ['nomor_kode' => '8.01.33.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
-            // --- Kegiatan 8.01.33.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
-            ['nomor_kode' => '8.01.33.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
-            // --- Kegiatan 8.01.33.02.06 — Administrasi Umum Perangkat Daerah ---
-            ['nomor_kode' => '8.01.33.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
-            ['nomor_kode' => '8.01.33.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
-            ['nomor_kode' => '8.01.33.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
-            ['nomor_kode' => '8.01.33.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
-            ['nomor_kode' => '8.01.33.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
-            ['nomor_kode' => '8.01.33.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
-            ['nomor_kode' => '8.01.33.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
-            // --- Kegiatan 8.01.33.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
-            ['nomor_kode' => '8.01.33.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
-            // --- Kegiatan 8.01.33.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '8.01.33.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
-            ['nomor_kode' => '8.01.33.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
-            ['nomor_kode' => '8.01.33.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
-            // --- Kegiatan 8.01.33.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
-            ['nomor_kode' => '8.01.33.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
-            ['nomor_kode' => '8.01.33.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
-            ['nomor_kode' => '8.01.33.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
-            ['nomor_kode' => '8.01.33.02.09.0010', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
+            // ===== Program 4.01.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 4.01.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '4.01.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '4.01.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '4.01.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '4.01.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '4.01.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '4.01.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '4.01.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+            
+            // --- Kegiatan 4.01.01.02.02 — Administrasi Keuangan Perangkat Daerah ---
+            ['nomor_kode' => '4.01.01.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
+            ['nomor_kode' => '4.01.01.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
+            ['nomor_kode' => '4.01.01.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
+            ['nomor_kode' => '4.01.01.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
+            
+            // --- Kegiatan 4.01.01.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
+            ['nomor_kode' => '4.01.01.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
+            ['nomor_kode' => '4.01.01.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
+            ['nomor_kode' => '4.01.01.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
+            
+            // --- Kegiatan 4.01.01.02.06 — Administrasi Umum Perangkat Daerah ---
+            ['nomor_kode' => '4.01.01.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
+            ['nomor_kode' => '4.01.01.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
+            ['nomor_kode' => '4.01.01.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
+            ['nomor_kode' => '4.01.01.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
+            ['nomor_kode' => '4.01.01.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
+            ['nomor_kode' => '4.01.01.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
+            ['nomor_kode' => '4.01.01.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
+            
+            // --- Kegiatan 4.01.01.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
+            ['nomor_kode' => '4.01.01.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '4.01.01.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
+            ['nomor_kode' => '4.01.01.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
+            
+            // --- Kegiatan 4.01.01.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '4.01.01.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
+            ['nomor_kode' => '4.01.01.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
+            ['nomor_kode' => '4.01.01.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
+            
+            // --- Kegiatan 4.01.01.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '4.01.01.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '4.01.01.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
+            ['nomor_kode' => '4.01.01.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
+            ['nomor_kode' => '4.01.01.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
 
+            // ===== Program 4.01.02 — PROGRAM PENINGKATAN INVESTASI DAN REALISASI INVESTASI =====
+            // --- Kegiatan 4.01.02.02.01 — Peningkatan Iklim Investasi dan Realisasi Investasi ---
+            ['nomor_kode' => '4.01.02.02.01.0001', 'nomenklatur' => 'Promosi Investasi'],
+            ['nomor_kode' => '4.01.02.02.01.0002', 'nomenklatur' => 'Fasilitasi Penanaman Modal'],
+            ['nomor_kode' => '4.01.02.02.01.0003', 'nomenklatur' => 'Pembinaan dan Pengawasan Pelaksanaan Penanaman Modal'],
+            ['nomor_kode' => '4.01.02.02.01.0004', 'nomenklatur' => 'Koordinasi Bidang Penanaman Modal'],
+
+            // ===== Program 4.01.03 — PROGRAM PENGEMBANGAN KOPERASI DAN USAHA MIKRO KECIL MENENGAH =====
+            // --- Kegiatan 4.01.03.02.01 — Pengembangan Kelembagaan Koperasi ---
+            ['nomor_kode' => '4.01.03.02.01.0001', 'nomenklatur' => 'Pembinaan Koperasi Simpan Pinjam/Unit Simpan Pinjam'],
+            ['nomor_kode' => '4.01.03.02.01.0002', 'nomenklatur' => 'Pembinaan Koperasi Produksi'],
+            ['nomor_kode' => '4.01.03.02.01.0003', 'nomenklatur' => 'Pembinaan Koperasi Konsumsi'],
+            ['nomor_kode' => '4.01.03.02.01.0004', 'nomenklatur' => 'Pembinaan Koperasi Serba Usaha'],
+            
+            // --- Kegiatan 4.01.03.02.02 — Pengembangan Usaha Mikro Kecil Menengah ---
+            ['nomor_kode' => '4.01.03.02.02.0001', 'nomenklatur' => 'Fasilitasi Pengembangan Usaha Mikro'],
+            ['nomor_kode' => '4.01.03.02.02.0002', 'nomenklatur' => 'Fasilitasi Pengembangan Usaha Kecil'],
+            ['nomor_kode' => '4.01.03.02.02.0003', 'nomenklatur' => 'Fasilitasi Pengembangan Usaha Menengah'],
+            ['nomor_kode' => '4.01.03.02.02.0004', 'nomenklatur' => 'Pelatihan dan Pendampingan UMKM'],
+
+            // ===== Program 4.01.04 — PROGRAM PENGEMBANGAN PERDAGANGAN =====
+            // --- Kegiatan 4.01.04.02.01 — Stabilisasi Harga Barang Kebutuhan Pokok dan Barang Penting ---
+            ['nomor_kode' => '4.01.04.02.01.0001', 'nomenklatur' => 'Monitoring Harga dan Distribusi Barang Kebutuhan Pokok'],
+            ['nomor_kode' => '4.01.04.02.01.0002', 'nomenklatur' => 'Operasi Pasar dalam rangka Stabilisasi Harga'],
+            ['nomor_kode' => '4.01.04.02.01.0003', 'nomenklatur' => 'Pembinaan Sarana Distribusi Perdagangan'],
+            
+            // --- Kegiatan 4.01.04.02.02 — Pengembangan Ekspor ---
+            ['nomor_kode' => '4.01.04.02.02.0001', 'nomenklatur' => 'Promosi Dagang Luar Negeri'],
+            ['nomor_kode' => '4.01.04.02.02.0002', 'nomenklatur' => 'Fasilitasi Ekspor'],
+            ['nomor_kode' => '4.01.04.02.02.0003', 'nomenklatur' => 'Pengembangan Produk Ekspor'],
+
+            // ===== Program 4.01.05 — PROGRAM PENGEMBANGAN INDUSTRI =====
+            // --- Kegiatan 4.01.05.02.01 — Pembinaan dan Pengembangan Industri ---
+            ['nomor_kode' => '4.01.05.02.01.0001', 'nomenklatur' => 'Pembinaan Industri Kecil dan Menengah'],
+            ['nomor_kode' => '4.01.05.02.01.0002', 'nomenklatur' => 'Pengembangan Sentra Industri'],
+            ['nomor_kode' => '4.01.05.02.01.0003', 'nomenklatur' => 'Fasilitasi Peningkatan Kapasitas Industri'],
+            ['nomor_kode' => '4.01.05.02.01.0004', 'nomenklatur' => 'Pembinaan Standardisasi dan Sertifikasi Industri'],
+
+            // ===== Program 4.02.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 4.02.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '4.02.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '4.02.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '4.02.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '4.02.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '4.02.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '4.02.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '4.02.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+
+            // ===== Program 4.02.02 — PROGRAM PENGEMBANGAN PARIWISATA =====
+            // --- Kegiatan 4.02.02.02.01 — Pengembangan Destinasi Pariwisata ---
+            ['nomor_kode' => '4.02.02.02.01.0001', 'nomenklatur' => 'Pengembangan Daya Tarik Wisata'],
+            ['nomor_kode' => '4.02.02.02.01.0002', 'nomenklatur' => 'Pengembangan Aksesibilitas Pariwisata'],
+            ['nomor_kode' => '4.02.02.02.01.0003', 'nomenklatur' => 'Pengembangan Amenitas Pariwisata'],
+            ['nomor_kode' => '4.02.02.02.01.0004', 'nomenklatur' => 'Pengembangan Kelembagaan Pariwisata'],
+            
+            // --- Kegiatan 4.02.02.02.02 — Pengembangan Pemasaran Pariwisata ---
+            ['nomor_kode' => '4.02.02.02.02.0001', 'nomenklatur' => 'Promosi Pariwisata'],
+            ['nomor_kode' => '4.02.02.02.02.0002', 'nomenklatur' => 'Pengembangan Informasi Pariwisata'],
+            ['nomor_kode' => '4.02.02.02.02.0003', 'nomenklatur' => 'Pengembangan Kemitraan Pemasaran Pariwisata'],
+            
+            // --- Kegiatan 4.02.02.02.03 — Pengembangan Industri Pariwisata ---
+            ['nomor_kode' => '4.02.02.02.03.0001', 'nomenklatur' => 'Pembinaan Usaha Pariwisata'],
+            ['nomor_kode' => '4.02.02.02.03.0002', 'nomenklatur' => 'Pengembangan Sumber Daya Manusia Pariwisata'],
+            ['nomor_kode' => '4.02.02.02.03.0003', 'nomenklatur' => 'Standardisasi Usaha dan Profesi Pariwisata'],
+
+            // ===== Program 4.02.03 — PROGRAM PENGEMBANGAN EKONOMI KREATIF =====
+            // --- Kegiatan 4.02.03.02.01 — Pengembangan Ekonomi Kreatif ---
+            ['nomor_kode' => '4.02.03.02.01.0001', 'nomenklatur' => 'Pengembangan Subsektor Ekonomi Kreatif'],
+            ['nomor_kode' => '4.02.03.02.01.0002', 'nomenklatur' => 'Fasilitasi Pelaku Ekonomi Kreatif'],
+            ['nomor_kode' => '4.02.03.02.01.0003', 'nomenklatur' => 'Pengembangan Ekosistem Ekonomi Kreatif'],
+            ['nomor_kode' => '4.02.03.02.01.0004', 'nomenklatur' => 'Promosi dan Pemasaran Produk Ekonomi Kreatif'],
+
+
+
+            // ===== Program 5.01.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 5.01.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '5.01.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '5.01.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '5.01.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '5.01.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '5.01.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '5.01.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '5.01.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+            
+            // --- Kegiatan 5.01.01.02.02 — Administrasi Keuangan Perangkat Daerah ---
+            ['nomor_kode' => '5.01.01.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
+            ['nomor_kode' => '5.01.01.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
+            ['nomor_kode' => '5.01.01.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
+            ['nomor_kode' => '5.01.01.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
+            
+            // --- Kegiatan 5.01.01.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
+            ['nomor_kode' => '5.01.01.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
+            ['nomor_kode' => '5.01.01.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
+            ['nomor_kode' => '5.01.01.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
+            
+            // --- Kegiatan 5.01.01.02.06 — Administrasi Umum Perangkat Daerah ---
+            ['nomor_kode' => '5.01.01.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
+            ['nomor_kode' => '5.01.01.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
+            ['nomor_kode' => '5.01.01.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
+            ['nomor_kode' => '5.01.01.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
+            ['nomor_kode' => '5.01.01.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
+            ['nomor_kode' => '5.01.01.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
+            ['nomor_kode' => '5.01.01.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
+            
+            // --- Kegiatan 5.01.01.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
+            ['nomor_kode' => '5.01.01.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '5.01.01.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
+            ['nomor_kode' => '5.01.01.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
+            
+            // --- Kegiatan 5.01.01.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '5.01.01.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
+            ['nomor_kode' => '5.01.01.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
+            ['nomor_kode' => '5.01.01.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
+            
+
+            // --- Kegiatan 5.01.01.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '5.01.01.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '5.01.01.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
+            ['nomor_kode' => '5.01.01.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
+            ['nomor_kode' => '5.01.01.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+
+            // ===== Program 5.01.02 — PROGRAM PERENCANAAN, PENGENDALIAN DAN EVALUASI PEMBANGUNAN DAERAH =====
+            // --- Kegiatan 5.01.02.02.01 — Perencanaan Pembangunan Daerah ---
+            ['nomor_kode' => '5.01.02.02.01.0001', 'nomenklatur' => 'Koordinasi Penyusunan RPJPD'],
+            ['nomor_kode' => '5.01.02.02.01.0002', 'nomenklatur' => 'Koordinasi Penyusunan RPJMD'],
+            ['nomor_kode' => '5.01.02.02.01.0003', 'nomenklatur' => 'Koordinasi Penyusunan RKPD'],
+            ['nomor_kode' => '5.01.02.02.01.0004', 'nomenklatur' => 'Koordinasi Penyusunan Rencana Kerja SKPD'],
+            ['nomor_kode' => '5.01.02.02.01.0005', 'nomenklatur' => 'Penyusunan Rencana Tata Ruang Wilayah'],
+            
+            // --- Kegiatan 5.01.02.02.02 — Pengendalian Pelaksanaan Rencana Pembangunan Daerah ---
+            ['nomor_kode' => '5.01.02.02.02.0001', 'nomenklatur' => 'Pengendalian dan Evaluasi Pelaksanaan RPJPD'],
+            ['nomor_kode' => '5.01.02.02.02.0002', 'nomenklatur' => 'Pengendalian dan Evaluasi Pelaksanaan RPJMD'],
+            ['nomor_kode' => '5.01.02.02.02.0003', 'nomenklatur' => 'Pengendalian dan Evaluasi Pelaksanaan RKPD'],
+            
+            // --- Kegiatan 5.01.02.02.03 — Evaluasi dan Pelaporan Pembangunan Daerah ---
+            ['nomor_kode' => '5.01.02.02.03.0001', 'nomenklatur' => 'Monitoring dan Evaluasi Pembangunan Daerah'],
+            ['nomor_kode' => '5.01.02.02.03.0002', 'nomenklatur' => 'Penyusunan Laporan Penyelenggaraan Pemerintahan Daerah'],
+            ['nomor_kode' => '5.01.02.02.03.0003', 'nomenklatur' => 'Evaluasi Kinerja Penyelenggaraan Pemerintahan Daerah'],
+
+            // ===== Program 5.01.03 — PROGRAM KOORDINASI DAN SINKRONISASI PERENCANAAN PEMBANGUNAN DAERAH =====
+            // --- Kegiatan 5.01.03.02.01 — Koordinasi Perencanaan Pembangunan ---
+            ['nomor_kode' => '5.01.03.02.01.0001', 'nomenklatur' => 'Koordinasi Perencanaan Pembangunan Antar SKPD'],
+            ['nomor_kode' => '5.01.03.02.01.0002', 'nomenklatur' => 'Sinkronisasi Perencanaan Pembangunan Daerah'],
+            ['nomor_kode' => '5.01.03.02.01.0003', 'nomenklatur' => 'Fasilitasi Perencanaan Partisipatif'],
+
+            // ===== Program 5.02.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 5.02.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '5.02.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '5.02.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '5.02.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '5.02.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '5.02.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '5.02.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '5.02.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+
+            // ===== Program 5.02.02 — PROGRAM PENGELOLAAN KEUANGAN DAERAH =====
+            // --- Kegiatan 5.02.02.02.01 — Pengelolaan Anggaran Daerah ---
+            ['nomor_kode' => '5.02.02.02.01.0001', 'nomenklatur' => 'Penyusunan RAPBD'],
+            ['nomor_kode' => '5.02.02.02.01.0002', 'nomenklatur' => 'Koordinasi Penyusunan Kebijakan Umum APBD'],
+            ['nomor_kode' => '5.02.02.02.01.0003', 'nomenklatur' => 'Penyusunan Prioritas dan Plafon Anggaran Sementara'],
+            
+            // --- Kegiatan 5.02.02.02.02 — Pengelolaan Kas Daerah ---
+            ['nomor_kode' => '5.02.02.02.02.0001', 'nomenklatur' => 'Pengelolaan Kas Umum Daerah'],
+            ['nomor_kode' => '5.02.02.02.02.0002', 'nomenklatur' => 'Pengelolaan Investasi Jangka Pendek'],
+            ['nomor_kode' => '5.02.02.02.02.0003', 'nomenklatur' => 'Pengendalian Pelaksanaan APBD'],
+
+            // ===== Program 5.02.03 — PROGRAM PENGELOLAAN BARANG MILIK DAERAH =====
+            // --- Kegiatan 5.02.03.02.01 — Perencanaan Kebutuhan dan Penganggaran Barang Milik Daerah ---
+            ['nomor_kode' => '5.02.03.02.01.0001', 'nomenklatur' => 'Penyusunan Rencana Kebutuhan Barang Milik Daerah'],
+            ['nomor_kode' => '5.02.03.02.01.0002', 'nomenklatur' => 'Penyusunan Rencana Kebutuhan Pemeliharaan Barang Milik Daerah'],
+            
+            // --- Kegiatan 5.02.03.02.02 — Pengadaan Barang Milik Daerah ---
+            ['nomor_kode' => '5.02.03.02.02.0001', 'nomenklatur' => 'Pengadaan Tanah'],
+            ['nomor_kode' => '5.02.03.02.02.0002', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin'],
+            ['nomor_kode' => '5.02.03.02.02.0003', 'nomenklatur' => 'Pengadaan Gedung dan Bangunan'],
+
+            // ===== Program 5.02.04 — PROGRAM PENGELOLAAN PENDAPATAN DAERAH =====
+            // --- Kegiatan 5.02.04.02.01 — Intensifikasi dan Ekstensifikasi Penerimaan Daerah ---
+            ['nomor_kode' => '5.02.04.02.01.0001', 'nomenklatur' => 'Intensifikasi Pajak Daerah'],
+            ['nomor_kode' => '5.02.04.02.01.0002', 'nomenklatur' => 'Ekstensifikasi Pajak Daerah'],
+            ['nomor_kode' => '5.02.04.02.01.0003', 'nomenklatur' => 'Optimalisasi Retribusi Daerah'],
+
+            // ===== Program 5.03.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 5.03.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '5.03.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '5.03.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '5.03.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '5.03.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '5.03.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '5.03.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '5.03.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+
+            // ===== Program 5.03.02 — PROGRAM KEPEGAWAIAN DAERAH =====
+            // --- Kegiatan 5.03.02.02.01 — Perencanaan, Pengadaan, dan Distribusi PNS ---
+            ['nomor_kode' => '5.03.02.02.01.0001', 'nomenklatur' => 'Penyusunan Kebutuhan PNS'],
+            ['nomor_kode' => '5.03.02.02.01.0002', 'nomenklatur' => 'Seleksi Calon PNS'],
+            ['nomor_kode' => '5.03.02.02.01.0003', 'nomenklatur' => 'Pengangkatan dan Penempatan PNS'],
+            
+            // --- Kegiatan 5.03.02.02.02 — Mutasi PNS ---
+            ['nomor_kode' => '5.03.02.02.02.0001', 'nomenklatur' => 'Promosi dan Mutasi PNS'],
+            ['nomor_kode' => '5.03.02.02.02.0002', 'nomenklatur' => 'Rotasi dan Alih Tugas PNS'],
+            ['nomor_kode' => '5.03.02.02.02.0003', 'nomenklatur' => 'Pemberhentian PNS'],
+
+            // ===== Program 5.04.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 5.04.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '5.04.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '5.04.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '5.04.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '5.04.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '5.04.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '5.04.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '5.04.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+
+            // ===== Program 5.04.02 — PROGRAM PENGEMBANGAN SUMBER DAYA MANUSIA =====
+            // --- Kegiatan 5.04.02.02.01 — Pendidikan dan Pelatihan Aparatur ---
+            ['nomor_kode' => '5.04.02.02.01.0001', 'nomenklatur' => 'Diklat Prajabatan'],
+            ['nomor_kode' => '5.04.02.02.01.0002', 'nomenklatur' => 'Diklat Dalam Jabatan'],
+            ['nomor_kode' => '5.04.02.02.01.0003', 'nomenklatur' => 'Diklat Teknis Fungsional'],
+            ['nomor_kode' => '5.04.02.02.01.0004', 'nomenklatur' => 'Diklat Kepemimpinan'],
+
+            // ===== Program 5.05.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 5.05.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '5.05.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '5.05.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '5.05.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '5.05.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '5.05.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '5.05.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '5.05.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+
+            // ===== Program 5.05.02 — PROGRAM PENELITIAN DAN PENGEMBANGAN DAERAH =====
+            // --- Kegiatan 5.05.02.02.01 — Penelitian dan Pengembangan Pemerintahan Daerah ---
+            ['nomor_kode' => '5.05.02.02.01.0001', 'nomenklatur' => 'Penelitian Bidang Pemerintahan'],
+            ['nomor_kode' => '5.05.02.02.01.0002', 'nomenklatur' => 'Penelitian Bidang Kemasyarakatan'],
+            ['nomor_kode' => '5.05.02.02.01.0003', 'nomenklatur' => 'Penelitian Bidang Ekonomi'],
+            
+            // --- Kegiatan 5.05.02.02.02 — Pengembangan Inovasi Daerah ---
+            ['nomor_kode' => '5.05.02.02.02.0001', 'nomenklatur' => 'Pengembangan Inovasi Pelayanan Publik'],
+            ['nomor_kode' => '5.05.02.02.02.0002', 'nomenklatur' => 'Pengembangan Inovasi Tata Kelola Pemerintahan'],
+            ['nomor_kode' => '5.05.02.02.02.0003', 'nomenklatur' => 'Diseminasi Hasil Penelitian dan Pengembangan'],
+
+            // ===== Program 6.01.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 6.01.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '6.01.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '6.01.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '6.01.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '6.01.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '6.01.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '6.01.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '6.01.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+            
+            // --- Kegiatan 6.01.01.02.02 — Administrasi Keuangan Perangkat Daerah ---
+            ['nomor_kode' => '6.01.01.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
+            ['nomor_kode' => '6.01.01.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
+            ['nomor_kode' => '6.01.01.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
+            ['nomor_kode' => '6.01.01.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
+            
+            // --- Kegiatan 6.01.01.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
+            ['nomor_kode' => '6.01.01.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
+            ['nomor_kode' => '6.01.01.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
+            ['nomor_kode' => '6.01.01.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
+            
+            // --- Kegiatan 6.01.01.02.06 — Administrasi Umum Perangkat Daerah ---
+            ['nomor_kode' => '6.01.01.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
+            ['nomor_kode' => '6.01.01.02.06.0002', 'nomenklatur' => 'Penyediaan Peralatan dan Perlengkapan Kantor'],
+            ['nomor_kode' => '6.01.01.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
+            ['nomor_kode' => '6.01.01.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
+            ['nomor_kode' => '6.01.01.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
+            ['nomor_kode' => '6.01.01.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
+            ['nomor_kode' => '6.01.01.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
+            ['nomor_kode' => '6.01.01.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
+            ['nomor_kode' => '6.01.01.02.06.0011', 'nomenklatur' => 'Dukungan Pelaksanaan Sistem Pemerintahan Berbasis Elektronik pada SKPD'],
+            
+            // --- Kegiatan 6.01.01.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
+            ['nomor_kode' => '6.01.01.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '6.01.01.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
+            ['nomor_kode' => '6.01.01.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
+            
+            // --- Kegiatan 6.01.01.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '6.01.01.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
+            ['nomor_kode' => '6.01.01.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
+            ['nomor_kode' => '6.01.01.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
+            
+            // --- Kegiatan 6.01.01.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '6.01.01.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '6.01.01.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
+            ['nomor_kode' => '6.01.01.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
+            ['nomor_kode' => '6.01.01.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+
+            // ===== Program 6.01.02 — PROGRAM PENYELENGGARAAN PENGAWASAN =====
+            // --- Kegiatan 6.01.02.02.01 — Penyelenggaraan Pengawasan Internal ---
+            ['nomor_kode' => '6.01.02.02.01.0001', 'nomenklatur' => 'Pengawasan Kinerja Pemerintah Daerah'],
+            ['nomor_kode' => '6.01.02.02.01.0002', 'nomenklatur' => 'Pengawasan Keuangan Pemerintah Daerah'],
+            ['nomor_kode' => '6.01.02.02.01.0003', 'nomenklatur' => 'Reviu Laporan Kinerja'],
+            ['nomor_kode' => '6.01.02.02.01.0004', 'nomenklatur' => 'Reviu Laporan Keuangan'],
+            ['nomor_kode' => '6.01.02.02.01.0006', 'nomenklatur' => 'Kerja Sama Pengawasan Internal'],
+            ['nomor_kode' => '6.01.02.02.01.0007', 'nomenklatur' => 'Monitoring dan Evaluasi Tindak Lanjut Hasil Pemeriksaan BPK RI dan Tindak Lanjut Hasil Pemeriksaan'],
+            
+            // --- Kegiatan 6.01.02.02.02 — Penyelenggaraan Pengawasan dengan Tujuan Tertentu ---
+            ['nomor_kode' => '6.01.02.02.02.0002', 'nomenklatur' => 'Pengawasan dengan Tujuan Tertentu'],
+
+            // ===== Program 6.01.03 — PROGRAM PERUMUSAN KEBIJAKAN, PENDAMPINGAN DAN ASISTENSI =====
+            // --- Kegiatan 6.01.03.02.01 — Perumusan Kebijakan Teknis di Bidang Pengawasan dan Fasilitasi Pengawasan ---
+            ['nomor_kode' => '6.01.03.02.01.0001', 'nomenklatur' => 'Perumusan Kebijakan Teknis di Bidang Pengawasan'],
+            ['nomor_kode' => '6.01.03.02.01.0002', 'nomenklatur' => 'Perumusan Kebijakan Teknis di Bidang Fasilitasi Pengawasan'],
+            
+            // --- Kegiatan 6.01.03.02.02 — Pendampingan dan Asistensi ---
+            ['nomor_kode' => '6.01.03.02.02.0002', 'nomenklatur' => 'Pendampingan, Asistensi, Verifikasi, dan Penilaian Reformasi Birokrasi'],
+            ['nomor_kode' => '6.01.03.02.02.0003', 'nomenklatur' => 'Koordinasi, Monitoring dan Evaluasi serta Verifikasi Pencegahan dan Pemberantasan Korupsi'],
+
+            // ===== Program 7.01.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 7.01.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '7.01.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '7.01.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '7.01.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '7.01.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '7.01.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '7.01.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '7.01.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+            
+            // --- Kegiatan 7.01.01.02.02 — Administrasi Keuangan Perangkat Daerah ---
+            ['nomor_kode' => '7.01.01.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
+            ['nomor_kode' => '7.01.01.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
+            ['nomor_kode' => '7.01.01.02.02.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Akuntansi SKPD'],
+            ['nomor_kode' => '7.01.01.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
+            ['nomor_kode' => '7.01.01.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
+            
+            // --- Kegiatan 7.01.01.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
+            ['nomor_kode' => '7.01.01.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
+            ['nomor_kode' => '7.01.01.02.03.0005', 'nomenklatur' => 'Rekonsiliasi dan Penyusunan Laporan Barang Milik Daerah pada SKPD'],
+            ['nomor_kode' => '7.01.01.02.03.0006', 'nomenklatur' => 'Penatausahaan Barang Milik Daerah pada SKPD'],
+            
+            // --- Kegiatan 7.01.01.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
+            ['nomor_kode' => '7.01.01.02.05.0002', 'nomenklatur' => 'Pengadaan Pakaian Dinas beserta Atribut Kelengkapannya'],
+            ['nomor_kode' => '7.01.01.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
+            ['nomor_kode' => '7.01.01.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
+            ['nomor_kode' => '7.01.01.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
+            ['nomor_kode' => '7.01.01.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
+            
+            // --- Kegiatan 7.01.01.02.06 — Administrasi Umum Perangkat Daerah ---
+            ['nomor_kode' => '7.01.01.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
+            ['nomor_kode' => '7.01.01.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
+            ['nomor_kode' => '7.01.01.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
+            ['nomor_kode' => '7.01.01.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
+            ['nomor_kode' => '7.01.01.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
+            ['nomor_kode' => '7.01.01.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
+            
+            // --- Kegiatan 7.01.01.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
+            ['nomor_kode' => '7.01.01.02.07.0001', 'nomenklatur' => 'Pengadaan Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '7.01.01.02.07.0005', 'nomenklatur' => 'Pengadaan Mebel'],
+            ['nomor_kode' => '7.01.01.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
+            ['nomor_kode' => '7.01.01.02.07.0009', 'nomenklatur' => 'Pengadaan Gedung Kantor atau Bangunan Lainnya'],
+            ['nomor_kode' => '7.01.01.02.07.0010', 'nomenklatur' => 'Pengadaan Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
+            
+            // --- Kegiatan 7.01.01.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '7.01.01.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
+            ['nomor_kode' => '7.01.01.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
+            ['nomor_kode' => '7.01.01.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
+            
+            // --- Kegiatan 7.01.01.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '7.01.01.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '7.01.01.02.09.0002', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, Pajak dan Perizinan Kendaraan Dinas Operasional atau Lapangan'],
+            ['nomor_kode' => '7.01.01.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
+            ['nomor_kode' => '7.01.01.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
+            ['nomor_kode' => '7.01.01.02.09.0009', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Gedung Kantor dan Bangunan Lainnya'],
+
+            // ===== Program 7.01.02 — PROGRAM PENYELENGGARAAN PEMERINTAHAN DAN PELAYANAN PUBLIK =====
+            // --- Kegiatan 7.01.02.02.01 — Koordinasi Penyelenggaraan Kegiatan Pemerintahan di Tingkat Kecamatan ---
+            ['nomor_kode' => '7.01.02.02.01.0001', 'nomenklatur' => 'Koordinasi Penyelenggaraan Kegiatan Pemerintahan di Tingkat Kecamatan'],
+            ['nomor_kode' => '7.01.02.02.01.0002', 'nomenklatur' => 'Koordinasi dan Sinkronisasi Penyelenggaraan Kegiatan Pemerintahan di Tingkat Kecamatan'],
+            ['nomor_kode' => '7.01.02.02.01.0003', 'nomenklatur' => 'Pembinaan dan Pengawasan Penyelenggaraan Kegiatan Pemerintahan di Tingkat Kecamatan'],
+            ['nomor_kode' => '7.01.02.02.01.0004', 'nomenklatur' => 'Evaluasi dan Pelaporan Penyelenggaraan Kegiatan Pemerintahan di Tingkat Kecamatan'],
+            
+            // --- Kegiatan 7.01.02.02.04 — Pelaksanaan Urusan Pemerintahan yang Dilimpahkan kepada Camat ---
+            ['nomor_kode' => '7.01.02.02.04.0001', 'nomenklatur' => 'Pelaksanaan Urusan Pemerintahan yang Dilimpahkan kepada Camat'],
+            ['nomor_kode' => '7.01.02.02.04.0002', 'nomenklatur' => 'Koordinasi Pelaksanaan Urusan Pemerintahan yang Dilimpahkan kepada Camat'],
+            ['nomor_kode' => '7.01.02.02.04.0003', 'nomenklatur' => 'Pelaksanaan Urusan Pemerintahan yang Terkait dengan Kewenangan Lain yang Dilimpahkan'],
+
+            // ===== Program 7.01.03 — PROGRAM PEMBERDAYAAN MASYARAKAT DESA DAN KELURAHAN =====
+            // --- Kegiatan 7.01.03.02.02 — Kegiatan Pemberdayaan Kelurahan ---
+            ['nomor_kode' => '7.01.03.02.02.0001', 'nomenklatur' => 'Kegiatan Pemberdayaan Kelurahan'],
+            ['nomor_kode' => '7.01.03.02.02.0002', 'nomenklatur' => 'Pembangunan Sarana dan Prasarana Kelurahan'],
+            ['nomor_kode' => '7.01.03.02.02.0003', 'nomenklatur' => 'Peningkatan Kapasitas Aparatur Kelurahan'],
+            ['nomor_kode' => '7.01.03.02.02.0004', 'nomenklatur' => 'Koordinasi dan Sinkronisasi Pemberdayaan Kelurahan'],
+            
+            // --- Kegiatan 7.01.03.02.03 — Pemberdayaan Lembaga Kemasyarakatan Tingkat Kecamatan ---
+            ['nomor_kode' => '7.01.03.02.03.0001', 'nomenklatur' => 'Penyelenggaraan Lembaga Kemasyarakatan'],
+            ['nomor_kode' => '7.01.03.02.03.0002', 'nomenklatur' => 'Peningkatan Kapasitas Lembaga Kemasyarakatan'],
+            ['nomor_kode' => '7.01.03.02.03.0003', 'nomenklatur' => 'Pembinaan dan Pengembangan Lembaga Kemasyarakatan'],
+            
+            // --- Kegiatan 7.01.03.02.06 — Pemberdayaan dan Kesejahteraan Keluarga Tingkat Kecamatan dan Kelurahan ---
+            ['nomor_kode' => '7.01.03.02.06.0001', 'nomenklatur' => 'Pemberdayaan dan Kesejahteraan Keluarga'],
+            ['nomor_kode' => '7.01.03.02.06.0002', 'nomenklatur' => 'Peningkatan Ketahanan Pangan Keluarga'],
+            ['nomor_kode' => '7.01.03.02.06.0003', 'nomenklatur' => 'Pelatihan Keluarga Tanggap Bencana Alam'],
+            ['nomor_kode' => '7.01.03.02.06.0004', 'nomenklatur' => 'Pembinaan Kelompok Usaha Ekonomi Produktif'],
+
+            // ===== Program 7.01.04 — PROGRAM KOORDINASI KETENTRAMAN DAN KETERTIBAN UMUM =====
+            // --- Kegiatan 7.01.04.02.01 — Koordinasi Upaya Penyelenggaraan Ketenteraman dan Ketertiban Umum ---
+            ['nomor_kode' => '7.01.04.02.01.0001', 'nomenklatur' => 'Koordinasi Upaya Penyelenggaraan Ketenteraman dan Ketertiban Umum'],
+            ['nomor_kode' => '7.01.04.02.01.0002', 'nomenklatur' => 'Pembinaan dan Pengawasan Ketenteraman dan Ketertiban Umum'],
+            ['nomor_kode' => '7.01.04.02.01.0003', 'nomenklatur' => 'Evaluasi dan Pelaporan Ketenteraman dan Ketertiban Umum'],
+            
+            // --- Kegiatan 7.01.04.02.02 — Koordinasi Penerapan dan Penegakan Peraturan Daerah dan Peraturan Kepala Daerah ---
+            ['nomor_kode' => '7.01.04.02.02.0001', 'nomenklatur' => 'Koordinasi Penerapan dan Penegakan Peraturan Daerah dan Peraturan Kepala Daerah'],
+            ['nomor_kode' => '7.01.04.02.02.0002', 'nomenklatur' => 'Pembinaan dan Pengawasan Penegakan Peraturan Daerah'],
+            ['nomor_kode' => '7.01.04.02.02.0003', 'nomenklatur' => 'Sosialisasi Peraturan Daerah dan Peraturan Kepala Daerah'],
+
+            // ===== Program 8.01.01 — PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA =====
+            // --- Kegiatan 8.01.01.02.01 — Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah ---
+            ['nomor_kode' => '8.01.01.02.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
+            ['nomor_kode' => '8.01.01.02.01.0002', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen RKA-SKPD'],
+            ['nomor_kode' => '8.01.01.02.01.0003', 'nomenklatur' => 'Koordinasi dan Penyusunan Dokumen Perubahan RKA-SKPD'],
+            ['nomor_kode' => '8.01.01.02.01.0004', 'nomenklatur' => 'Koordinasi dan Penyusunan DPA-SKPD'],
+            ['nomor_kode' => '8.01.01.02.01.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Perubahan DPA- SKPD'],
+            ['nomor_kode' => '8.01.01.02.01.0006', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Capaian Kinerja dan Ikhtisar Realisasi Kinerja SKPD'],
+            ['nomor_kode' => '8.01.01.02.01.0007', 'nomenklatur' => 'Evaluasi Kinerja Perangkat Daerah'],
+            
+            // --- Kegiatan 8.01.01.02.02 — Administrasi Keuangan Perangkat Daerah ---
+            ['nomor_kode' => '8.01.01.02.02.0001', 'nomenklatur' => 'Penyediaan Gaji dan Tunjangan ASN'],
+            ['nomor_kode' => '8.01.01.02.02.0003', 'nomenklatur' => 'Pelaksanaan Penatausahaan dan Pengujian/Verifikasi Keuangan SKPD'],
+            ['nomor_kode' => '8.01.01.02.02.0004', 'nomenklatur' => 'Koordinasi dan Pelaksanaan Akuntansi SKPD'],
+            ['nomor_kode' => '8.01.01.02.02.0005', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Akhir Tahun SKPD'],
+            ['nomor_kode' => '8.01.01.02.02.0007', 'nomenklatur' => 'Koordinasi dan Penyusunan Laporan Keuangan Bulanan/ Triwulanan/ Semesteran SKPD'],
+            
+            // --- Kegiatan 8.01.01.02.03 — Administrasi Barang Milik Daerah pada Perangkat Daerah ---
+            ['nomor_kode' => '8.01.01.02.03.0001', 'nomenklatur' => 'Penyusunan Perencanaan Kebutuhan Barang Milik Daerah SKPD'],
+            ['nomor_kode' => '8.01.01.02.03.0005', 'nomenklatur' => 'Rekonsiliasi dan Penyusunan Laporan Barang Milik Daerah pada SKPD'],
+            ['nomor_kode' => '8.01.01.02.03.0006', 'nomenklatur' => 'Penatausahaan Barang Milik Daerah pada SKPD'],
+            
+            // --- Kegiatan 8.01.01.02.05 — Administrasi Kepegawaian Perangkat Daerah ---
+            ['nomor_kode' => '8.01.01.02.05.0003', 'nomenklatur' => 'Pendataan dan Pengolahan Administrasi Kepegawaian'],
+            ['nomor_kode' => '8.01.01.02.05.0005', 'nomenklatur' => 'Monitoring, Evaluasi, dan Penilaian Kinerja Pegawai'],
+            ['nomor_kode' => '8.01.01.02.05.0009', 'nomenklatur' => 'Pendidikan dan Pelatihan Pegawai Berdasarkan Tugas dan Fungsi'],
+            ['nomor_kode' => '8.01.01.02.05.0011', 'nomenklatur' => 'Bimbingan Teknis Implementasi Peraturan Perundang-Undangan'],
+            
+            // --- Kegiatan 8.01.01.02.06 — Administrasi Umum Perangkat Daerah ---
+            ['nomor_kode' => '8.01.01.02.06.0001', 'nomenklatur' => 'Penyediaan Komponen Instalasi Listrik/Penerangan Bangunan Kantor'],
+            ['nomor_kode' => '8.01.01.02.06.0004', 'nomenklatur' => 'Penyediaan Bahan Logistik Kantor'],
+            ['nomor_kode' => '8.01.01.02.06.0005', 'nomenklatur' => 'Penyediaan Barang Cetakan dan Penggandaan'],
+            ['nomor_kode' => '8.01.01.02.06.0006', 'nomenklatur' => 'Penyediaan Bahan Bacaan dan Peraturan Perundang-undangan'],
+            ['nomor_kode' => '8.01.01.02.06.0007', 'nomenklatur' => 'Penyediaan Bahan/Material'],
+            ['nomor_kode' => '8.01.01.02.06.0008', 'nomenklatur' => 'Fasilitasi Kunjungan Tamu'],
+            ['nomor_kode' => '8.01.01.02.06.0009', 'nomenklatur' => 'Penyelenggaraan Rapat Koordinasi dan Konsultasi SKPD'],
+            
+            // --- Kegiatan 8.01.01.02.07 — Pengadaan Barang Milik Daerah Penunjang Urusan Pemerintah Daerah ---
+            ['nomor_kode' => '8.01.01.02.07.0006', 'nomenklatur' => 'Pengadaan Peralatan dan Mesin Lainnya'],
+            
+            // --- Kegiatan 8.01.01.02.08 — Penyediaan Jasa Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '8.01.01.02.08.0001', 'nomenklatur' => 'Penyediaan Jasa Surat Menyurat'],
+            ['nomor_kode' => '8.01.01.02.08.0002', 'nomenklatur' => 'Penyediaan Jasa Komunikasi, Sumber Daya Air dan Listrik'],
+            ['nomor_kode' => '8.01.01.02.08.0004', 'nomenklatur' => 'Penyediaan Jasa Pelayanan Umum Kantor'],
+            
+            // --- Kegiatan 8.01.01.02.09 — Pemeliharaan Barang Milik Daerah Penunjang Urusan Pemerintahan Daerah ---
+            ['nomor_kode' => '8.01.01.02.09.0001', 'nomenklatur' => 'Penyediaan Jasa Pemeliharaan, Biaya Pemeliharaan, dan Pajak Kendaraan Perorangan Dinas atau Kendaraan Dinas Jabatan'],
+            ['nomor_kode' => '8.01.01.02.09.0005', 'nomenklatur' => 'Pemeliharaan Mebel'],
+            ['nomor_kode' => '8.01.01.02.09.0006', 'nomenklatur' => 'Pemeliharaan Peralatan dan Mesin Lainnya'],
+            ['nomor_kode' => '8.01.01.02.09.0010', 'nomenklatur' => 'Pemeliharaan/Rehabilitasi Sarana dan Prasarana Gedung Kantor atau Bangunan Lainnya'],
+
+            // ===== Program 8.01.02 — PROGRAM PENGUATAN IDEOLOGI PANCASILA DAN KARAKTER KEBANGSAAN =====
+            // --- Kegiatan 8.01.02.02.01 — Perumusan Kebijakan Teknis dan Pemantapan Pelaksanaan Bidang Ideologi Pancasila dan Karakter Kebangsaan ---
+            ['nomor_kode' => '8.01.02.02.01.0001', 'nomenklatur' => 'Penyusunan Program Kerja di Bidang Ideologi Wawasan Kebangsaan, Bela Negara, Karakter Bangsa'],
+            ['nomor_kode' => '8.01.02.02.01.0002', 'nomenklatur' => 'Penyusunan Bahan Rumusan Kebijakan di Bidang Ideologi Pancasila dan Karakter Bangsa'],
+            ['nomor_kode' => '8.01.02.02.01.0003', 'nomenklatur' => 'Pelaksanaan Kebijakan di Bidang Ideologi Wawasan Kebangsaan, Bela Negara, Karakter Bangsa'],
+            ['nomor_kode' => '8.01.02.02.01.0004', 'nomenklatur' => 'Pelaksanaan Koordinasi di Bidang Ideologi Wawasan Kebangsaan, Bela Negara, Karakter Bangsa'],
+            ['nomor_kode' => '8.01.02.02.01.0005', 'nomenklatur' => 'Pelaksanaan Monitoring, Evaluasi dan Pelaporan di Bidang Ideologi Wawasan Kebangsaan, Bela Negara, Karakter Bangsa'],
+            ['nomor_kode' => '8.01.02.02.01.0008', 'nomenklatur' => 'Pembentukan Paskibraka'],
+            ['nomor_kode' => '8.01.02.02.01.0009', 'nomenklatur' => 'Pembinaan Lanjutan kepada Purnapaskibraka Duta Pancasila'],
+            ['nomor_kode' => '8.01.02.02.01.0010', 'nomenklatur' => 'Pelaksanaan tugas Purnapaskibraka Duta Pancasila'],
+
+            // ===== Program 8.01.03 — PROGRAM PENINGKATAN PERAN PARTAI POLITIK DAN LEMBAGA PENDIDIKAN =====
+            // --- Kegiatan 8.01.03.02.01 — Perumusan Kebijakan Teknis dan Pemantapan Pelaksanaan Bidang Pendidikan Politik ---
+            ['nomor_kode' => '8.01.03.02.01.0001', 'nomenklatur' => 'Penyusunan Program Kerja di Bidang Pendidikan Politik, Etika Budaya Politik, Peningkatan Demokrasi'],
+            ['nomor_kode' => '8.01.03.02.01.0002', 'nomenklatur' => 'Penyusunan Bahan Rumusan Kebijakan di Bidang Pendidikan Politik, Etika Budaya Politik, Peningkatan Demokrasi'],
+            ['nomor_kode' => '8.01.03.02.01.0003', 'nomenklatur' => 'Pelaksanaan Kebijakan di Bidang Pendidikan Politik, Etika Budaya Politik, Peningkatan Demokrasi'],
+            ['nomor_kode' => '8.01.03.02.01.0004', 'nomenklatur' => 'Pelaksanaan Koordinasi di Bidang Pendidikan Politik, Etika Budaya Politik, Peningkatan Demokrasi'],
+            ['nomor_kode' => '8.01.03.02.01.0005', 'nomenklatur' => 'Pelaksanaan Monitoring, Evaluasi dan Pelaporan di Bidang Pendidikan Politik, Etika Budaya Politik, Peningkatan Demokrasi'],
+
+            // ===== Program 8.01.04 — PROGRAM PEMBERDAYAAN DAN PENGAWASAN ORGANISASI KEMASYARAKATAN =====
+            // --- Kegiatan 8.01.04.02.01 — Perumusan Kebijakan Teknis dan Pemantapan Pelaksanaan Bidang Pemberdayaan dan Pengawasan Organisasi Kemasyarakatan ---
+            ['nomor_kode' => '8.01.04.02.01.0001', 'nomenklatur' => 'Penyusunan Program Kerja di Bidang Pemberdayaan dan Pengawasan Organisasi Kemasyarakatan'],
+            ['nomor_kode' => '8.01.04.02.01.0002', 'nomenklatur' => 'Penyusunan Bahan Rumusan Kebijakan di Bidang Pemberdayaan dan Pengawasan Organisasi Kemasyarakatan'],
+            ['nomor_kode' => '8.01.04.02.01.0003', 'nomenklatur' => 'Pelaksanaan Kebijakan di Bidang Pemberdayaan dan Pengawasan Organisasi Kemasyarakatan'],
+            ['nomor_kode' => '8.01.04.02.01.0004', 'nomenklatur' => 'Pelaksanaan Koordinasi di Bidang Pemberdayaan dan Pengawasan Organisasi Kemasyarakatan'],
+            ['nomor_kode' => '8.01.04.02.01.0005', 'nomenklatur' => 'Pelaksanaan Monitoring, Evaluasi dan Pelaporan di Bidang Pemberdayaan dan Pengawasan Organisasi Kemasyarakatan'],
+
+            // ===== Program 8.01.05 — PROGRAM PEMBINAAN DAN PENGEMBANGAN KETAHANAN EKONOMI, SOSIAL, DAN BUDAYA =====
+            // --- Kegiatan 8.01.05.02.01 — Perumusan Kebijakan Teknis dan Pemantapan Pelaksanaan Bidang Ketahanan Ekonomi, Sosial dan Budaya ---
+            ['nomor_kode' => '8.01.05.02.01.0001', 'nomenklatur' => 'Penyusunan Program Kerja di Bidang Ketahanan Ekonomi, Sosial, Budaya dan Fasilitasi Pencegahan Penyalahgunaan Narkoba'],
+            ['nomor_kode' => '8.01.05.02.01.0002', 'nomenklatur' => 'Penyusunan Bahan Rumusan Kebijakan di Bidang Ketahanan Ekonomi, Sosial, Budaya dan Fasilitasi Pencegahan Penyalahgunaan Narkoba'],
+            ['nomor_kode' => '8.01.05.02.01.0003', 'nomenklatur' => 'Pelaksanaan Kebijakan di Bidang Ketahanan Ekonomi, Sosial, Budaya dan Fasilitasi Pencegahan Penyalahgunaan Narkoba'],
+            ['nomor_kode' => '8.01.05.02.01.0004', 'nomenklatur' => 'Pelaksanaan Koordinasi di Bidang Ketahanan Ekonomi, Sosial, Budaya dan Fasilitasi Pencegahan Penyalahgunaan Narkoba'],
+            ['nomor_kode' => '8.01.05.02.01.0005', 'nomenklatur' => 'Pelaksanaan Monitoring, Evaluasi dan Pelaporan di Bidang Ketahanan Ekonomi, Sosial, Budaya dan Fasilitasi Pencegahan Penyalahgunaan Narkoba'],
+
+            // ===== Program 8.01.06 — PROGRAM PENINGKATAN KEWASPADAAN NASIONAL DAN PENINGKATAN KUALITAS DAN FASILITASI PENANGANAN KONFLIK SOSIAL =====
+            // --- Kegiatan 8.01.06.02.01 — Perumusan Kebijakan Teknis dan Pelaksanaan Pemantapan Kewaspadaan Nasional dan Penanganan Konflik Sosial ---
+            ['nomor_kode' => '8.01.06.02.01.0001', 'nomenklatur' => 'Penyusunan Program Kerja di Bidang Kewaspadaan Nasional dan Penanganan Konflik Sosial'],
+            ['nomor_kode' => '8.01.06.02.01.0002', 'nomenklatur' => 'Penyusunan Bahan Rumusan Kebijakan di Bidang Kewaspadaan Nasional dan Penanganan Konflik Sosial'],
+            ['nomor_kode' => '8.01.06.02.01.0003', 'nomenklatur' => 'Pelaksanaan Kebijakan di Bidang Kewaspadaan Nasional dan Penanganan Konflik Sosial'],
+            ['nomor_kode' => '8.01.06.02.01.0004', 'nomenklatur' => 'Pelaksanaan Koordinasi di Bidang Kewaspadaan Nasional dan Penanganan Konflik Sosial'],
+            ['nomor_kode' => '8.01.06.02.01.0005', 'nomenklatur' => 'Pelaksanaan Monitoring, Evaluasi dan Pelaporan di Bidang Kewaspadaan Nasional dan Penanganan Konflik Sosial'],
+            ['nomor_kode' => '8.01.06.02.01.0006', 'nomenklatur' => 'Pelaksanaan Forum Koordinasi Pimpinan Daerah Kabupaten/Kota'],
         ];
 
         foreach ($rows as $r) {

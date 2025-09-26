@@ -22,6 +22,32 @@ export default defineConfig({
             },
         }),
     ],
+    esbuild: {
+        drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    },
+    build: {
+        sourcemap: false,
+        cssCodeSplit: true,
+        chunkSizeWarningLimit: 1200,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('vue')) return 'vendor-vue';
+                        if (id.includes('@inertiajs')) return 'vendor-inertia';
+                        if (id.includes('vue-router')) return 'vendor-router';
+                        if (id.includes('axios')) return 'vendor-axios';
+                        if (id.includes('date-fns')) return 'vendor-date';
+                        if (id.includes('vee-validate') || id.includes('zod')) return 'vendor-forms';
+                        if (id.includes('@vueuse')) return 'vendor-vueuse';
+                        if (id.includes('lucide')) return 'vendor-icons';
+                        if (id.includes('@tanstack')) return 'vendor-table';
+                        return 'vendor';
+                    }
+                },
+            },
+        },
+    },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './resources/js'),

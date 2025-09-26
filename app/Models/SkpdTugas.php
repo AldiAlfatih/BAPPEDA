@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SkpdTugas extends Model
@@ -14,10 +15,12 @@ class SkpdTugas extends Model
 
     protected $fillable = [
         'skpd_id',
-        'user_id',
         'kode_nomenklatur_id',
         'is_aktif',
-        'is_finalized'
+    ];
+
+    protected $attributes = [
+        'is_aktif' => 1,
     ];
 
     protected $dates = ['deleted_at'];
@@ -31,10 +34,10 @@ class SkpdTugas extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    
+
     public function kodeNomenklatur()
     {
-        return $this->belongsTo(KodeNomenklatur::class);
+        return $this->belongsTo(KodeNomenklatur::class, 'kode_nomenklatur_id');
     }
     public function monitoring()
     {
@@ -44,5 +47,5 @@ class SkpdTugas extends Model
     public function tugasMonitoring()
     {
         return $this->hasOne(Monitoring::class, 'skpd_tugas_id');
-    }
+}
 }

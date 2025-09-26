@@ -5,8 +5,8 @@ import NavFooter from '@/components/NavFooter.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, LayoutGrid, Users, Monitor, BadgeHelp } from 'lucide-vue-next';
-// import AppLogo from './AppLogo.vue';
+import { BookOpen, LayoutGrid, Users, Monitor, BadgeHelp, FileText } from 'lucide-vue-next';
+import AppLogo from './AppLogo.vue';
 
 
 const mainNavItems: NavItem[] = [
@@ -25,17 +25,17 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Manajemen Tim',
-        href: '/usermanagement',
+        href: '/manajemen-tim/usermanagement',
         icon: Users,
         guard: ['super_admin','admin'],
         children: [
         {
             title: 'User',
-            href: '/usermanagement',
+            href: '/manajemen-tim/usermanagement',
         },
         {
             title: 'Perangkat Daerah',
-            href: '/perangkatdaerah',
+            href: '/manajemen-tim/perangkatdaerah',
         },
         ],
     },
@@ -43,19 +43,19 @@ const mainNavItems: NavItem[] = [
 
     {
         title: 'Perangkat Daerah',
-        href: '/perangkatdaerah',
-        guard: ['perangkat_daerah'],
+        href: '/manajemen-tim/perangkatdaerah',
+        guard: ['perangkat_daerah','operator'],
         icon: Users,
     },
 
     {
         title: 'Monitoring',
-        href: '/monitoring',
+        href: '/rencana-awal',
         icon: Monitor,
         children: [
         {
             title: 'Manajemen Periode',
-            href: '/periode',
+            href: '/monitoring/periode',
             guard: ['admin'],
         },
         {
@@ -64,30 +64,31 @@ const mainNavItems: NavItem[] = [
         },
         {
             title: 'Rencana Awal',
-            href: '/monitoring',
+            href: '/rencana-awal',
         },
         {
             title: 'Triwulan 1',
-            href: '/triwulan1',
+            href: route('triwulan.index', { tid: 1 }),
         },
         {
             title: 'Triwulan 2',
-            href: '/triwulan2',
+            href: route('triwulan.index', { tid: 2 }),
         },
         {
             title: 'Triwulan 3',
-            href: '/triwulan3',
+            href: route('triwulan.index', { tid: 3 }),
         },
         {
             title: 'Triwulan 4',
-            href: '/triwulan4',
+            href: route('triwulan.index', { tid: 4 }),
         },
         {
-            title: 'Laporan Akhir',
-            href: '#',
+            title: 'Arsip Monitoring',
+            href: '/arsip-monitoring',
         },
         ],
     },
+
 
 
 ];

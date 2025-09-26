@@ -8,41 +8,35 @@ return new class extends Migration {
         Schema::create('monitoring', function (Blueprint $table) {
             $table->id();
             $table->foreignId('skpd_tugas_id')->constrained('skpd_tugas');
-            // $table->string('sumber_dana');
             $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');
             $table->year('tahun');
             $table->text('deskripsi');
             $table->string('nama_pptk');
-            // $table->integer('pagu_anggaran');
             $table->timestamps();
         });
     
             Schema::create('sumber_anggaran', function (Blueprint $table) {
             $table->id();
             $table->string('nama');
-});  
+        });  
 
-             Schema::create('monitoring_anggaran', function (Blueprint $table) {
+            Schema::create('monitoring_anggaran', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sumber_anggaran_id')->constrained('sumber_anggaran');
-            // $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');
-            // $table->integer('kinerja_fisik');
-            // $table->integer('keuangan');
             $table->foreignId('monitoring_id')->constrained('monitoring');
-
             $table->timestamps();
-}); 
+        }); 
 
-             Schema::create('monitoring_pagu', function (Blueprint $table) {
+            Schema::create('monitoring_pagu', function (Blueprint $table) {
             $table->id();
             $table->foreignId('monitoring_anggaran_id')->constrained('monitoring_anggaran');
             $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');
             $table->integer('kategori'); //pkok, parsial, perubahan
             $table->integer('dana'); //RP
             $table->timestamps();
-}); 
+        }); 
 
-        Schema::create('monitoring_realisasi', function (Blueprint $table) {
+            Schema::create('monitoring_realisasi', function (Blueprint $table) {
             $table->id();
             $table->foreignId('monitoring_anggaran_id')->constrained('monitoring_anggaran');
             $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');
@@ -51,7 +45,7 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('monitoring_target', function (Blueprint $table) {
+            Schema::create('monitoring_target', function (Blueprint $table) {
             $table->id();
             $table->foreignId('monitoring_anggaran_id')->constrained('monitoring_anggaran');
             $table->foreignId('periode_id')->nullable()->constrained('periode')->onDelete('cascade');

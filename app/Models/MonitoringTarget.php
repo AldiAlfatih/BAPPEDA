@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MonitoringTarget extends Model
 {
@@ -14,21 +15,17 @@ class MonitoringTarget extends Model
         'monitoring_anggaran_id',
         'periode_id',
         'kinerja_fisik',
-        'keuangan'
+        'keuangan',
     ];
 
-    protected $casts = [
-        'kinerja_fisik' => 'float',
-        'keuangan' => 'integer'
-    ];
-
-    public function monitoringAnggaran()
+    public function anggaran(): BelongsTo
     {
         return $this->belongsTo(MonitoringAnggaran::class, 'monitoring_anggaran_id');
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
-        return $this->belongsTo(Periode::class);
-    }
+        // Assuming you have a Periode model
+        return $this->belongsTo(Periode::class, 'periode_id');
+}
 }

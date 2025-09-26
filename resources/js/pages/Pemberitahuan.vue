@@ -101,6 +101,8 @@ const closePopup = () => {
             src="/images/logo-parepare.png"
             alt="Panduan E-Monev"
             class="w-25 rounded shadow"
+            loading="lazy"
+            decoding="async"
           />
           <div class="text-base text-gray-700 dark:text-gray-200">
             <p class="mb-2 font-bold">

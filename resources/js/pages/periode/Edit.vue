@@ -30,8 +30,8 @@ const props = defineProps<{
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Periode', href: '/periode' },
-  { title: 'Edit', href: `/periode/${props.periode.id}/edit` },
+  { title: 'Periode', href: '/monitoring/periode' },
+  { title: 'Edit', href: `/monitoring/periode/${props.periode.id}/edit` },
 ]
 
 const form = useForm({
@@ -43,7 +43,7 @@ const form = useForm({
 })
 
 function updatePeriode() {
-  form.put(`/periode/${props.periode.id}`, {
+  form.put(`/monitoring/periode/${props.periode.id}`, {
     preserveScroll: true,
   })
 }
@@ -97,7 +97,7 @@ function updatePeriode() {
         <div class="flex justify-end gap-2 pt-4">
           <button
             type="button"
-            @click="router.visit('/periode')"
+            @click="router.visit('/monitoring/periode')"
             class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
           >
             Batal

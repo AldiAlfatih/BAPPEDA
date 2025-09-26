@@ -3,6 +3,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MonitoringAnggaran extends Model
 {
@@ -15,38 +17,27 @@ class MonitoringAnggaran extends Model
         'monitoring_id',
     ];
 
-    public function sumberAnggaran()
+    public function monitoring(): BelongsTo
     {
-        return $this->belongsTo(SumberAnggaran::class);
+        return $this->belongsTo(Monitoring::class, 'monitoring_id');
     }
 
-    public function monitoring()
+    public function sumberAnggaran(): BelongsTo
     {
-        return $this->belongsTo(Monitoring::class);
+        return $this->belongsTo(SumberAnggaran::class, 'sumber_anggaran_id');
     }
 
-    public function monitoringPagu()
+    public function pagu(): HasMany
     {
-        return $this->hasMany(MonitoringPagu::class);
+        return $this->hasMany(MonitoringPagu::class, 'monitoring_anggaran_id');
     }
 
-    // Add pagu relationship as an alias for monitoringPagu
-    public function pagu()
+    public function realisasi(): HasMany
     {
-        return $this->hasMany(MonitoringPagu::class);
+        return $this->hasMany(MonitoringRealisasi::class, 'monitoring_anggaran_id');
     }
 
-    public function monitoringRealisasi()
-    {
-        return $this->hasMany(MonitoringRealisasi::class);
-    }
-    // Alias untuk konsistensi
-    public function monitoringTarget()
-    {
-        return $this->hasMany(MonitoringTarget::class);
-    }
-
-    public function targets()
+    public function target(): HasMany
     {
         return $this->hasMany(MonitoringTarget::class, 'monitoring_anggaran_id');
     }

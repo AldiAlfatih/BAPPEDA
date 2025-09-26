@@ -11,21 +11,16 @@ class KodeNomenklaturSeeder extends Seeder
     public function run(): void
     {
         $data = [
-            ['jenis_nomenklatur' => 0, 'nomor_kode' => '1', 'nomenklatur' => 'URUSAN PEMERINTAHAN WAJIB YANG BERKAITAN DENGAN PELAYANAN DASAR'], //RS HASRI AINUN HABIBIE //DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 1, 'nomor_kode' => '1.01', 'nomenklatur' => 'URUSAN PEMERINTAHAN BIDANG PENDIDIKAN'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 1, 'nomor_kode' => '1.02', 'nomenklatur' => 'URUSAN PEMERINTAHAN BIDANG KESEHATAN'], //RS HASRI AINUN HABIBIE
-            ['jenis_nomenklatur' => 2, 'nomor_kode' => '1.01.01', 'nomenklatur' => 'PROGRAM PENUNJANG URUSAN PEMERINTAHAN DASAR KABUPATEN / KOTA'], //DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 2, 'nomor_kode' => '1.02.01', 'nomenklatur' => 'PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH/ KOTA'], //RS HASRI AINUN HABIBIE
-            ['jenis_nomenklatur' => 3, 'nomor_kode' => '1.01.01.2.01', 'nomenklatur' => 'Perencanaan, Penganggaran dan Evaluasi Kinerja Perangkat Daerah'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 3, 'nomor_kode' => '1.02.01.2.01', 'nomenklatur' => 'Kegiatan Perencanaan, Penganggaran, dan Evaluasi Kinerja Perangkat Daerah'],//RS HASRI AINUN HABIBIE
-            ['jenis_nomenklatur' => 4, 'nomor_kode' => '1.01.01.2.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 4, 'nomor_kode' => '1.01.01.2.01.0002', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah bismillah'],//RS HASRI AINUN HABIBIE
-            ['jenis_nomenklatur' => 4, 'nomor_kode' => '1.02.01.2.01.0001', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],//RS HASRI AINUN HABIBIE
-            ['jenis_nomenklatur' => 0, 'nomor_kode' => '2', 'nomenklatur' => 'URUSAN PEMERINTAHAN WAJIB YANG TIDAK BERKAITAN DENGAN PELAYANAN DASAR'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 1, 'nomor_kode' => '2.22', 'nomenklatur' => 'URUSAN PEMERINTAHAN BIDANG KEBUDAYAAN'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 2, 'nomor_kode' => '2.22.02', 'nomenklatur' => 'PROGRAM PENGEMBANGAN KEBUDAYAAN'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 3, 'nomor_kode' => '2.22.02.2.01', 'nomenklatur' => 'Pengelolaan Kekayaan yang Masyarakat Pelakunya dalam Daerah Kabupaten/Kota'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
-            ['jenis_nomenklatur' => 4, 'nomor_kode' => '2.22.02.2.01.0001', 'nomenklatur' => 'Pelindungan, Pengembangan, Pemanfaatan Objek Pemajuan Kebudayaan'],//DINAS PENDIDIKAN DAN KEBUDAYAAN
+            // Level 0: Urusan
+            ['jenis_nomenklatur' => 0, 'nomor_kode' => '5', 'nomenklatur' => 'URUSAN PEMERINTAHAN PILIHAN BIDANG PERENCANAAN'],
+            // Level 1: Bidang Urusan
+            ['jenis_nomenklatur' => 1, 'nomor_kode' => '5.01', 'nomenklatur' => 'URUSAN PEMERINTAHAN BIDANG PERENCANAAN'],
+            // Level 2: Program
+            ['jenis_nomenklatur' => 2, 'nomor_kode' => '5.01.01', 'nomenklatur' => 'PROGRAM PENUNJANG URUSAN PEMERINTAHAN DAERAH KABUPATEN/KOTA'],
+            // Level 3: Kegiatan
+            ['jenis_nomenklatur' => 3, 'nomor_kode' => '5.01.01.2.01', 'nomenklatur' => 'Perencanaan, Penganggaran dan Evaluasi Kinerja Perangkat Daerah'],
+            // Level 4: Sub Kegiatan 
+            ['jenis_nomenklatur' => 4, 'nomor_kode' => '5.01.01.2.01.01', 'nomenklatur' => 'Penyusunan Dokumen Perencanaan Perangkat Daerah'],
         ];
 
         $now = Carbon::now();

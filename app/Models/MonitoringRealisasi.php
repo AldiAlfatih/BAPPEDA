@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MonitoringRealisasi extends Model
 {
@@ -15,17 +16,16 @@ class MonitoringRealisasi extends Model
         'periode_id',
         'kinerja_fisik',
         'keuangan',
-        'deskripsi',
-        'nama_pptk',
     ];
 
-    public function monitoringAnggaran()
+    public function anggaran(): BelongsTo
     {
-        return $this->belongsTo(MonitoringAnggaran::class);
+        return $this->belongsTo(MonitoringAnggaran::class, 'monitoring_anggaran_id');
     }
 
-    public function periode()
+    public function periode(): BelongsTo
     {
-        return $this->belongsTo(Periode::class);
-    }
+        // Assuming you have a Periode model
+        return $this->belongsTo(Periode::class, 'periode_id');
+}
 }

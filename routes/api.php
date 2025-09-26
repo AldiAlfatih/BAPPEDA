@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-// use App\Http\Controllers\PeriodeController;
+use App\Http\Controllers\PeriodeController;
+use App\Http\Controllers\DashboardController;
 // use App\Http\Controllers\Api\NomenklaturController;
 // use App\Http\Controllers\Api\BantuanController;
 use Illuminate\Http\Request;
@@ -14,7 +15,24 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
 // Rute untuk mendapatkan periode aktif
-// Route::get('/periode-aktif', [PeriodeController::class, 'getPeriodeAktif']);
+// Route::get('/monitoring/periode-aktif', [PeriodeController::class, 'getPeriodeAktif']);
+
+// Route untuk mendapatkan periode selesai
+Route::get('/periode/selesai', [PeriodeController::class, 'getPeriodeSelesaiData']);
+
+// Route untuk activity logging
+Route::middleware(['auth'])->group(function () {
+    Route::post('/log-activity', [DashboardController::class, 'logActivity'])
+        ->name('api.log-activity');
+});
+
+// Route untuk selective PDF download
+Route::middleware(['auth'])->group(function () {
+    Route::get('/triwulan/{tid}/tugas/{tugasId}/sumber-dana', [App\Http\Controllers\TriwulanController::class, 'getAvailableSumberDana'])
+        ->name('api.triwulan.sumber-dana');
+    Route::post('/triwulan/{tid}/tugas/{tugasId}/preview', [App\Http\Controllers\TriwulanController::class, 'previewSelectiveData'])
+        ->name('api.triwulan.preview');
+});
 
 // Routes untuk Nomenklatur (CRUD)
 // Route::middleware(['auth:sanctum'])->group(function () {
@@ -57,4 +75,4 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 //     Route::delete('/bantuan/{post}', [BantuanController::class, 'destroy'])
 //         ->middleware('role:admin')
 //         ->name('api.bantuan.destroy');
-// });       
+// });

@@ -25,7 +25,14 @@ class UserDetail extends Model
 
     public function skpd()
     {
-        return $this->hasOne(Skpd::class, 'user_id'); 
+        return $this->hasManyThrough(
+            Skpd::class, 
+            SkpdKepala::class,
+            'user_id',  // Foreign key on skpd_kepala table
+            'id',       // Foreign key on skpd table
+            'user_id',  // Local key on user_detail table
+            'skpd_id'   // Local key on skpd_kepala table
+        );
     }
     
 

@@ -12,26 +12,27 @@ class PanduanSeeder extends Seeder
     {
         $dataPanduan = [
             [
-                'judul' => 'Panduan Penggunaan Sistem',
-                'deskripsi' => 'Panduan ini berisi langkah-langkah penggunaan sistem dari login hingga pelaporan.',
-                'file' => 'panduan_files/pp.docx',
-                'sampul' => 'panduan_sampul/bpd.jpeg',
+                'judul' => 'Panduan Penggunaan Admin',
+                'deskripsi' => 'Panduan ini berisi langkah-langkah penggunaan sistem dari login hingga pelaporan Admin.',
+                'file' => 'panduan_files/BUKU PANDUAN E-Monev Admin.pdf',
+                'sampul' => 'panduan_sampul/BUKU PANDUAN ADMIN.jpg',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'judul' => 'Panduan Pengisian Data SKPD',
                 'deskripsi' => 'Dokumen ini menjelaskan cara pengisian data untuk masing-masing SKPD.',
-                'file' => 'panduan_files/pp.docx',
-                'sampul' => 'panduan_sampul/bpd.jpeg',
+                'file' => 'panduan_files/BUKU PANDUAN E-Monev Perangkat Daerah.pdf',
+                'sampul' => 'panduan_sampul/BUKU PANDUAN PERANGKAT DAERAH.jpg',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'judul' => 'Panduan Upload Dokumen',
-                'deskripsi' => 'Berisi petunjuk tentang bagaimana cara upload file dan dokumen penting ke sistem.',
-                'file' => 'panduan_files/pp.docx',
-                'sampul' => 'panduan_sampul/bpd.jpeg',
+                'judul' => 'Panduan Penggunaan Operator
+                ',
+                'deskripsi' => 'Panduan ini berisi langkah-langkah penggunaan sistem dari login hingga pelaporan Operator.',
+                'file' => 'panduan_files/BUKU PANDUAN E-Monev Operator.pdf',
+                'sampul' => 'panduan_sampul/BUKU PANDUAN OPERATOR.jpg',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]

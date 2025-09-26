@@ -37,12 +37,16 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
-    
+        $quote = null;
+        if (app()->environment('local')) {
+            [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+            $quote = ['message' => trim($message), 'author' => trim($author)];
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
+            'quote' => $quote,
             'auth' => [
                 'user' => fn () => $request->user()
                     ? [
@@ -51,7 +55,7 @@ class HandleInertiaRequests extends Middleware
                         'email' => $request->user()->email,
                         'role' => $request->user()->getRoleNames()->first(),
                         'nip' => optional($request->user()->userDetail)->nip,
-                        'dinas' => optional($request->user()->skpd)->nama_dinas,
+                        'dinas' => $request->user()->skpd->first() ? $request->user()->skpd->first()->nama_skpd : null,
                     ]
                     : null,
             ],

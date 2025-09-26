@@ -23,10 +23,17 @@ class DatabaseSeeder extends Seeder
 
         $this->call(FiturSeeder::class);
         $this->call(RuleSeeder::class);
-        $this->call(KodeNomenklaturSeeder::class);
+        
+        // Seeder hierarki kode nomenklatur (urutan penting!)
+        $this->call(UrusanSeeder::class);           // Level 0
+        $this->call(BidangUrusanSeeder::class);     // Level 1 
+        $this->call(ProgramSeeder::class);          // Level 2
+        $this->call(KegiatanSeeder::class);         // Level 3
+        $this->call(SubKegiatanSeeder::class);      // Level 4
+        
         $this->call(AnggaranSeeder::class);
         $this->call(UserSeeder::class);
         // $this->call(MonitoringTargetSeeder::class);
         $this->call(PanduanSeeder::class);
-}
+    }
 }

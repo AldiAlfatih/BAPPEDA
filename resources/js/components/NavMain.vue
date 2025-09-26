@@ -8,10 +8,10 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { ChevronDown } from 'lucide-vue-next';
 
-defineProps<{
+const props = defineProps<{
   items: NavItem[];
   class?: string;
 }>();
@@ -19,8 +19,84 @@ defineProps<{
 const page = usePage<SharedData>();
 
 const openMenus = ref<Record<string, boolean>>({});
+
+// Function to check if any child menu item is active (current URL matches or starts with)
+const isMenuActive = (item: NavItem): boolean => {
+  if (!item.children) return false;
+  return item.children.some(child => {
+    // Exact match
+    if (child.href === page.url) return true;
+    
+    // Special handling for triwulan routes
+    if (child.href.includes('/triwulan/')) {
+      // Check if current URL starts with the triwulan base URL
+      // This handles /triwulan/1, /triwulan/1/123, /triwulan/1/123/detail/456, etc.
+      return page.url.startsWith(child.href);
+    }
+    
+    // For other nested routes, check if current URL starts with child href + /
+    if (page.url.startsWith(child.href + '/')) {
+      return true;
+    }
+    
+    return false;
+  });
+};
+
+// Function to check if single menu item is active
+const isSingleItemActive = (item: NavItem): boolean => {
+  if (item.children) return false; // Skip dropdown items
+  
+  // Exact match
+  if (item.href === page.url) return true;
+  
+  // For dynamic routes, check if current URL starts with the base href
+  return page.url.startsWith(item.href + '/');
+};
+
+// Initialize and auto-open menus that contain active items
+const initializeMenus = () => {
+  props.items.forEach(item => {
+    if (item.children) {
+      const isActive = isMenuActive(item);
+      
+      // Always update state if menu contains active page
+      // This ensures dropdown stays open even after manual toggles
+      if (isActive) {
+        openMenus.value[item.title] = true;
+      } else if (openMenus.value[item.title] === undefined) {
+        // Only set to false if not defined (first load)
+        openMenus.value[item.title] = false;
+      }
+      
+
+    }
+  });
+};
+
+// Watch for route changes and update menu states
+watch(() => page.url, async (newUrl, oldUrl) => {
+  await nextTick(); // Ensure DOM is updated
+  initializeMenus();
+}, { immediate: true });
+
+onMounted(() => {
+  initializeMenus();
+});
+
 const toggleMenu = (title: string) => {
   openMenus.value[title] = !openMenus.value[title];
+  
+  // If we just closed a menu, check if it should stay open (contains active page)
+  if (!openMenus.value[title]) {
+    setTimeout(() => {
+      const item = props.items.find(item => item.title === title);
+      const isActive = item ? isMenuActive(item) : false;
+      if (isActive) {
+        openMenus.value[title] = true;
+      }
+    }, 100); // Small delay to allow URL changes to process
+  }
 };
 </script>
 
@@ -36,17 +112,28 @@ const toggleMenu = (title: string) => {
     <SidebarMenu class="space-y-1.5">
       <SidebarMenuItem v-for="item in items" :key="item.title">
         <template v-if="!item.guard || item.guard.includes(page.props.auth.user.role)">
-          <!-- Dropdown parent -->
+          <!-- Dropdown parent - Auto opens if contains active page -->
           <div v-if="item.children" class="group">
             <SidebarMenuButton as-child>
               <button
-                class="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-emerald-100 
-                       hover:bg-white/10 hover:text-white transition-all duration-300 
+                class="flex items-center w-full gap-3 px-3 py-2.5 text-sm transition-all duration-300 
                        rounded-lg group-hover:shadow-lg backdrop-blur-sm
                        hover:transform hover:translate-x-1"
+                :class="[
+                  isMenuActive(item) 
+                    ? 'bg-white/20 text-white shadow-lg transform translate-x-1' 
+                    : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+                ]"
                 @click="toggleMenu(item.title)"
               >
-                <div class="p-1.5 rounded-md bg-white/10 group-hover:bg-white/20 transition-colors duration-300">
+                <div 
+                  class="p-1.5 rounded-md transition-colors duration-300"
+                  :class="[
+                    isMenuActive(item) 
+                      ? 'bg-white/30' 
+                      : 'bg-white/10 group-hover:bg-white/20'
+                  ]"
+                >
                   <component :is="item.icon" class="w-4 h-4" />
                 </div>
                 <span class="flex-1 text-left font-medium">{{ item.title }}</span>
@@ -77,7 +164,7 @@ const toggleMenu = (title: string) => {
                 >
                   <SidebarMenuButton
                     as-child
-                    :is-active="child.href === page.url"
+                    :is-active="child.href === page.url || (child.href.includes('/triwulan/') && page.url.startsWith(child.href)) || page.url.startsWith(child.href + '/')"
                     :tooltip="child.title"
                     class="group/child"
                   >
@@ -102,20 +189,29 @@ const toggleMenu = (title: string) => {
           <SidebarMenuButton
             v-else
             as-child
-            :is-active="item.href === page.url"
+            :is-active="isSingleItemActive(item)"
             :tooltip="item.title"
             class="group"
           >
             <Link 
               :href="item.href"
-              class="flex items-center gap-3 px-3 py-2.5 text-sm text-emerald-100 
-                     hover:bg-white/10 hover:text-white transition-all duration-300 
+              class="flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-300 
                      rounded-lg group-hover:shadow-lg backdrop-blur-sm
-                     hover:transform hover:translate-x-1
-                     data-[active=true]:bg-white/20 data-[active=true]:text-white
-                     data-[active=true]:shadow-lg data-[active=true]:transform data-[active=true]:translate-x-1"
+                     hover:transform hover:translate-x-1"
+              :class="[
+                isSingleItemActive(item)
+                  ? 'bg-white/20 text-white shadow-lg transform translate-x-1'
+                  : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+              ]"
             >
-              <div class="p-1.5 rounded-md bg-white/10 group-hover:bg-white/20 transition-colors duration-300 group-data-[active=true]:bg-white/30">
+              <div 
+                class="p-1.5 rounded-md transition-colors duration-300"
+                :class="[
+                  isSingleItemActive(item)
+                    ? 'bg-white/30'
+                    : 'bg-white/10 group-hover:bg-white/20'
+                ]"
+              >
                 <component :is="item.icon" class="w-4 h-4" />
               </div>
               <span class="font-medium">{{ item.title }}</span>

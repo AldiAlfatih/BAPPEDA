@@ -14,20 +14,20 @@ class PanduanController extends Controller
         $panduan = Panduan::all()->map(function ($item) {
             $fileUrl = null;
             $sampulUrl = null;
-            
-            // Generate file URL dengan pengecekan yang lebih robust
-            if ($item->file) {
-                $fileUrl = asset('storage/' . $item->file);
-                // Log untuk debugging
-                \Log::info('Panduan file URL generated: ' . $fileUrl . ' for file: ' . $item->file);
+
+            // Build URLs only if file exists on public disk
+            if ($item->file && Storage::disk('public')->exists($item->file)) {
+                $fileUrl = Storage::url($item->file);
+            } else if ($item->file) {
+                \Log::warning('Panduan file missing on disk', ['path' => $item->file]);
             }
-            
-            if ($item->sampul) {
-                $sampulUrl = asset('storage/' . $item->sampul);
-                // Log untuk debugging  
-                \Log::info('Panduan sampul URL generated: ' . $sampulUrl . ' for file: ' . $item->sampul);
+
+            if ($item->sampul && Storage::disk('public')->exists($item->sampul)) {
+                $sampulUrl = Storage::url($item->sampul);
+            } else if ($item->sampul) {
+                \Log::warning('Panduan sampul missing on disk', ['path' => $item->sampul]);
             }
-            
+
             return [
                 'id' => $item->id,
                 'judul' => $item->judul,
@@ -46,8 +46,9 @@ class PanduanController extends Controller
         $validated = $request->validate([
             'judul' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            // Naikkan batas agar tidak mudah gagal upload di produksi
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240', // 10MB
+            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:4096', // 4MB
         ]);
 
         $panduan = new Panduan();
@@ -121,8 +122,8 @@ class PanduanController extends Controller
         $validated = $request->validate([
             'judul' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240', // 10MB, samakan dengan store()
+            'sampul' => 'nullable|image|mimes:jpg,jpeg,png|max:4096', // 4MB, samakan dengan store()
         ]);
 
         $panduan = Panduan::findOrFail($id);

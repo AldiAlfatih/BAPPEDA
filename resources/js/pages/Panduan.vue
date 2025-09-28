@@ -139,10 +139,10 @@ const viewFile = (fileUrl: string | undefined | null) => {
 const handleImageError = (event: Event) => {
     const img = event.target as HTMLImageElement;
     console.warn('🖼️ Image failed to load:', img.src);
-    console.warn('🔄 Switching to fallback image: /images/default-image.png');
+    console.warn('🔄 Switching to fallback image: /images/default-image.svg');
     
     // Set fallback image
-    img.src = '/images/default-image.png';
+    img.src = '/images/default-image.svg';
     // Add error styling
     img.classList.add('opacity-75', 'border-2', 'border-dashed', 'border-gray-300');
     

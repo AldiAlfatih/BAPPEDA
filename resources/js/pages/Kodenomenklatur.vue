@@ -36,7 +36,7 @@ const showDetailId = ref<number | null>(null);
 const confirmDelete = ref<number | null>(null);
 
 // Breadcrumbs
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Kode Nomenklatur', href: '/KodeNomenklatur' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Kode Nomenklatur', href: '/kodenomenklatur' }];
 
 // Filter dan Sorting
 const filteredData = computed(() => {
@@ -268,9 +268,9 @@ function handleSearchChange() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge class="text-gray-500">
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                     {{ labelJenisNomenklatur(kode.jenis_nomenklatur) }}
-                                                </Badge>
+                                                </span>
                                             </TableCell>
                                             <TableCell>
                                                 <div class="flex items-center gap-2">
@@ -308,9 +308,9 @@ function handleSearchChange() {
                                                         </div>
                                                         <div>
                                                             <p class="text-sm text-gray-600">Jenis:</p>
-                                                            <Badge class="text-gray-500">
+                                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                                 {{ labelJenisNomenklatur(kode.jenis_nomenklatur) }}
-                                                            </Badge>
+                                                            </span>
                                                         </div>
                                                         <div class="md:col-span-2">
                                                             <p class="text-sm text-gray-600">Nomenklatur:</p>

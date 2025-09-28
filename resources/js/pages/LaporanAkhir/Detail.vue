@@ -4,6 +4,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type BreadcrumbItem } from '@/types';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { AlertCircle, Building2, Calendar, CheckCircle, Download, Binoculars, FileText, FolderOpen, Trash2, Upload, User } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
@@ -46,6 +47,7 @@ const props = defineProps<{
     periodeOptions: { [key: string]: string };
     breadcrumbUserId?: number | null;
     urusanTugasList?: Array<{ id: number; nomor_kode: string; nomenklatur: string }>;
+    arsipTugasId?: number;
 }>();
 
 // Get flash messages
@@ -55,14 +57,24 @@ const flashMessage = computed(() => {
     return pageProps.flash || {};
 });
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Arsip Monitoring', href: route('arsip-monitoring.index') },
-    { 
-        title: `Arsip Monitoring ${props.skpd.nama_skpd}`, 
-        href: '' // Halaman show dihapus; breadcrumb ini tidak clickable
-    },
-    { title: 'Detail Arsip', href: '' },
-];
+const userRole = computed(() => {
+    const p = page.props as any;
+    return p?.auth?.user?.role ?? '';
+});
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    const skpdTitle = `Arsip Monitoring ${props.skpd.nama_skpd}`;
+    // Untuk penanggung jawab (perangkat_daerah) hanya 1 tahap
+    if (userRole.value === 'perangkat_daerah') {
+        return [{ title: skpdTitle, href: '' }];
+    }
+
+    // Admin/operator tetap 2 tahap
+    return [
+        { title: 'Arsip Monitoring', href: route('arsip-monitoring.index') },
+        { title: `Detail Arsip ${props.skpd.nama_skpd}`, href: '' },
+    ];
+});
 
 // State untuk upload modal
 const uploadModalOpen = ref(false);
@@ -73,7 +85,7 @@ const selectedArsipId = ref<number | null>(null);
 // Form untuk upload
 const uploadForm = useForm({
     file: null as File | null,
-    skpd_tugas_id: props.tugas.id,
+    skpd_tugas_id: props.arsipTugasId ?? props.tugas.id,
     periode: '',
     tahun: props.tahun,
     keterangan: '',
@@ -93,7 +105,7 @@ const handleTahunChange = (event: Event) => {
         if (selectedTahun && props.tugas?.id) {
             router.visit(
                 route('arsip-monitoring.detail.tahun', {
-                    tugasId: props.tugas.id,
+                    tugasId: props.arsipTugasId ?? props.tugas.id,
                     tahun: selectedTahun.tahun,
                 }),
                 {
@@ -104,18 +116,7 @@ const handleTahunChange = (event: Event) => {
     }
 };
 
-// Helper functions
-function goBack() {
-    router.visit(`/arsip-monitoring/${props.skpd.id}`);
-}
-
-// Multiple Urusan handling
-const hasMultipleUrusan = computed(() => (props.urusanTugasList?.length || 0) > 1);
-function switchUrusan(tugasId: number) {
-    if (tugasId && tugasId !== props.tugas.id) {
-        router.visit(route('arsip-monitoring.detail', tugasId), { preserveState: false });
-    }
-}
+// SKPD-level arsip: tidak ada pemilihan urusan
 
 function openUploadModal(periode: string) {
     selectedPeriode.value = periode;
@@ -223,28 +224,7 @@ function getFileIcon(tipeFile: string) {
                 </div>
             </div>
 
-            <!-- Selector Urusan jika lebih dari satu -->
-            <div v-if="hasMultipleUrusan" class="rounded-lg border border-yellow-200 bg-yellow-50 p-4 shadow">
-                <div class="mb-2 flex items-center gap-2">
-                    <span class="text-sm font-semibold text-yellow-800">Pilih Urusan/Tugas Perangkat Daerah ({{ props.urusanTugasList?.length }})</span>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button
-                        v-for="u in props.urusanTugasList"
-                        :key="u.id"
-                        type="button"
-                        @click="switchUrusan(u.id)"
-                        class="rounded-md px-3 py-2 text-sm font-medium transition-colors"
-                        :class="u.id === tugas.id
-                            ? 'bg-yellow-500 text-white shadow'
-                            : 'bg-white text-gray-700 hover:bg-yellow-100 border border-yellow-200'"
-                        :title="`${u.nomor_kode} - ${u.nomenklatur}`"
-                    >
-                        <span class="font-mono mr-1">{{ u.nomor_kode }}</span>
-                        <span class="hidden sm:inline">{{ u.nomenklatur }}</span>
-                    </button>
-                </div>
-            </div>
+            <!-- SKPD-level arsip: tidak ada pemilihan urusan -->
 
             <!-- Flash Messages -->
             <div v-if="flashMessage.success" class="rounded border border-green-400 bg-green-100 px-4 py-3 text-green-700">
@@ -299,13 +279,16 @@ function getFileIcon(tipeFile: string) {
                 </div>
             </div>
 
-            <!-- Informasi Tugas -->
+            <!-- Informasi Arsip (SKPD-level) -->
             <div class="rounded-lg border border-gray-100 bg-white p-6 shadow-lg">
-                <h2 class="mb-4 text-xl font-bold text-gray-700">Informasi Tugas</h2>
-                <div class="rounded-lg border border-green-200 bg-green-50 p-4">
-                    <h3 class="mb-1 text-sm font-medium text-green-700">Urusan/Tugas Perangkat Daerah</h3>
-                    <p class="text-lg font-semibold text-green-800">
-                        {{ tugas.kode_nomenklatur.nomor_kode }} - {{ tugas.kode_nomenklatur.nomenklatur }}
+                <h2 class="mb-4 text-xl font-bold text-gray-700">Informasi Arsip</h2>
+                <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <h3 class="mb-1 text-sm font-medium text-blue-700">Cakupan Arsip</h3>
+                    <p class="text-lg font-semibold text-blue-800">
+                        Arsip ini mencakup seluruh urusan/tugas pada Perangkat Daerah ini.
+                    </p>
+                    <p v-if="props.urusanTugasList?.length" class="mt-1 text-sm text-blue-700">
+                        Jumlah urusan/tugas: {{ props.urusanTugasList.length }}
                     </p>
                 </div>
             </div>
@@ -482,6 +465,8 @@ function getFileIcon(tipeFile: string) {
                             {{ uploadForm.errors.keterangan }}
                         </div>
                     </div>
+
+                    <!-- SKPD-level arsip: tidak perlu opsi terapkan ke semua -->
 
                     <DialogFooter>
                         <DialogClose asChild>

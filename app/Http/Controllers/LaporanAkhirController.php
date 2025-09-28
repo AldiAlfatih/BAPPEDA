@@ -242,12 +242,15 @@ class LaporanAkhirController extends Controller
         $allTahun = $this->getAllTahun();
         $currentYear = $tahunAktif ? $tahunAktif->tahun : date('Y');
 
-        // Get arsip monitoring data for all periods
+        // Tentukan canonical tugas untuk SKPD ini agar arsip bersifat SKPD-level
+        $arsipTugasId = $this->getDefaultTugasIdForSkpd($skpdTugas->skpd_id) ?? $tugasId;
+
+        // Get arsip monitoring data for all periods (menggunakan canonical tugas id)
         $arsipData = [];
         $periodeOptions = ArsipMonitoring::getPeriodeOptions();
 
         foreach ($periodeOptions as $periode => $label) {
-            $arsip = ArsipMonitoring::where('skpd_tugas_id', $tugasId)
+            $arsip = ArsipMonitoring::where('skpd_tugas_id', $arsipTugasId)
                 ->where('periode', $periode)
                 ->where('tahun', $currentYear)
                 ->with('uploadedBy')
@@ -358,6 +361,7 @@ class LaporanAkhirController extends Controller
             'periodeOptions' => $periodeOptions,
             'breadcrumbUserId' => $breadcrumbUserId, // Add breadcrumb user ID for correct navigation
             'urusanTugasList' => $urusanTugasList,
+            'arsipTugasId' => $arsipTugasId,
         ]);
     }
 
@@ -371,67 +375,71 @@ class LaporanAkhirController extends Controller
             'skpd_tugas_id' => 'required|exists:skpd_tugas,id',
             'periode' => 'required|in:rencana_awal,triwulan_1,triwulan_2,triwulan_3,triwulan_4',
             'tahun' => 'required|digits:4|integer',
-            'keterangan' => 'nullable|string|max:500'
+            'keterangan' => 'nullable|string|max:500',
+            'apply_to_all' => 'nullable|boolean',
         ]);
 
         try {
             $file = $request->file('file');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs(
-                'arsip_monitoring/' . $request->tahun . '/' . $request->skpd_tugas_id,
-                $fileName,
-                'public'
-            );
 
-            // Check if arsip already exists for this periode and tugas
-            $existingArsip = ArsipMonitoring::where('skpd_tugas_id', $request->skpd_tugas_id)
+            // Gunakan canonical tugas id agar arsip bersifat SKPD-level
+            $skpdId = SkpdTugas::where('id', $request->skpd_tugas_id)->value('skpd_id');
+            $targetTugasId = $this->getDefaultTugasIdForSkpd($skpdId) ?? $request->skpd_tugas_id;
+
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $size = $file->getSize();
+            $fileName = time() . '_' . $originalName;
+            $destDir = 'arsip_monitoring/' . $request->tahun . '/' . $targetTugasId;
+            Storage::disk('public')->makeDirectory($destDir);
+            $filePath = $file->storeAs($destDir, $fileName, 'public');
+
+            // Upsert record untuk canonical tugas saja
+            $existingArsip = ArsipMonitoring::where('skpd_tugas_id', $targetTugasId)
                 ->where('periode', $request->periode)
                 ->where('tahun', $request->tahun)
                 ->first();
 
             if ($existingArsip) {
-                // Delete old file
                 $existingArsip->deleteFile();
-
-                // Update existing record
                 $existingArsip->update([
-                    'nama_file' => $file->getClientOriginalName(),
+                    'nama_file' => $originalName,
                     'path_file' => $filePath,
-                    'ukuran_file' => $file->getSize(),
-                    'tipe_file' => $file->getClientOriginalExtension(),
+                    'ukuran_file' => $size,
+                    'tipe_file' => $extension,
                     'tanggal_upload' => now(),
                     'uploaded_by' => Auth::id(),
-                    'keterangan' => $request->keterangan
+                    'keterangan' => $request->keterangan,
                 ]);
 
-                $arsip = $existingArsip;
+                $arsipId = $existingArsip->id;
             } else {
-                // Create new record
-                $arsip = ArsipMonitoring::create([
-                    'skpd_tugas_id' => $request->skpd_tugas_id,
+                $new = ArsipMonitoring::create([
+                    'skpd_tugas_id' => $targetTugasId,
                     'periode' => $request->periode,
                     'tahun' => $request->tahun,
-                    'nama_file' => $file->getClientOriginalName(),
+                    'nama_file' => $originalName,
                     'path_file' => $filePath,
-                    'ukuran_file' => $file->getSize(),
-                    'tipe_file' => $file->getClientOriginalExtension(),
+                    'ukuran_file' => $size,
+                    'tipe_file' => $extension,
                     'tanggal_upload' => now(),
                     'uploaded_by' => Auth::id(),
-                    'keterangan' => $request->keterangan
+                    'keterangan' => $request->keterangan,
                 ]);
+                $arsipId = $new->id;
             }
 
-            // Log aktivitas upload file
-            UserActivityService::logFileUpload($file->getClientOriginalName(), [
-                'arsip_id' => $arsip->id,
-                'skpd_tugas_id' => $request->skpd_tugas_id,
+            // Log aktivitas
+            UserActivityService::logFileUpload($originalName, [
+                'arsip_id' => $arsipId,
+                'skpd_tugas_id' => $targetTugasId,
                 'periode' => $request->periode,
                 'tahun' => $request->tahun,
-                'nama_file' => $file->getClientOriginalName(),
-                'ukuran_file' => $file->getSize(),
-                'tipe_file' => $file->getClientOriginalExtension(),
+                'nama_file' => $originalName,
+                'ukuran_file' => $size,
+                'tipe_file' => $extension,
                 'path_file' => $filePath,
-                'keterangan' => $request->keterangan
+                'keterangan' => $request->keterangan,
             ]);
 
             return back()->with('success', 'File berhasil diunggah!');

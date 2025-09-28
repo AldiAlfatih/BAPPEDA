@@ -57,14 +57,31 @@ const isSubmitting = ref(false);
 const showForm = () => (isFormVisible.value = true);
 const hideForm = () => (isFormVisible.value = false);
 
+const MAX_FILE_MB = 10; // harus selaras dengan validasi server
+const MAX_SAMPUL_MB = 4; // harus selaras dengan validasi server
+
 const handleFileChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    form.value.file = input.files?.[0] ?? null;
+    const f = input.files?.[0] ?? null;
+    if (f && f.size > MAX_FILE_MB * 1024 * 1024) {
+        errors.value.file = `Ukuran file melebihi batas ${MAX_FILE_MB}MB`;
+        form.value.file = null;
+        return;
+    }
+    errors.value.file = '' as any;
+    form.value.file = f;
 };
 
 const handleSampulChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    form.value.sampul = input.files?.[0] ?? null;
+    const f = input.files?.[0] ?? null;
+    if (f && f.size > MAX_SAMPUL_MB * 1024 * 1024) {
+        errors.value.sampul = `Ukuran gambar sampul melebihi batas ${MAX_SAMPUL_MB}MB`;
+        form.value.sampul = null;
+        return;
+    }
+    errors.value.sampul = '' as any;
+    form.value.sampul = f;
 };
 
 const resetForm = () => {
@@ -78,6 +95,18 @@ const resetForm = () => {
 const handleSubmit = () => {
     isSubmitting.value = true;
     errors.value = {};
+
+    // Client-side guard untuk mencegah 413
+    if (form.value.file && form.value.file.size > MAX_FILE_MB * 1024 * 1024) {
+        errors.value.file = `Ukuran file melebihi batas ${MAX_FILE_MB}MB`;
+        isSubmitting.value = false;
+        return;
+    }
+    if (form.value.sampul && form.value.sampul.size > MAX_SAMPUL_MB * 1024 * 1024) {
+        errors.value.sampul = `Ukuran gambar sampul melebihi batas ${MAX_SAMPUL_MB}MB`;
+        isSubmitting.value = false;
+        return;
+    }
 
     const formData = new FormData();
     formData.append('judul', form.value.judul);

@@ -210,13 +210,6 @@ const getUserId = computed(() => {
     return props.user?.id || null;
 });
 
-// Helper function to get the skpdId safely
-const getSkpdId = computed(() => {
-    if (props.user?.skpd && Array.isArray(props.user.skpd) && props.user.skpd.length > 0) {
-        return props.user.skpd[0].id;
-    }
-    return null;
-});
 
 // PERBAIKAN: Computed untuk cek apakah periode aktif (berbeda untuk setiap mode)
 const isPeriodeRencanaAktif = computed(() => {
@@ -459,7 +452,7 @@ onMounted(() => {
 
                     // PERBAIKAN: Fallback untuk struktur data yang tidak dikenali
                     // Coba ekstrak data dari struktur apapun yang ada
-                    let extractedData = {
+                    const extractedData = {
                         dau: 0, // ✅ FIXED: dau (bukan dak)
                         dau_peruntukan: 0, // ✅ Benar
                         dak_fisik: 0, // ✅ Benar
@@ -564,9 +557,6 @@ const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('id-ID').format(value);
 };
 
-const editItem = (item: AnggaranItem) => {
-    // jika perlu fungsi edit
-};
 
 type SumberAnggaranKey = keyof AnggaranItem['sumber_anggaran'];
 
@@ -749,7 +739,7 @@ const saveItem = async (item: AnggaranItem) => {
 
             // 📝 Log aktivitas ke sistem
             let actionDescription = '';
-            let logDetails = {
+            let logDetails: any = {
                 subkegiatan_id: item.id,
                 subkegiatan_name: item.jenis_nomenklatur,
                 sumber_anggaran: item.sumber_anggaran,
@@ -759,13 +749,12 @@ const saveItem = async (item: AnggaranItem) => {
 
             if (isBudgetChangeMode.value) {
                 actionDescription = 'Menyimpan perubahan anggaran Triwulan 4';
-                logDetails = { ...logDetails, mode: 'budget_change', grand_total: calculateBudgetChangeGrandTotal(item) };
+                logDetails = { ...logDetails, grand_total: calculateBudgetChangeGrandTotal(item) };
             } else if (isParsialMode.value) {
                 actionDescription = 'Menyimpan data anggaran parsial';
-                logDetails = { ...logDetails, mode: 'parsial', grand_total: calculateGrandTotal(item) };
+                logDetails = { ...logDetails, grand_total: calculateGrandTotal(item) };
             } else {
                 actionDescription = 'Menyimpan data anggaran rencana awal';
-                logDetails = { ...logDetails, mode: 'rencana_awal' };
             }
 
             // Kirim log aktivitas
@@ -896,24 +885,6 @@ const totalSubKegiatan = computed(() => {
     return anggaranItems.value.length;
 });
 
-// Handler for period change
-const handlePeriodeChange = (event: Event) => {
-    const target = event.target as HTMLSelectElement;
-    const newPeriodeId = target.value ? parseInt(target.value) : null;
-
-    if (selectedPeriodeId.value !== newPeriodeId) {
-        selectedPeriodeId.value = newPeriodeId;
-
-        // PERBAIKAN: Reload data with the new period using user ID
-        const userId = getUserId.value;
-        if (userId) {
-            router.visit(`/manajemenanggaran/${userId}?periode_id=${newPeriodeId || ''}`, {
-                preserveState: true,
-                only: ['dataAnggaranTerakhir'],
-            });
-        }
-    }
-};
 
 // Computed untuk pesan status periode
 const periodeMessage = computed(() => {
@@ -966,25 +937,7 @@ const dataDisplayInfo = computed(() => {
     }
 });
 
-// Add a new method to handle going to Rencana Awal detail
-const goToRencanaAwal = () => {
-    // Navigate to Rencana Awal detail page
-    const userId = getUserId.value;
-    if (userId) {
-        // If there's a specific subkegiatan, we can navigate to its detail
-        const firstSubkegiatan = props.skpdTugas?.find((task) => task.kode_nomenklatur.jenis_nomenklatur === 4);
-        if (firstSubkegiatan) {
-            router.visit(`/monitoring/rencanaawal/${firstSubkegiatan.id}`, {
-                preserveState: false,
-            });
-        } else {
-            // Fallback to main rencana awal page for this user
-            router.visit(`/rencana-awal/${userId}`, {
-                preserveState: false,
-            });
-        }
-    }
-};
+
 
 // Add a new method to handle going to Rencana Awal detail for specific subkegiatan
 const goToSubkegiatanDetail = (subkegiatanId: number) => {
@@ -1876,6 +1829,7 @@ const goToSubkegiatanDetail = (subkegiatanId: number) => {
 }
 
 input[type='number'] {
+    appearance: textfield;
     -moz-appearance: textfield;
 }
 

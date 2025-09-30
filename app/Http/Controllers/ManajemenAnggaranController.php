@@ -12,7 +12,6 @@ use App\Models\Skpd;
 use App\Models\TimKerja;
 use App\Models\MonitoringTarget;
 use App\Models\MonitoringAnggaran;
-use App\Models\MonitoringPagu;
 use App\Models\SumberAnggaran;
 use App\Models\Periode;
 use App\Models\PeriodeTahun;
@@ -30,11 +29,20 @@ class ManajemenAnggaranController extends Controller
     {
         // Jika ada parameter tahun_id di request, gunakan itu
         if ($request->has('tahun_id') && $request->tahun_id) {
-            return PeriodeTahun::find($request->tahun_id);
+            $tahunByParam = PeriodeTahun::find($request->tahun_id);
+            if ($tahunByParam) {
+                return $tahunByParam;
+            }
         }
 
-        // Jika tidak, ambil tahun aktif
-        return PeriodeTahun::getTahunAktif();
+        // Jika tidak, ambil tahun aktif terlebih dahulu
+        $tahunAktif = PeriodeTahun::getTahunAktif();
+        if ($tahunAktif) {
+            return $tahunAktif;
+        }
+
+        // Fallback terakhir: ambil tahun terbaru (by tahun desc)
+        return PeriodeTahun::orderByDesc('tahun')->first();
     }
 
     /**
@@ -204,37 +212,48 @@ class ManajemenAnggaranController extends Controller
         // Get tahun aktif atau tahun yang dipilih
         $tahunAktif = $this->getTahunAktif($request);
         $allTahun = $this->getAllTahun();
+        $tahunId = $tahunAktif?->id;
+        $tahunVal = $tahunAktif?->tahun;
 
-        // PERBAIKAN 1: Get active periods dengan filtering tahun (WAJIB filter berdasarkan tahun aktif)
-        $periodeAktif = Periode::with(['tahap', 'tahun'])
+        // PERBAIKAN 1: Get active periods dengan filtering tahun (opsional jika tersedia)
+        $periodeAktifQuery = Periode::with(['tahap', 'tahun'])
             ->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->where('tahap', 'Rencana');
-            })
-            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
-            ->get();
+            });
 
-        \Log::debug('Periode aktif:', ['count' => $periodeAktif->count(), 'data' => $periodeAktif->toArray(), 'tahun_aktif' => $tahunAktif->tahun]);
+        if ($tahunId) {
+            $periodeAktifQuery->where('tahun_id', $tahunId);
+        }
 
-        // PERBAIKAN 2: Get all periods for the dropdown dengan filtering tahun (WAJIB filter berdasarkan tahun aktif)
-        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
-            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
+        $periodeAktif = $periodeAktifQuery->get();
+
+        \Log::debug('Periode aktif:', ['count' => $periodeAktif->count(), 'tahun_aktif' => $tahunVal]);
+
+        // PERBAIKAN 2: Get all periods for the dropdown dengan filtering tahun (opsional jika tersedia)
+        $semuaPeriodeAktifQuery = Periode::with(['tahap', 'tahun'])
             ->whereHas('tahap', function($query) {
                 $query->whereIn('tahap', ['Rencana', 'Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
             })
-            ->orderBy('tahap_id', 'asc')
-            ->get();
+            ->orderBy('tahap_id', 'asc');
+
+        if ($tahunId) {
+            $semuaPeriodeAktifQuery->where('tahun_id', $tahunId);
+        }
+
+        $semuaPeriodeAktif = $semuaPeriodeAktifQuery->get();
 
         // PERBAIKAN 3: Jika tidak ada periode Rencana aktif, ambil periode Rencana terakhir untuk tahun aktif
         $periodeRencanaFallback = null;
         if ($periodeAktif->isEmpty()) {
-            $periodeRencanaFallback = Periode::with(['tahap', 'tahun'])
+            $fallbackQuery = Periode::with(['tahap', 'tahun'])
                 ->whereHas('tahap', function($query) {
                     $query->where('tahap', 'Rencana');
-                })
-                ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
-                ->latest('created_at')
-                ->first();
+                });
+            if ($tahunId) {
+                $fallbackQuery->where('tahun_id', $tahunId);
+            }
+            $periodeRencanaFallback = $fallbackQuery->latest('created_at')->first();
         }
 
         // Get funding data for each subkegiatan
@@ -261,14 +280,16 @@ class ManajemenAnggaranController extends Controller
 
         foreach ($skpdTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Hanya ambil sub kegiatan
-                // ✅ FIXED: Ambil monitoring yang memiliki data anggaran, prioritaskan tahun aktif tapi fallback ke tahun lain
-                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
-                    ->where('tahun', $tahunAktif->tahun)
-                    ->whereHas('anggaran') // ✅ FIXED: Nama relasi yang benar adalah 'anggaran'
-                    ->latest()
-                    ->first();
+                // ✅ Ambil monitoring yang memiliki data anggaran, prioritaskan tahun aktif jika tersedia
+                $monitoringQuery = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->whereHas('anggaran') // Nama relasi yang benar adalah 'anggaran'
+                    ->latest();
+                if ($tahunVal) {
+                    $monitoringQuery->where('tahun', $tahunVal);
+                }
+                $monitoring = $monitoringQuery->first();
 
-                // Fallback: jika tidak ada data untuk tahun aktif, cari di tahun lain
+                // Fallback: jika tidak ada data untuk tahun spesifik, cari di tahun lain
                 if (!$monitoring) {
                     $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
                         ->whereHas('anggaran')
@@ -426,26 +447,33 @@ class ManajemenAnggaranController extends Controller
         // Get tahun aktif atau tahun yang dipilih
         $tahunAktif = $this->getTahunAktif($request);
         $allTahun = $this->getAllTahun();
+        $tahunId = $tahunAktif?->id;
+        $tahunVal = $tahunAktif?->tahun;
 
-        // Get periods for parsial (should be triwulan periods, not rencana) dengan filtering tahun
-        $periodeAktif = Periode::with(['tahap', 'tahun'])
+        // Get periods for parsial (should be triwulan periods, not rencana) dengan filtering tahun (opsional)
+        $periodeAktifQuery = Periode::with(['tahap', 'tahun'])
             ->where('status', 1)
             ->whereHas('tahap', function($query) {
                 $query->whereIn('tahap', ['Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
-            })
-            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
-            ->get();
+            });
+        if ($tahunId) {
+            $periodeAktifQuery->where('tahun_id', $tahunId);
+        }
+        $periodeAktif = $periodeAktifQuery->get();
 
-        $semuaPeriodeAktif = Periode::with(['tahap', 'tahun'])
+        $semuaPeriodeAktifQuery = Periode::with(['tahap', 'tahun'])
             ->whereHas('tahap', function($query) {
                 $query->whereIn('tahap', ['Rencana', 'Triwulan 1', 'Triwulan 2', 'Triwulan 3', 'Triwulan 4']);
             })
-            ->where('tahun_id', $tahunAktif->id) // WAJIB filter berdasarkan tahun aktif
-            ->orderBy('tahap_id', 'asc')
-            ->get();
+            ->orderBy('tahap_id', 'asc');
+        if ($tahunId) {
+            $semuaPeriodeAktifQuery->where('tahun_id', $tahunId);
+        }
+        $semuaPeriodeAktif = $semuaPeriodeAktifQuery->get();
 
-        // Get current year
-        $tahunAktif = $semuaPeriodeAktif->isNotEmpty() ? $semuaPeriodeAktif->first()->tahun : null;
+        // Get current year string from periode or fallback to tahun aktif
+        $tahunFromPeriode = $semuaPeriodeAktif->isNotEmpty() ? $semuaPeriodeAktif->first()->tahun : null;
+        $tahunString = $tahunFromPeriode?->tahun ?? $tahunVal;
 
         // Get funding data for each subkegiatan including both rencana awal and parsial
         $subkegiatanIds = $skpdTugas->where('kode_nomenklatur.jenis_nomenklatur', 4)->pluck('id');
@@ -463,13 +491,15 @@ class ManajemenAnggaranController extends Controller
         foreach ($skpdTugas as $tugas) {
             if ($tugas->kodeNomenklatur->jenis_nomenklatur == 4) { // Only sub kegiatan
                 // ✅ FIXED: Ambil monitoring yang memiliki data anggaran, bukan yang terbaru
-                \Log::info("🚨 DEBUG PARSIAL: Looking for monitoring with anggaran for task {$tugas->id}, tahun {$tahunAktif->tahun}");
+                \Log::info("🚨 DEBUG PARSIAL: Looking for monitoring with anggaran for task {$tugas->id}, tahun " . ($tahunString ?? 'N/A'));
 
-                $monitoring = Monitoring::where('skpd_tugas_id', $tugas->id)
-                    ->where('tahun', $tahunAktif->tahun)
-                    ->whereHas('anggaran') // ✅ FIXED: Nama relasi yang benar adalah 'anggaran'
-                    ->latest()
-                    ->first();
+                $monitoringQuery = Monitoring::where('skpd_tugas_id', $tugas->id)
+                    ->whereHas('anggaran') // Nama relasi yang benar adalah 'anggaran'
+                    ->latest();
+                if ($tahunString) {
+                    $monitoringQuery->where('tahun', $tahunString);
+                }
+                $monitoring = $monitoringQuery->first();
 
                 // Fallback: jika tidak ada data untuk tahun aktif, cari di tahun lain
                 if (!$monitoring) {
